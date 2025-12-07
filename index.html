@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ROBOTS Pre-Call Qualification Form</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
     <style>
         /* Configure Tailwind to use the custom primary color and font */
         tailwind.config = {
@@ -23,9 +23,109 @@
             }
         }
     </style>
+
+    <style>
+        /* Base Glass Effect for Main Container */
+        .custom-glass-background {
+            background-color: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 217, 255, 0.2); 
+        }
+
+        /* Glass Effect for Text Inputs and Textareas */
+        .custom-glass-input {
+            color: #FFF;
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+
+        .custom-glass-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+            font-style: italic;
+            text-shadow: 0 0 2px rgba(0, 217, 255, 0.2);
+        }
+
+        .custom-glass-input:focus {
+            background-color: rgba(0, 217, 255, 0.1);
+            box-shadow: 0 0 15px rgba(0, 217, 255, 0.4);
+        }
+
+        /* Styling for Radio Buttons (Custom Glass Look) */
+        .radio-label {
+            position: relative;
+            padding-left: 3.5rem;
+            display: block; 
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+            background-color: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
+            font-weight: 500;
+        }
+        
+        .radio-label:hover {
+            background-color: rgba(0, 217, 255, 0.05); 
+            border-color: rgba(0, 217, 255, 0.3);
+        }
+
+        /* Hide the default radio button */
+        .radio-label input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Custom radio circle (outer ring) */
+        .radio-label::before {
+            content: '';
+            position: absolute;
+            left: 1.5rem; 
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.5); 
+            background-color: transparent;
+            transition: all 0.2s ease-in-out;
+            box-sizing: border-box;
+        }
+
+        /* Custom radio check dot (inner fill) */
+        .radio-label::after {
+            content: '';
+            position: absolute;
+            left: calc(1.5rem + 4px); /* Center the dot */
+            top: 50%;
+            transform: translateY(-50%) scale(0);
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #00D9FF; 
+            transition: all 0.2s ease-in-out;
+        }
+
+        /* Checked state styles */
+        .radio-label:has(input[type="radio"]:checked) {
+            background-color: rgba(0, 217, 255, 0.15);
+            border-color: #00D9FF;
+            box-shadow: 0 0 10px rgba(0, 217, 255, 0.3);
+        }
+
+        .radio-label input[type="radio"]:checked ~ ::before {
+            border-color: #00D9FF;
+            box-shadow: 0 0 8px rgba(0, 217, 255, 0.5);
+        }
+
+        .radio-label input[type="radio"]:checked ~ ::after {
+            transform: translateY(-50%) scale(1);
+        }
+    </style>
 </head>
 <body class="bg-background min-h-screen flex items-center justify-center p-4 font-sans text-white">
-    <div id="form-container" class="w-full max-w-xl p-8 rounded-2xl shadow-2xl backdrop-blur-md custom-glass-background transition-all duration-500">
+    <div id="form-container" class="w-full max-w-xl p-8 rounded-2xl shadow-2xl custom-glass-background transition-all duration-500">
         
         <header class="mb-8 text-center">
             <div class="inline-flex items-center space-x-2 text-3xl font-bold text-primary liquid-glass-icon p-2 rounded-xl">
@@ -90,25 +190,25 @@
                     4. Which best describes your role?
                 </label>
                 <div class="space-y-2">
-                    <label class="radio-label custom-glass-radio">
+                    <label class="radio-label">
                         <input type="radio" name="role" value="Founder / Owner" required>
-                        Founder / Owner
+                        <span>Founder / Owner</span>
                     </label>
-                    <label class="radio-label custom-glass-radio">
+                    <label class="radio-label">
                         <input type="radio" name="role" value="C-Level / VP">
-                        C-Level / VP
+                        <span>C-Level / VP</span>
                     </label>
-                    <label class="radio-label custom-glass-radio">
+                    <label class="radio-label">
                         <input type="radio" name="role" value="Operations / Systems">
-                        Operations / Systems
+                        <span>Operations / Systems</span>
                     </label>
-                    <label class="radio-label custom-glass-radio">
+                    <label class="radio-label">
                         <input type="radio" name="role" value="Marketing / Sales">
-                        Marketing / Sales
+                        <span>Marketing / Sales</span>
                     </label>
-                    <label class="radio-label custom-glass-radio">
+                    <label class="radio-label">
                         <input type="radio" name="role" value="Other">
-                        Other
+                        <span>Other</span>
                     </label>
                 </div>
             </div>
@@ -118,25 +218,25 @@
                     5. How many employees are in your company?
                 </label>
                 <div class="space-y-2">
-                    <label class="radio-label custom-glass-radio">
+                    <label class="radio-label">
                         <input type="radio" name="employees" value="1–5" required>
-                        1–5
+                        <span>1–5</span>
                     </label>
-                    <label class="radio-label custom-glass-radio">
+                    <label class="radio-label">
                         <input type="radio" name="employees" value="6–20">
-                        6–20
+                        <span>6–20</span>
                     </label>
-                    <label class="radio-label custom-glass-radio">
+                    <label class="radio-label">
                         <input type="radio" name="employees" value="21–50">
-                        21–50
+                        <span>21–50</span>
                     </label>
-                    <label class="radio-label custom-glass-radio">
+                    <label class="radio-label">
                         <input type="radio" name="employees" value="51–200">
-                        51–200
+                        <span>51–200</span>
                     </label>
-                    <label class="radio-label custom-glass-radio">
+                    <label class="radio-label">
                         <input type="radio" name="employees" value="200+">
-                        200+
+                        <span>200+</span>
                     </label>
                 </div>
             </div>
@@ -146,17 +246,17 @@
                     6. How serious are you about fixing this in the next 60 days?
                 </label>
                 <div class="space-y-2">
-                    <label class="radio-label custom-glass-radio">
+                    <label class="radio-label">
                         <input type="radio" name="urgency" value="Just exploring / Not urgent" required>
-                        Just exploring / Not urgent
+                        <span>Just exploring / Not urgent</span>
                     </label>
-                    <label class="radio-label custom-glass-radio">
+                    <label class="radio-label">
                         <input type="radio" name="urgency" value="Interested, but timing is flexible">
-                        Interested, but timing is flexible
+                        <span>Interested, but timing is flexible</span>
                     </label>
-                    <label class="radio-label custom-glass-radio">
+                    <label class="radio-label">
                         <input type="radio" name="urgency" value="This is a priority to solve in the next 60 days">
-                        This is a priority to solve in the next 60 days
+                        <span>This is a priority to solve in the next 60 days</span>
                     </label>
                 </div>
             </div>
@@ -183,6 +283,80 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('qualificationForm');
+            const submitBtn = document.getElementById('submitBtn');
+            const submitText = document.getElementById('submitText');
+            const spinner = document.getElementById('spinner');
+            const message = document.getElementById('message');
+            const formContainer = document.getElementById('form-container');
+            const successState = document.getElementById('success-state');
+
+            // The target API endpoint
+            const API_ENDPOINT = 'https://zerogpt.app.n8n.cloud/webhook-test/form-api-v1form-api-v1';
+            
+            const setLoading = (isLoading) => {
+                submitBtn.disabled = isLoading;
+                if (isLoading) {
+                    submitText.textContent = 'Submitting...';
+                    spinner.classList.remove('hidden');
+                    message.textContent = '';
+                } else {
+                    submitText.textContent = 'Submit & See Next Step';
+                    spinner.classList.add('hidden');
+                }
+            };
+
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                setLoading(true);
+
+                try {
+                    // Collect form data
+                    const formData = new FormData(form);
+                    const data = {};
+                    
+                    formData.forEach((value, key) => {
+                        data[key] = value.trim();
+                    });
+
+                    // POST data using Fetch API
+                    const response = await fetch(API_ENDPOINT, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data),
+                    });
+
+                    if (response.ok) {
+                        // Success State Transition
+                        form.classList.add('hidden');
+                        successState.classList.remove('hidden');
+                        formContainer.scrollIntoView({ behavior: 'smooth' }); 
+                        message.textContent = 'Success! Your information has been received.';
+                        message.className = 'mt-4 text-center text-sm font-semibold text-primary';
+
+                    } else {
+                        // Handle API errors
+                        const errorData = await response.text();
+                        console.error('API Submission Error:', response.status, errorData);
+                        message.textContent = `Submission failed (Error: ${response.status}). Please try again or contact support.`;
+                        message.className = 'mt-4 text-center text-sm font-semibold text-red-400';
+                    }
+
+                } catch (error) {
+                    // Handle network errors
+                    console.error('Network or Parse Error:', error);
+                    message.textContent = 'An unexpected error occurred. Check your network connection.';
+                    message.className = 'mt-4 text-center text-sm font-semibold text-red-400';
+
+                } finally {
+                    setLoading(false);
+                }
+            });
+        });
+    </script>
 </body>
 </html>
