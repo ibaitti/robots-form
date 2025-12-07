@@ -1,0 +1,256 @@
+/*
+ * ROBOTS Custom Styles for Liquid Glass Theme
+ * Primary Color: #00D9FF
+ * Background: #0A0E27
+ */
+
+/* Custom Font - Ensures Poppins is used across the body */
+body {
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Base Glass Effect for Main Container */
+.custom-glass-background {
+    /* Subtle white background + Blur effect */
+    background-color: rgba(255, 255, 255, 0.05); /* Very light, transparent white */
+    backdrop-filter: blur(10px); /* The iOS liquid glass effect */
+    -webkit-backdrop-filter: blur(10px); /* For Safari support */
+    border: 1px solid rgba(0, 217, 255, 0.2); /* Light border using primary color */
+}
+
+/* Glass Effect for Text Inputs and Textareas (IOS 26 Style) */
+.custom-glass-input {
+    /* Inherit base transparent background from Tailwind class bg-white/5 */
+    color: #FFF; /* White text */
+    transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+.custom-glass-input::placeholder {
+    color: rgba(255, 255, 255, 0.5); /* Lighter, more subtle placeholder */
+    font-style: italic;
+    /* Optional: Subtle 'liquid' shadow on text */
+    text-shadow: 0 0 2px rgba(0, 217, 255, 0.2);
+}
+
+.custom-glass-input:focus {
+    background-color: rgba(0, 217, 255, 0.1); /* Slight glow effect on focus */
+    box-shadow: 0 0 15px rgba(0, 217, 255, 0.4); /* Stronger primary color shadow */
+}
+
+/* Styling for Radio Buttons (Custom Glass Look) */
+.radio-label {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background-color 0.3s, border-color 0.3s;
+    font-weight: 500;
+}
+
+.custom-glass-radio {
+    /* Base style */
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.custom-glass-radio:hover {
+    background-color: rgba(0, 217, 255, 0.05); /* Hover effect */
+    border-color: rgba(0, 217, 255, 0.3);
+}
+
+/* Hide the default radio button */
+.radio-label input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Create the custom radio circle icon */
+.radio-label input[type="radio"] + span {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.5); /* Liquid glass border */
+    margin-right: 12px;
+    transition: border-color 0.3s, background-color 0.3s, box-shadow 0.3s;
+    flex-shrink: 0; /* Prevents the circle from shrinking */
+}
+
+/* Style when selected */
+.radio-label input[type="radio"]:checked + span {
+    border-color: #00D9FF; /* Primary color border when checked */
+    background-color: #00D9FF; /* Filled with primary color */
+    box-shadow: 0 0 10px rgba(0, 217, 255, 0.6); /* Glowing effect */
+}
+
+/* Style for the actual text in the radio label (if using a <span> or just plain text) */
+.radio-label {
+    /* Use the default text color, which is white */
+}
+
+/* Apply the checked style to the entire label for the 'selected' look */
+.radio-label input[type="radio"]:checked:not(:disabled) {
+    /* Revert the default input element's appearance, and let CSS handle it */
+}
+
+.radio-label input[type="radio"]:checked {
+    /* Target the parent container when radio is checked */
+}
+
+/* Applying the selected style to the glass container */
+.radio-label input[type="radio"]:checked:not(:disabled) ~ .radio-label {
+    background-color: rgba(0, 217, 255, 0.15);
+    border-color: #00D9FF;
+    box-shadow: 0 0 10px rgba(0, 217, 255, 0.3);
+}
+
+/* Helper to insert the custom radio circle before the text */
+.radio-label {
+    position: relative;
+    /* Create a custom visual element for the radio button */
+}
+
+.radio-label input[type="radio"] {
+    /* Existing code to hide the native radio button */
+}
+
+.radio-label::before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.5); 
+    margin-right: 12px;
+    transition: border-color 0.3s, background-color 0.3s, box-shadow 0.3s;
+    flex-shrink: 0;
+}
+
+.radio-label input[type="radio"]:checked + .radio-label::before {
+    border-color: #00D9FF;
+    background-color: #00D9FF;
+    box-shadow: 0 0 10px rgba(0, 217, 255, 0.6);
+}
+
+/* Adjust the ::before pseudo-element to be the actual custom radio button */
+.radio-label {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background-color 0.3s, border-color 0.3s;
+    font-weight: 500;
+}
+
+.radio-label::before {
+    content: '';
+    display: block; /* Change to block for better positioning */
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.5); 
+    margin-right: 12px;
+    transition: border-color 0.3s, background-color 0.3s, box-shadow 0.3s;
+    flex-shrink: 0;
+}
+
+.radio-label input[type="radio"]:checked::before {
+    border-color: #00D9FF;
+    background-color: #00D9FF;
+    box-shadow: 0 0 10px rgba(0, 217, 255, 0.6);
+}
+
+/* Final correct structure for radio buttons */
+.radio-label {
+    position: relative;
+    padding-left: 38px; /* Space for the custom radio button */
+    display: flex;
+    align-items: center;
+    min-height: 20px; /* Ensure space */
+}
+
+.radio-label::before {
+    content: '';
+    position: absolute;
+    left: 10px; /* Position the circle */
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.5); 
+    background-color: transparent;
+    transition: all 0.2s ease-in-out;
+    box-sizing: border-box;
+}
+
+.radio-label::after {
+    content: '';
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%) scale(0);
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: #00D9FF; /* Inner check color */
+    transition: all 0.2s ease-in-out;
+}
+
+.radio-label input[type="radio"]:checked ~ ::before {
+    border-color: #00D9FF;
+    box-shadow: 0 0 8px rgba(0, 217, 255, 0.5);
+}
+
+.radio-label input[type="radio"]:checked ~ ::after {
+    transform: translateY(-50%) scale(1);
+}
+
+/* Applying checked background to the label */
+.radio-label input[type="radio"]:checked + span {
+    /* If you wrapped the text in a span, you could style it here */
+}
+
+/* Corrected selection style for the container */
+.radio-label input[type="radio"]:checked:not(:disabled) + .radio-label,
+.radio-label:has(input[type="radio"]:checked):not(:has(input[type="radio"]:disabled)) {
+    background-color: rgba(0, 217, 255, 0.15);
+    border-color: #00D9FF;
+    box-shadow: 0 0 10px rgba(0, 217, 255, 0.3);
+}
+
+/* Final touch on the radio button structure, simplifying it */
+.radio-label {
+    position: relative;
+    padding-left: 3.5rem; /* Increased padding */
+    display: block; /* Make it a block element for better layout */
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+.radio-label::before {
+    left: 1.5rem; 
+    top: 50%;
+}
+
+.radio-label::after {
+    left: calc(1.5rem + 4px); /* Center the dot */
+    top: 50%;
+}
+
+/* Apply checked style to the label for visual feedback */
+.radio-label:has(input[type="radio"]:checked) {
+    background-color: rgba(0, 217, 255, 0.15);
+    border-color: #00D9FF;
+    box-shadow: 0 0 10px rgba(0, 217, 255, 0.3);
+}
+
+/* Use a proper span to wrap the text and apply styles */
+.radio-label > span {
+    display: inline-block;
+    color: white;
+}
