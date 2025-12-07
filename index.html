@@ -3,360 +3,707 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ROBOTS Pre-Call Qualification Form</title>
+    <title>Pre-Call Qualification | ROBOTS</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    
-    <style>
-        /* Configure Tailwind to use the custom primary color and font */
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        'primary': '#00D9FF',
-                        'background': '#0A0E27',
+                        deepNavy: '#0A0E27',
+                        electricCyan: '#00D9FF',
+                        glassWhite: 'rgba(255, 255, 255, 0.05)',
+                        glassBorder: 'rgba(255, 255, 255, 0.1)'
                     },
                     fontFamily: {
-                        sans: ['Poppins', 'sans-serif'],
+                        sans: ['Inter', 'sans-serif'],
                     },
+                    boxShadow: {
+                        'neon': '0 0 20px rgba(0, 217, 255, 0.3)',
+                    }
                 }
             }
         }
-    </style>
-
-    <style>
-        /* Base Glass Effect for Main Container */
-        .custom-glass-background {
-            background-color: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(0, 217, 255, 0.2); 
-        }
-
-        /* Glass Effect for Text Inputs and Textareas */
-        .custom-glass-input {
-            color: #FFF;
-            transition: background-color 0.3s, box-shadow 0.3s;
-        }
-
-        .custom-glass-input::placeholder {
-            color: rgba(255, 255, 255, 0.5);
-            font-style: italic;
-            text-shadow: 0 0 2px rgba(0, 217, 255, 0.2);
-        }
-
-        .custom-glass-input:focus {
-            background-color: rgba(0, 217, 255, 0.1);
-            box-shadow: 0 0 15px rgba(0, 217, 255, 0.4);
-        }
-
-        /* Styling for Radio Buttons (Custom Glass Look) */
-        .radio-label {
-            position: relative;
-            padding-left: 3.5rem;
-            display: block; 
-            padding-top: 1rem;
-            padding-bottom: 1rem;
-            background-color: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            cursor: pointer;
-            transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
-            font-weight: 500;
-        }
-        
-        .radio-label:hover {
-            background-color: rgba(0, 217, 255, 0.05); 
-            border-color: rgba(0, 217, 255, 0.3);
-        }
-
-        /* Hide the default radio button */
-        .radio-label input[type="radio"] {
-            position: absolute;
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        /* Custom radio circle (outer ring) */
-        .radio-label::before {
-            content: '';
-            position: absolute;
-            left: 1.5rem; 
-            top: 50%;
-            transform: translateY(-50%);
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.5); 
-            background-color: transparent;
-            transition: all 0.2s ease-in-out;
-            box-sizing: border-box;
-        }
-
-        /* Custom radio check dot (inner fill) */
-        .radio-label::after {
-            content: '';
-            position: absolute;
-            left: calc(1.5rem + 4px); /* Center the dot */
-            top: 50%;
-            transform: translateY(-50%) scale(0);
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background-color: #00D9FF; 
-            transition: all 0.2s ease-in-out;
-        }
-
-        /* Checked state styles */
-        .radio-label:has(input[type="radio"]:checked) {
-            background-color: rgba(0, 217, 255, 0.15);
-            border-color: #00D9FF;
-            box-shadow: 0 0 10px rgba(0, 217, 255, 0.3);
-        }
-
-        .radio-label input[type="radio"]:checked ~ ::before {
-            border-color: #00D9FF;
-            box-shadow: 0 0 8px rgba(0, 217, 255, 0.5);
-        }
-
-        .radio-label input[type="radio"]:checked ~ ::after {
-            transform: translateY(-50%) scale(1);
-        }
-    </style>
+    </script>
 </head>
-<body class="bg-background min-h-screen flex items-center justify-center p-4 font-sans text-white">
-    <div id="form-container" class="w-full max-w-xl p-8 rounded-2xl shadow-2xl custom-glass-background transition-all duration-500">
+<body class="bg-deepNavy text-white font-sans min-h-screen flex flex-col items-center justify-center p-4 selection:bg-electricCyan selection:text-deepNavy overflow-x-hidden relative">
+
+    <!-- Background Elements -->
+    <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+        <div class="absolute top-[10%] left-[20%] w-96 h-96 bg-electricCyan/10 rounded-full blur-[100px] animate-pulse-slow"></div>
+        <div class="absolute bottom-[20%] right-[10%] w-80 h-80 bg-purple-600/10 rounded-full blur-[100px] animate-blob"></div>
+    </div>
+
+    <div class="w-full max-w-3xl animate-fade-in-up">
+        <!-- Logo -->
+        <div class="flex justify-center mb-8">
+            <div class="glass-panel px-6 py-3 rounded-full flex items-center gap-3 border border-glassBorder shadow-neon">
+                <span class="text-2xl">🤖</span>
+                <span class="font-bold tracking-widest text-lg">ROBOTS</span>
+            </div>
+        </div>
+
+        <!-- Form Card -->
+        <div class="glass-panel rounded-2xl p-8 md:p-10 border border-glassBorder relative overflow-hidden backdrop-blur-xl">
+            <!-- Header -->
+            <div class="text-center mb-10">
+                <h1 class="text-3xl md:text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-white to-electricCyan">
+                    Pre-Call Qualification
+                </h1>
+                <p class="text-gray-400 text-lg">
+                    In 6 quick questions, we'll identify where an AI employee can fit into your business.
+                </p>
+            </div>
+
+            <!-- Form -->
+            <form id="qualificationForm" class="space-y-8">
+                
+                <!-- Q1 -->
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-electricCyan mb-2 uppercase tracking-wider">01. Immediate workflows</label>
+                    <p class="text-gray-300 mb-3 text-sm">If you had a digital employee that could handle 3–5 repetitive workflows in the next 30 days, which ones would you pick first?</p>
+                    <input type="text" name="b_workflows_30_days" required
+                        class="w-full bg-glassWhite border border-glassBorder rounded-lg p-4 text-white placeholder-gray-500 focus:border-electricCyan focus:ring-1 focus:ring-electricCyan focus:bg-deepNavy/50 transition-all duration-300 outline-none"
+                        placeholder="e.g. Data entry, lead qualification, scheduling...">
+                </div>
+
+                <!-- Q2 -->
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-electricCyan mb-2 uppercase tracking-wider">02. 90-Day Vision</label>
+                    <p class="text-gray-300 mb-3 text-sm">90 days from now, if this works exactly as you want—what's the one thing you'd love to be true about your business?</p>
+                    <textarea name="b_vision_90_days" rows="2" required
+                        class="w-full bg-glassWhite border border-glassBorder rounded-lg p-4 text-white placeholder-gray-500 focus:border-electricCyan focus:ring-1 focus:ring-electricCyan focus:bg-deepNavy/50 transition-all duration-300 outline-none resize-none"
+                        placeholder="e.g. Fast response times, more qualified leads..."></textarea>
+                </div>
+
+                <!-- Q3 -->
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-electricCyan mb-2 uppercase tracking-wider">03. Business & Customer</label>
+                    <p class="text-gray-300 mb-3 text-sm">What does your company sell, and who is your ideal customer?</p>
+                    <textarea name="b_company_sell_customer" rows="2" required
+                        class="w-full bg-glassWhite border border-glassBorder rounded-lg p-4 text-white placeholder-gray-500 focus:border-electricCyan focus:ring-1 focus:ring-electricCyan focus:bg-deepNavy/50 transition-all duration-300 outline-none resize-none"
+                        placeholder="Describe your product/service and target audience"></textarea>
+                </div>
+
+                <!-- Q4 -->
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-electricCyan mb-2 uppercase tracking-wider">04. Your Role</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <label class="radio-card cursor-pointer">
+                            <input type="radio" name="b_role" value="Founder / Owner" class="hidden peer" required>
+                            <div class="p-4 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center">
+                                Founder / Owner
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer">
+                            <input type="radio" name="b_role" value="C-Level / VP" class="hidden peer">
+                            <div class="p-4 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center">
+                                C-Level / VP
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer">
+                            <input type="radio" name="b_role" value="Operations / Systems" class="hidden peer">
+                            <div class="p-4 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center">
+                                Operations / Systems
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer">
+                            <input type="radio" name="b_role" value="Marketing / Sales" class="hidden peer">
+                            <div class="p-4 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center">
+                                Marketing / Sales
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer sm:col-span-2">
+                            <input type="radio" name="b_role" value="Other" class="hidden peer">
+                            <div class="p-4 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center">
+                                Other
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Q5 -->
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-electricCyan mb-2 uppercase tracking-wider">05. Company Size</label>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
+                        <label class="radio-card cursor-pointer">
+                            <input type="radio" name="b_employees" value="1–5" class="hidden peer" required>
+                            <div class="p-3 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center text-sm">
+                                1–5
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer">
+                            <input type="radio" name="b_employees" value="6–20" class="hidden peer">
+                            <div class="p-3 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center text-sm">
+                                6–20
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer">
+                            <input type="radio" name="b_employees" value="21–50" class="hidden peer">
+                            <div class="p-3 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center text-sm">
+                                21–50
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer">
+                            <input type="radio" name="b_employees" value="51–200" class="hidden peer">
+                            <div class="p-3 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center text-sm">
+                                51–200
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer">
+                            <input type="radio" name="b_employees" value="200+" class="hidden peer">
+                            <div class="p-3 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center text-sm">
+                                200+
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Q6 -->
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-electricCyan mb-2 uppercase tracking-wider">06. Urgency</label>
+                    <p class="text-gray-300 mb-3 text-sm">How serious are you about fixing this in the next 60 days?</p>
+                    <div class="space-y-3">
+                        <label class="radio-card cursor-pointer block">
+                            <input type="radio" name="b_urgency" value="Just exploring / Not urgent" class="hidden peer" required>
+                            <div class="p-4 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 flex items-center gap-3">
+                                <div class="w-4 h-4 rounded-full border border-gray-500 peer-checked:border-electricCyan peer-checked:bg-electricCyan flex-shrink-0"></div>
+                                <span>Just exploring / Not urgent</span>
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer block">
+                            <input type="radio" name="b_urgency" value="Interested, but timing is flexible" class="hidden peer">
+                            <div class="p-4 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 flex items-center gap-3">
+                                <div class="w-4 h-4 rounded-full border border-gray-500 peer-checked:border-electricCyan peer-checked:bg-electricCyan flex-shrink-0"></div>
+                                <span>Interested, but timing is flexible</span>
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer block">
+                            <input type="radio" name="b_urgency" value="This is a priority to solve in the next 60 days" class="hidden peer">
+                            <div class="p-4 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 flex items-center gap-3">
+                                <div class="w-4 h-4 rounded-full border border-gray-500 peer-checked:border-electricCyan peer-checked:bg-electricCyan flex-shrink-0"></div>
+                                <span class="font-semibold text-white">This is a priority to solve in the next 60 days</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="pt-6">
+                    <button type="submit" id="submitBtn" class="w-full relative group overflow-hidden rounded-xl bg-electricCyan p-4 font-bold text-deepNavy transition-all hover:shadow-[0_0_40px_rgba(0,217,255,0.4)] hover:scale-[1.02] active:scale-[0.98]">
+                        <span class="relative z-10 flex items-center justify-center gap-2">
+                            <span>Submit Answers</span>
+                            <svg class="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                        </span>
+                        <div class="absolute inset-0 z-0 bg-white/20 translate-y-full transition-transform duration-300 group-hover:translate-y-0"></div>
+                    </button>
+                    <p id="errorMsg" class="mt-4 text-red-400 text-center text-sm hidden">Something went wrong. Please try again.</p>
+                </div>
+            </form>
+
+            <!-- Success State -->
+            <div id="successState" class="hidden absolute inset-0 bg-deepNavy/95 backdrop-blur-xl z-20 flex flex-col items-center justify-center p-8 text-center animate-fade-in">
+                <div class="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mb-6 text-4xl animate-bounce-small text-green-400">
+                    ✓
+                </div>
+                <h2 class="text-3xl font-bold text-white mb-4">Thanks—got it.</h2>
+                <p class="text-gray-300 mb-8 max-w-md">
+                    Based on your answers, the next step is a 30-minute call to map a specific AI employee to the workflows you selected.
+                </p>
+                
+                <a href="#" class="inline-flex items-center gap-2 bg-electricCyan text-deepNavy font-bold px-8 py-4 rounded-xl hover:shadow-[0_0_30px_rgba(0,217,255,0.3)] transition-all hover:-translate-y-1">
+                    Book your time here
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                </a>
+            </div>
+
+            <!-- Loading Overlay -->
+            <div id="loadingState" class="hidden absolute inset-0 bg-deepNavy/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
+                <div class="w-16 h-16 border-4 border-electricCyan/30 border-t-electricCyan rounded-full animate-spin mb-4"></div>
+                <p class="text-electricCyan font-medium animate-pulse">Processing...</p>
+            </div>
+
+        </div>
         
-        <header class="mb-8 text-center">
-            <div class="inline-flex items-center space-x-2 text-3xl font-bold text-primary liquid-glass-icon p-2 rounded-xl">
-                🤖 
-                <span class="tracking-widest">ROBOTS</span>
-            </div>
-            <h1 class="text-3xl mt-6 font-bold text-white leading-tight">Pre-Call Qualification and Engagement</h1>
-            <p class="text-gray-300 mt-2 text-lg italic">
-                In **6 quick questions**, we'll identify where an AI employee can fit into your business.
-            </p>
-        </header>
-
-        <form id="qualificationForm" class="space-y-6">
-
-            <div class="form-group">
-                <label for="workflows" class="block mb-3 text-lg font-semibold text-primary">
-                    1. If you had a digital employee that could handle 3–5 repetitive workflows in the next 30 days, which ones would you pick first?
-                </label>
-                <input 
-                    type="text" 
-                    id="workflows" 
-                    name="workflows" 
-                    placeholder="e.g., Customer support ticket triage, onboarding new clients, data entry" 
-                    required 
-                    class="w-full p-4 rounded-xl border border-primary/50 bg-white/5 focus:ring-2 focus:ring-primary/80 focus:border-primary/80 transition duration-300 custom-glass-input"
-                    maxlength="150"
-                >
-            </div>
-
-            <div class="form-group">
-                <label for="goal" class="block mb-3 text-lg font-semibold text-primary">
-                    2. 90 days from now, if this works exactly as you want—what's the one thing you'd love to be true about your business?
-                </label>
-                <textarea 
-                    id="goal" 
-                    name="goal" 
-                    placeholder="e.g. faster response times, more qualified leads, more booked calls, hours saved per week, more monthly revenue" 
-                    required 
-                    rows="3" 
-                    class="w-full p-4 rounded-xl border border-primary/50 bg-white/5 focus:ring-2 focus:ring-primary/80 focus:border-primary/80 transition duration-300 custom-glass-input"
-                    maxlength="200"
-                ></textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="companyCustomer" class="block mb-3 text-lg font-semibold text-primary">
-                    3. What does your company sell, and who is your ideal customer?
-                </label>
-                <textarea 
-                    id="companyCustomer" 
-                    name="companyCustomer" 
-                    placeholder="e.g., We sell SaaS for small businesses that need inventory management." 
-                    required 
-                    rows="2" 
-                    class="w-full p-4 rounded-xl border border-primary/50 bg-white/5 focus:ring-2 focus:ring-primary/80 focus:border-primary/80 transition duration-300 custom-glass-input"
-                    maxlength="150"
-                ></textarea>
-            </div>
-
-            <div class="form-group">
-                <label class="block mb-3 text-lg font-semibold text-primary">
-                    4. Which best describes your role?
-                </label>
-                <div class="space-y-2">
-                    <label class="radio-label">
-                        <input type="radio" name="role" value="Founder / Owner" required>
-                        <span>Founder / Owner</span>
-                    </label>
-                    <label class="radio-label">
-                        <input type="radio" name="role" value="C-Level / VP">
-                        <span>C-Level / VP</span>
-                    </label>
-                    <label class="radio-label">
-                        <input type="radio" name="role" value="Operations / Systems">
-                        <span>Operations / Systems</span>
-                    </label>
-                    <label class="radio-label">
-                        <input type="radio" name="role" value="Marketing / Sales">
-                        <span>Marketing / Sales</span>
-                    </label>
-                    <label class="radio-label">
-                        <input type="radio" name="role" value="Other">
-                        <span>Other</span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label class="block mb-3 text-lg font-semibold text-primary">
-                    5. How many employees are in your company?
-                </label>
-                <div class="space-y-2">
-                    <label class="radio-label">
-                        <input type="radio" name="employees" value="1–5" required>
-                        <span>1–5</span>
-                    </label>
-                    <label class="radio-label">
-                        <input type="radio" name="employees" value="6–20">
-                        <span>6–20</span>
-                    </label>
-                    <label class="radio-label">
-                        <input type="radio" name="employees" value="21–50">
-                        <span>21–50</span>
-                    </label>
-                    <label class="radio-label">
-                        <input type="radio" name="employees" value="51–200">
-                        <span>51–200</span>
-                    </label>
-                    <label class="radio-label">
-                        <input type="radio" name="employees" value="200+">
-                        <span>200+</span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label class="block mb-3 text-lg font-semibold text-primary">
-                    6. How serious are you about fixing this in the next 60 days?
-                </label>
-                <div class="space-y-2">
-                    <label class="radio-label">
-                        <input type="radio" name="urgency" value="Just exploring / Not urgent" required>
-                        <span>Just exploring / Not urgent</span>
-                    </label>
-                    <label class="radio-label">
-                        <input type="radio" name="urgency" value="Interested, but timing is flexible">
-                        <span>Interested, but timing is flexible</span>
-                    </label>
-                    <label class="radio-label">
-                        <input type="radio" name="urgency" value="This is a priority to solve in the next 60 days">
-                        <span>This is a priority to solve in the next 60 days</span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="pt-4">
-                <button type="submit" id="submitBtn" class="w-full py-4 text-xl font-bold rounded-xl text-background bg-primary hover:bg-primary/90 transition duration-300 focus:outline-none focus:ring-4 focus:ring-primary/50 flex items-center justify-center space-x-2">
-                    <span id="submitText">Submit & See Next Step</span>
-                    <span id="spinner" class="hidden animate-spin h-5 w-5 border-2 border-background/50 border-t-background rounded-full"></span>
-                </button>
-                <p id="message" class="mt-4 text-center text-sm font-semibold"></p>
-            </div>
-
-        </form>
-
-        <div id="success-state" class="hidden text-center mt-8 p-6 rounded-2xl custom-glass-background border-2 border-primary/50">
-            <h2 class="text-3xl font-bold text-primary mb-4">Thanks—Got It.</h2>
-            <p class="text-lg text-gray-200 leading-relaxed mb-6">
-                Based on your answers, the next step is a **30-minute call** to map a specific AI employee to the workflows you selected.
-            </p>
-            <a href="[Calendar link]" target="_blank" class="inline-flex items-center justify-center px-8 py-3 text-xl font-bold rounded-xl bg-primary text-background hover:bg-primary/90 transition duration-300 shadow-lg shadow-primary/30">
-                → Book Your Time Here <span class="ml-2">🗓️</span>
-            </a>
-            <p class="mt-4 text-sm text-gray-400">You will be redirected to the booking calendar.</p>
+        <div class="text-center mt-8 text-gray-500 text-sm">
+            &copy; 2025 ROBOTS Inc. All systems functional.
         </div>
     </div>
 
+    <script src="app.js"></script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pre-Call Qualification | ROBOTS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const form = document.getElementById('qualificationForm');
-            const submitBtn = document.getElementById('submitBtn');
-            const submitText = document.getElementById('submitText');
-            const spinner = document.getElementById('spinner');
-            const message = document.getElementById('message');
-            const formContainer = document.getElementById('form-container');
-            const successState = document.getElementById('success-state');
-
-            // The target API endpoint
-            const API_ENDPOINT = 'https://zerogpt.app.n8n.cloud/webhook-test/form-api-v1form-api-v1';
-            
-            const setLoading = (isLoading) => {
-                submitBtn.disabled = isLoading;
-                if (isLoading) {
-                    submitText.textContent = 'Submitting...';
-                    spinner.classList.remove('hidden');
-                    message.textContent = '';
-                } else {
-                    submitText.textContent = 'Submit & See Next Step';
-                    spinner.classList.add('hidden');
-                }
-            };
-
-            form.addEventListener('submit', async (event) => {
-                event.preventDefault();
-                setLoading(true);
-
-                try {
-                    // Collect form data
-                    const formData = new FormData(form);
-                    const data = {};
-                    
-                    formData.forEach((value, key) => {
-                        data[key] = value.trim();
-                    });
-
-                    // POST data using Fetch API
-                    const response = await fetch(API_ENDPOINT, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(data),
-                    });
-
-                    if (response.ok) {
-                        // Success State Transition
-                        form.classList.add('hidden');
-                        successState.classList.remove('hidden');
-                        formContainer.scrollIntoView({ behavior: 'smooth' }); 
-                        message.textContent = 'Success! Your information has been received.';
-                        message.className = 'mt-4 text-center text-sm font-semibold text-primary';
-
-                    } else {
-                        // Handle API errors
-                        const errorData = await response.text();
-                        console.error('API Submission Error:', response.status, errorData);
-                        message.textContent = `Submission failed (Error: ${response.status}). Please try again or contact support.`;
-                        message.className = 'mt-4 text-center text-sm font-semibold text-red-400';
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        deepNavy: '#0A0E27',
+                        electricCyan: '#00D9FF',
+                        glassWhite: 'rgba(255, 255, 255, 0.05)',
+                        glassBorder: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'neon': '0 0 20px rgba(0, 217, 255, 0.3)',
                     }
-
-                } catch (error) {
-                    // Handle network errors
-                    console.error('Network or Parse Error:', error);
-                    message.textContent = 'An unexpected error occurred. Check your network connection.';
-                    message.className = 'mt-4 text-center text-sm font-semibold text-red-400';
-
-                } finally {
-                    setLoading(false);
                 }
-            });
-        });
+            }
+        }
     </script>
+</head>
+<body class="bg-deepNavy text-white font-sans min-h-screen flex flex-col items-center justify-center p-4 selection:bg-electricCyan selection:text-deepNavy overflow-x-hidden relative">
+
+    <!-- Background Elements -->
+    <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+        <div class="absolute top-[10%] left-[20%] w-96 h-96 bg-electricCyan/10 rounded-full blur-[100px] animate-pulse-slow"></div>
+        <div class="absolute bottom-[20%] right-[10%] w-80 h-80 bg-purple-600/10 rounded-full blur-[100px] animate-blob"></div>
+    </div>
+
+    <div class="w-full max-w-3xl animate-fade-in-up">
+        <!-- Logo -->
+        <div class="flex justify-center mb-8">
+            <div class="glass-panel px-6 py-3 rounded-full flex items-center gap-3 border border-glassBorder shadow-neon">
+                <span class="text-2xl">🤖</span>
+                <span class="font-bold tracking-widest text-lg">ROBOTS</span>
+            </div>
+        </div>
+
+        <!-- Form Card -->
+        <div class="glass-panel rounded-2xl p-8 md:p-10 border border-glassBorder relative overflow-hidden backdrop-blur-xl">
+            <!-- Header -->
+            <div class="text-center mb-10">
+                <h1 class="text-3xl md:text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-white to-electricCyan">
+                    Pre-Call Qualification
+                </h1>
+                <p class="text-gray-400 text-lg">
+                    In 6 quick questions, we'll identify where an AI employee can fit into your business.
+                </p>
+            </div>
+
+            <!-- Form -->
+            <form id="qualificationForm" class="space-y-8">
+                
+                <!-- Q1 -->
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-electricCyan mb-2 uppercase tracking-wider">01. Immediate workflows</label>
+                    <p class="text-gray-300 mb-3 text-sm">If you had a digital employee that could handle 3–5 repetitive workflows in the next 30 days, which ones would you pick first?</p>
+                    <input type="text" name="b_workflows_30_days" required
+                        class="w-full bg-glassWhite border border-glassBorder rounded-lg p-4 text-white placeholder-gray-500 focus:border-electricCyan focus:ring-1 focus:ring-electricCyan focus:bg-deepNavy/50 transition-all duration-300 outline-none"
+                        placeholder="e.g. Data entry, lead qualification, scheduling...">
+                </div>
+
+                <!-- Q2 -->
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-electricCyan mb-2 uppercase tracking-wider">02. 90-Day Vision</label>
+                    <p class="text-gray-300 mb-3 text-sm">90 days from now, if this works exactly as you want—what's the one thing you'd love to be true about your business?</p>
+                    <textarea name="b_vision_90_days" rows="2" required
+                        class="w-full bg-glassWhite border border-glassBorder rounded-lg p-4 text-white placeholder-gray-500 focus:border-electricCyan focus:ring-1 focus:ring-electricCyan focus:bg-deepNavy/50 transition-all duration-300 outline-none resize-none"
+                        placeholder="e.g. Fast response times, more qualified leads..."></textarea>
+                </div>
+
+                <!-- Q3 -->
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-electricCyan mb-2 uppercase tracking-wider">03. Business & Customer</label>
+                    <p class="text-gray-300 mb-3 text-sm">What does your company sell, and who is your ideal customer?</p>
+                    <textarea name="b_company_sell_customer" rows="2" required
+                        class="w-full bg-glassWhite border border-glassBorder rounded-lg p-4 text-white placeholder-gray-500 focus:border-electricCyan focus:ring-1 focus:ring-electricCyan focus:bg-deepNavy/50 transition-all duration-300 outline-none resize-none"
+                        placeholder="Describe your product/service and target audience"></textarea>
+                </div>
+
+                <!-- Q4 -->
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-electricCyan mb-2 uppercase tracking-wider">04. Your Role</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <label class="radio-card cursor-pointer">
+                            <input type="radio" name="b_role" value="Founder / Owner" class="hidden peer" required>
+                            <div class="p-4 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center">
+                                Founder / Owner
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer">
+                            <input type="radio" name="b_role" value="C-Level / VP" class="hidden peer">
+                            <div class="p-4 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center">
+                                C-Level / VP
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer">
+                            <input type="radio" name="b_role" value="Operations / Systems" class="hidden peer">
+                            <div class="p-4 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center">
+                                Operations / Systems
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer">
+                            <input type="radio" name="b_role" value="Marketing / Sales" class="hidden peer">
+                            <div class="p-4 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center">
+                                Marketing / Sales
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer sm:col-span-2">
+                            <input type="radio" name="b_role" value="Other" class="hidden peer">
+                            <div class="p-4 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center">
+                                Other
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Q5 -->
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-electricCyan mb-2 uppercase tracking-wider">05. Company Size</label>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
+                        <label class="radio-card cursor-pointer">
+                            <input type="radio" name="b_employees" value="1–5" class="hidden peer" required>
+                            <div class="p-3 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center text-sm">
+                                1–5
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer">
+                            <input type="radio" name="b_employees" value="6–20" class="hidden peer">
+                            <div class="p-3 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center text-sm">
+                                6–20
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer">
+                            <input type="radio" name="b_employees" value="21–50" class="hidden peer">
+                            <div class="p-3 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center text-sm">
+                                21–50
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer">
+                            <input type="radio" name="b_employees" value="51–200" class="hidden peer">
+                            <div class="p-3 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center text-sm">
+                                51–200
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer">
+                            <input type="radio" name="b_employees" value="200+" class="hidden peer">
+                            <div class="p-3 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center text-sm">
+                                200+
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Q6 -->
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-electricCyan mb-2 uppercase tracking-wider">06. Urgency</label>
+                    <p class="text-gray-300 mb-3 text-sm">How serious are you about fixing this in the next 60 days?</p>
+                    <div class="space-y-3">
+                        <label class="radio-card cursor-pointer block">
+                            <input type="radio" name="b_urgency" value="Just exploring / Not urgent" class="hidden peer" required>
+                            <div class="p-4 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 flex items-center gap-3">
+                                <div class="w-4 h-4 rounded-full border border-gray-500 peer-checked:border-electricCyan peer-checked:bg-electricCyan flex-shrink-0"></div>
+                                <span>Just exploring / Not urgent</span>
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer block">
+                            <input type="radio" name="b_urgency" value="Interested, but timing is flexible" class="hidden peer">
+                            <div class="p-4 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 flex items-center gap-3">
+                                <div class="w-4 h-4 rounded-full border border-gray-500 peer-checked:border-electricCyan peer-checked:bg-electricCyan flex-shrink-0"></div>
+                                <span>Interested, but timing is flexible</span>
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer block">
+                            <input type="radio" name="b_urgency" value="This is a priority to solve in the next 60 days" class="hidden peer">
+                            <div class="p-4 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 flex items-center gap-3">
+                                <div class="w-4 h-4 rounded-full border border-gray-500 peer-checked:border-electricCyan peer-checked:bg-electricCyan flex-shrink-0"></div>
+                                <span class="font-semibold text-white">This is a priority to solve in the next 60 days</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="pt-6">
+                    <button type="submit" id="submitBtn" class="w-full relative group overflow-hidden rounded-xl bg-electricCyan p-4 font-bold text-deepNavy transition-all hover:shadow-[0_0_40px_rgba(0,217,255,0.4)] hover:scale-[1.02] active:scale-[0.98]">
+                        <span class="relative z-10 flex items-center justify-center gap-2">
+                            <span>Submit Answers</span>
+                            <svg class="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                        </span>
+                        <div class="absolute inset-0 z-0 bg-white/20 translate-y-full transition-transform duration-300 group-hover:translate-y-0"></div>
+                    </button>
+                    <p id="errorMsg" class="mt-4 text-red-400 text-center text-sm hidden">Something went wrong. Please try again.</p>
+                </div>
+            </form>
+
+            <!-- Success State -->
+            <div id="successState" class="hidden absolute inset-0 bg-deepNavy/95 backdrop-blur-xl z-20 flex flex-col items-center justify-center p-8 text-center animate-fade-in">
+                <div class="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mb-6 text-4xl animate-bounce-small text-green-400">
+                    ✓
+                </div>
+                <h2 class="text-3xl font-bold text-white mb-4">Thanks—got it.</h2>
+                <p class="text-gray-300 mb-8 max-w-md">
+                    Based on your answers, the next step is a 30-minute call to map a specific AI employee to the workflows you selected.
+                </p>
+                
+                <a href="#" class="inline-flex items-center gap-2 bg-electricCyan text-deepNavy font-bold px-8 py-4 rounded-xl hover:shadow-[0_0_30px_rgba(0,217,255,0.3)] transition-all hover:-translate-y-1">
+                    Book your time here
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                </a>
+            </div>
+
+            <!-- Loading Overlay -->
+            <div id="loadingState" class="hidden absolute inset-0 bg-deepNavy/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
+                <div class="w-16 h-16 border-4 border-electricCyan/30 border-t-electricCyan rounded-full animate-spin mb-4"></div>
+                <p class="text-electricCyan font-medium animate-pulse">Processing...</p>
+            </div>
+
+        </div>
+        
+        <div class="text-center mt-8 text-gray-500 text-sm">
+            &copy; 2025 ROBOTS Inc. All systems functional.
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pre-Call Qualification | ROBOTS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        deepNavy: '#0A0E27',
+                        electricCyan: '#00D9FF',
+                        glassWhite: 'rgba(255, 255, 255, 0.05)',
+                        glassBorder: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'neon': '0 0 20px rgba(0, 217, 255, 0.3)',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-deepNavy text-white font-sans min-h-screen flex flex-col items-center justify-center p-4 selection:bg-electricCyan selection:text-deepNavy overflow-x-hidden relative">
+
+    <!-- Background Elements -->
+    <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+        <div class="absolute top-[10%] left-[20%] w-96 h-96 bg-electricCyan/10 rounded-full blur-[100px] animate-pulse-slow"></div>
+        <div class="absolute bottom-[20%] right-[10%] w-80 h-80 bg-purple-600/10 rounded-full blur-[100px] animate-blob"></div>
+    </div>
+
+    <div class="w-full max-w-3xl animate-fade-in-up">
+        <!-- Logo -->
+        <div class="flex justify-center mb-8">
+            <div class="glass-panel px-6 py-3 rounded-full flex items-center gap-3 border border-glassBorder shadow-neon">
+                <span class="text-2xl">🤖</span>
+                <span class="font-bold tracking-widest text-lg">ROBOTS</span>
+            </div>
+        </div>
+
+        <!-- Form Card -->
+        <div class="glass-panel rounded-2xl p-8 md:p-10 border border-glassBorder relative overflow-hidden backdrop-blur-xl">
+            <!-- Header -->
+            <div class="text-center mb-10">
+                <h1 class="text-3xl md:text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-white to-electricCyan">
+                    Pre-Call Qualification
+                </h1>
+                <p class="text-gray-400 text-lg">
+                    In 6 quick questions, we'll identify where an AI employee can fit into your business.
+                </p>
+            </div>
+
+            <!-- Form -->
+            <form id="qualificationForm" class="space-y-8">
+                
+                <!-- Q1 -->
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-electricCyan mb-2 uppercase tracking-wider">01. Immediate workflows</label>
+                    <p class="text-gray-300 mb-3 text-sm">If you had a digital employee that could handle 3–5 repetitive workflows in the next 30 days, which ones would you pick first?</p>
+                    <input type="text" name="b_workflows_30_days" required
+                        class="w-full bg-glassWhite border border-glassBorder rounded-lg p-4 text-white placeholder-gray-500 focus:border-electricCyan focus:ring-1 focus:ring-electricCyan focus:bg-deepNavy/50 transition-all duration-300 outline-none"
+                        placeholder="e.g. Data entry, lead qualification, scheduling...">
+                </div>
+
+                <!-- Q2 -->
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-electricCyan mb-2 uppercase tracking-wider">02. 90-Day Vision</label>
+                    <p class="text-gray-300 mb-3 text-sm">90 days from now, if this works exactly as you want—what's the one thing you'd love to be true about your business?</p>
+                    <textarea name="b_vision_90_days" rows="2" required
+                        class="w-full bg-glassWhite border border-glassBorder rounded-lg p-4 text-white placeholder-gray-500 focus:border-electricCyan focus:ring-1 focus:ring-electricCyan focus:bg-deepNavy/50 transition-all duration-300 outline-none resize-none"
+                        placeholder="e.g. Fast response times, more qualified leads..."></textarea>
+                </div>
+
+                <!-- Q3 -->
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-electricCyan mb-2 uppercase tracking-wider">03. Business & Customer</label>
+                    <p class="text-gray-300 mb-3 text-sm">What does your company sell, and who is your ideal customer?</p>
+                    <textarea name="b_company_sell_customer" rows="2" required
+                        class="w-full bg-glassWhite border border-glassBorder rounded-lg p-4 text-white placeholder-gray-500 focus:border-electricCyan focus:ring-1 focus:ring-electricCyan focus:bg-deepNavy/50 transition-all duration-300 outline-none resize-none"
+                        placeholder="Describe your product/service and target audience"></textarea>
+                </div>
+
+                <!-- Q4 -->
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-electricCyan mb-2 uppercase tracking-wider">04. Your Role</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <label class="radio-card cursor-pointer">
+                            <input type="radio" name="b_role" value="Founder / Owner" class="hidden peer" required>
+                            <div class="p-4 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center">
+                                Founder / Owner
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer">
+                            <input type="radio" name="b_role" value="C-Level / VP" class="hidden peer">
+                            <div class="p-4 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center">
+                                C-Level / VP
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer">
+                            <input type="radio" name="b_role" value="Operations / Systems" class="hidden peer">
+                            <div class="p-4 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center">
+                                Operations / Systems
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer">
+                            <input type="radio" name="b_role" value="Marketing / Sales" class="hidden peer">
+                            <div class="p-4 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center">
+                                Marketing / Sales
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer sm:col-span-2">
+                            <input type="radio" name="b_role" value="Other" class="hidden peer">
+                            <div class="p-4 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center">
+                                Other
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Q5 -->
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-electricCyan mb-2 uppercase tracking-wider">05. Company Size</label>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
+                        <label class="radio-card cursor-pointer">
+                            <input type="radio" name="b_employees" value="1–5" class="hidden peer" required>
+                            <div class="p-3 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center text-sm">
+                                1–5
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer">
+                            <input type="radio" name="b_employees" value="6–20" class="hidden peer">
+                            <div class="p-3 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center text-sm">
+                                6–20
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer">
+                            <input type="radio" name="b_employees" value="21–50" class="hidden peer">
+                            <div class="p-3 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center text-sm">
+                                21–50
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer">
+                            <input type="radio" name="b_employees" value="51–200" class="hidden peer">
+                            <div class="p-3 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center text-sm">
+                                51–200
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer">
+                            <input type="radio" name="b_employees" value="200+" class="hidden peer">
+                            <div class="p-3 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 text-center text-sm">
+                                200+
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Q6 -->
+                <div class="form-group">
+                    <label class="block text-sm font-medium text-electricCyan mb-2 uppercase tracking-wider">06. Urgency</label>
+                    <p class="text-gray-300 mb-3 text-sm">How serious are you about fixing this in the next 60 days?</p>
+                    <div class="space-y-3">
+                        <label class="radio-card cursor-pointer block">
+                            <input type="radio" name="b_urgency" value="Just exploring / Not urgent" class="hidden peer" required>
+                            <div class="p-4 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 flex items-center gap-3">
+                                <div class="w-4 h-4 rounded-full border border-gray-500 peer-checked:border-electricCyan peer-checked:bg-electricCyan flex-shrink-0"></div>
+                                <span>Just exploring / Not urgent</span>
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer block">
+                            <input type="radio" name="b_urgency" value="Interested, but timing is flexible" class="hidden peer">
+                            <div class="p-4 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 flex items-center gap-3">
+                                <div class="w-4 h-4 rounded-full border border-gray-500 peer-checked:border-electricCyan peer-checked:bg-electricCyan flex-shrink-0"></div>
+                                <span>Interested, but timing is flexible</span>
+                            </div>
+                        </label>
+                        <label class="radio-card cursor-pointer block">
+                            <input type="radio" name="b_urgency" value="This is a priority to solve in the next 60 days" class="hidden peer">
+                            <div class="p-4 rounded-lg bg-glassWhite border border-glassBorder peer-checked:border-electricCyan peer-checked:bg-electricCyan/10 hover:bg-white/10 transition-all duration-200 flex items-center gap-3">
+                                <div class="w-4 h-4 rounded-full border border-gray-500 peer-checked:border-electricCyan peer-checked:bg-electricCyan flex-shrink-0"></div>
+                                <span class="font-semibold text-white">This is a priority to solve in the next 60 days</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="pt-6">
+                    <button type="submit" id="submitBtn" class="w-full relative group overflow-hidden rounded-xl bg-electricCyan p-4 font-bold text-deepNavy transition-all hover:shadow-[0_0_40px_rgba(0,217,255,0.4)] hover:scale-[1.02] active:scale-[0.98]">
+                        <span class="relative z-10 flex items-center justify-center gap-2">
+                            <span>Submit Answers</span>
+                            <svg class="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                        </span>
+                        <div class="absolute inset-0 z-0 bg-white/20 translate-y-full transition-transform duration-300 group-hover:translate-y-0"></div>
+                    </button>
+                    <p id="errorMsg" class="mt-4 text-red-400 text-center text-sm hidden">Something went wrong. Please try again.</p>
+                </div>
+            </form>
+
+            <!-- Success State -->
+            <div id="successState" class="hidden absolute inset-0 bg-deepNavy/95 backdrop-blur-xl z-20 flex flex-col items-center justify-center p-8 text-center animate-fade-in">
+                <div class="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mb-6 text-4xl animate-bounce-small text-green-400">
+                    ✓
+                </div>
+                <h2 class="text-3xl font-bold text-white mb-4">Thanks—got it.</h2>
+                <p class="text-gray-300 mb-8 max-w-md">
+                    Based on your answers, the next step is a 30-minute call to map a specific AI employee to the workflows you selected.
+                </p>
+                
+                <a href="#" class="inline-flex items-center gap-2 bg-electricCyan text-deepNavy font-bold px-8 py-4 rounded-xl hover:shadow-[0_0_30px_rgba(0,217,255,0.3)] transition-all hover:-translate-y-1">
+                    Book your time here
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                </a>
+            </div>
+
+            <!-- Loading Overlay -->
+            <div id="loadingState" class="hidden absolute inset-0 bg-deepNavy/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
+                <div class="w-16 h-16 border-4 border-electricCyan/30 border-t-electricCyan rounded-full animate-spin mb-4"></div>
+                <p class="text-electricCyan font-medium animate-pulse">Processing...</p>
+            </div>
+
+        </div>
+        
+        <div class="text-center mt-8 text-gray-500 text-sm">
+            &copy; 2025 ROBOTS Inc. All systems functional.
+        </div>
+    </div>
+
+    <script src="app.js"></script>
 </body>
 </html>
