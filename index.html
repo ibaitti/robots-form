@@ -1,697 +1,878 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pre-Call Qualification - ROBOTS</title>
+  <head>
+    <meta charset="UTF-8" />
+    <title>AI Digital Employee Mapping</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Tailwind via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
-        * {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-        
-        body {
-            background: #0A0E27;
-            overflow-x: hidden;
-        }
-        
-        /* Animated background gradient */
-        .animated-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            background: linear-gradient(135deg, #0A0E27 0%, #1a1f3a 50%, #0A0E27 100%);
-        }
-        
-        .animated-bg::before {
-            content: '';
-            position: absolute;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle at 30% 50%, rgba(0, 217, 255, 0.1) 0%, transparent 50%),
-                        radial-gradient(circle at 70% 50%, rgba(0, 217, 255, 0.05) 0%, transparent 50%);
-            animation: float 20s ease-in-out infinite;
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            33% { transform: translate(30px, -30px) rotate(120deg); }
-            66% { transform: translate(-20px, 20px) rotate(240deg); }
-        }
-        
-        /* Glassmorphism card */
-        .glass-card {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        }
-        
-        /* Input styles */
-        .glass-input {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-            color: #fff;
-        }
-        
-        .glass-input:focus {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: #00D9FF;
-            box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.1);
-            outline: none;
-        }
-        
-        .glass-input::placeholder {
-            color: rgba(255, 255, 255, 0.4);
-        }
-        
-        /* Radio/Checkbox custom styles */
-        .option-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        
-        .option-card:hover {
-            background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(0, 217, 255, 0.3);
-            transform: translateY(-2px);
-        }
-        
-        .option-card.selected {
-            background: rgba(0, 217, 255, 0.1);
-            border-color: #00D9FF;
-            box-shadow: 0 0 20px rgba(0, 217, 255, 0.2);
-        }
-        
-        /* Button styles */
-        .btn-primary {
-            background: linear-gradient(135deg, #00D9FF 0%, #00a8cc 100%);
-            box-shadow: 0 4px 15px rgba(0, 217, 255, 0.3);
-            transition: all 0.3s ease;
-        }
-        
-        .btn-primary:hover:not(:disabled) {
-            box-shadow: 0 6px 25px rgba(0, 217, 255, 0.4);
-            transform: translateY(-2px);
-        }
-        
-        .btn-primary:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.3s ease;
-        }
-        
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-        
-        /* Progress bar */
-        .progress-bar {
-            background: rgba(255, 255, 255, 0.1);
-            height: 4px;
-            overflow: hidden;
-        }
-        
-        .progress-fill {
-            background: linear-gradient(90deg, #00D9FF 0%, #00ffcc 100%);
-            height: 100%;
-            transition: width 0.5s ease;
-            box-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
-        }
-        
-        /* Animations */
-        .fade-in {
-            animation: fadeIn 0.5s ease-in;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .slide-in {
-            animation: slideIn 0.4s ease-out;
-        }
-        
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(30px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-        
-        /* Loading spinner */
-        .spinner {
-            border: 3px solid rgba(255, 255, 255, 0.1);
-            border-top: 3px solid #00D9FF;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 0.8s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: rgba(0, 217, 255, 0.3);
-            border-radius: 4px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(0, 217, 255, 0.5);
-        }
-
-        /* Hide step content by default */
-        .step-content {
-            display: none;
-        }
-
-        .step-content.active {
-            display: block;
-        }
-    </style>
-</head>
-<body class="min-h-screen flex items-center justify-center p-4">
-    <div class="animated-bg"></div>
-    
-    <div class="relative z-10 w-full max-w-2xl">
-        <!-- Logo -->
-        <div class="text-center mb-8 fade-in">
-            <div class="inline-flex items-center justify-center w-16 h-16 glass-card rounded-2xl mb-4">
-                <span class="text-2xl font-bold" style="color: #00D9FF;">R</span>
-            </div>
-            <h1 class="text-3xl font-bold text-white mb-2">ROBOTS</h1>
-        </div>
-
-        <!-- Main Card -->
-        <div class="glass-card rounded-3xl p-8 md:p-12 fade-in">
-            <!-- Header -->
-            <div class="mb-8">
-                <h2 class="text-2xl md:text-3xl font-bold text-white mb-3">Pre-Call Qualification and Engagement</h2>
-                <p class="text-gray-300 text-lg">In 6 quick questions, we'll identify where an AI employee can fit into your business</p>
-            </div>
-
-            <!-- Progress Bar -->
-            <div class="mb-8">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="text-sm text-gray-400">Question <span id="currentStep">1</span> of 6</span>
-                    <span class="text-sm font-medium" style="color: #00D9FF;"><span id="progressPercent">17</span>%</span>
-                </div>
-                <div class="progress-bar rounded-full">
-                    <div id="progressBar" class="progress-fill" style="width: 17%"></div>
-                </div>
-            </div>
-
-            <!-- Form -->
-            <form id="qualificationForm">
-                <!-- Step 1 -->
-                <div class="step-content active slide-in" data-step="1">
-                    <label class="block text-white font-medium mb-3">
-                        If you had a digital employee that could handle 3–5 repetitive workflows in the next 30 days, which ones would you pick first?
-                    </label>
-                    <textarea 
-                        id="workflows"
-                        name="workflows"
-                        rows="4"
-                        class="glass-input w-full rounded-xl px-4 py-3 text-white resize-none"
-                        placeholder="E.g., Lead qualification, email follow-ups, data entry..."
-                        required
-                    ></textarea>
-                </div>
-
-                <!-- Step 2 -->
-                <div class="step-content" data-step="2">
-                    <label class="block text-white font-medium mb-3">
-                        90 days from now, if this works exactly as you want—what's the one thing you'd love to be true about your business?
-                    </label>
-                    <textarea 
-                        id="vision"
-                        name="vision"
-                        rows="4"
-                        class="glass-input w-full rounded-xl px-4 py-3 text-white resize-none"
-                        placeholder="E.g., Faster response times, more qualified leads, more booked calls..."
-                        required
-                    ></textarea>
-                    <p class="text-gray-400 text-sm mt-2">1–2 sentences</p>
-                </div>
-
-                <!-- Step 3 -->
-                <div class="step-content" data-step="3">
-                    <label class="block text-white font-medium mb-3">
-                        What does your company sell, and who is your ideal customer?
-                    </label>
-                    <textarea 
-                        id="company"
-                        name="company"
-                        rows="4"
-                        class="glass-input w-full rounded-xl px-4 py-3 text-white resize-none"
-                        placeholder="Describe your product/service and target customer..."
-                        required
-                    ></textarea>
-                    <p class="text-gray-400 text-sm mt-2">1–2 sentences</p>
-                </div>
-
-                <!-- Step 4 -->
-                <div class="step-content" data-step="4">
-                    <label class="block text-white font-medium mb-4">
-                        Which best describes your role?
-                    </label>
-                    <div class="space-y-3">
-                        <div class="option-card rounded-xl p-4" data-option="role" data-value="Founder / Owner">
-                            <div class="flex items-center">
-                                <div class="w-5 h-5 rounded-full border-2 border-white/30 mr-3 flex items-center justify-center">
-                                    <div class="w-2.5 h-2.5 rounded-full bg-cyan-400 hidden"></div>
-                                </div>
-                                <span class="text-white">Founder / Owner</span>
-                            </div>
-                        </div>
-                        <div class="option-card rounded-xl p-4" data-option="role" data-value="C-Level / VP">
-                            <div class="flex items-center">
-                                <div class="w-5 h-5 rounded-full border-2 border-white/30 mr-3 flex items-center justify-center">
-                                    <div class="w-2.5 h-2.5 rounded-full bg-cyan-400 hidden"></div>
-                                </div>
-                                <span class="text-white">C-Level / VP</span>
-                            </div>
-                        </div>
-                        <div class="option-card rounded-xl p-4" data-option="role" data-value="Operations / Systems">
-                            <div class="flex items-center">
-                                <div class="w-5 h-5 rounded-full border-2 border-white/30 mr-3 flex items-center justify-center">
-                                    <div class="w-2.5 h-2.5 rounded-full bg-cyan-400 hidden"></div>
-                                </div>
-                                <span class="text-white">Operations / Systems</span>
-                            </div>
-                        </div>
-                        <div class="option-card rounded-xl p-4" data-option="role" data-value="Marketing / Sales">
-                            <div class="flex items-center">
-                                <div class="w-5 h-5 rounded-full border-2 border-white/30 mr-3 flex items-center justify-center">
-                                    <div class="w-2.5 h-2.5 rounded-full bg-cyan-400 hidden"></div>
-                                </div>
-                                <span class="text-white">Marketing / Sales</span>
-                            </div>
-                        </div>
-                        <div class="option-card rounded-xl p-4" data-option="role" data-value="Other">
-                            <div class="flex items-center">
-                                <div class="w-5 h-5 rounded-full border-2 border-white/30 mr-3 flex items-center justify-center">
-                                    <div class="w-2.5 h-2.5 rounded-full bg-cyan-400 hidden"></div>
-                                </div>
-                                <span class="text-white">Other</span>
-                            </div>
-                        </div>
-                    </div>
-                    <input type="hidden" id="role" name="role" required>
-                </div>
-
-                <!-- Step 5 -->
-                <div class="step-content" data-step="5">
-                    <label class="block text-white font-medium mb-4">
-                        How many employees are in your company?
-                    </label>
-                    <div class="space-y-3">
-                        <div class="option-card rounded-xl p-4" data-option="employees" data-value="1–5">
-                            <div class="flex items-center">
-                                <div class="w-5 h-5 rounded-full border-2 border-white/30 mr-3 flex items-center justify-center">
-                                    <div class="w-2.5 h-2.5 rounded-full bg-cyan-400 hidden"></div>
-                                </div>
-                                <span class="text-white">1–5</span>
-                            </div>
-                        </div>
-                        <div class="option-card rounded-xl p-4" data-option="employees" data-value="6–20">
-                            <div class="flex items-center">
-                                <div class="w-5 h-5 rounded-full border-2 border-white/30 mr-3 flex items-center justify-center">
-                                    <div class="w-2.5 h-2.5 rounded-full bg-cyan-400 hidden"></div>
-                                </div>
-                                <span class="text-white">6–20</span>
-                            </div>
-                        </div>
-                        <div class="option-card rounded-xl p-4" data-option="employees" data-value="21–50">
-                            <div class="flex items-center">
-                                <div class="w-5 h-5 rounded-full border-2 border-white/30 mr-3 flex items-center justify-center">
-                                    <div class="w-2.5 h-2.5 rounded-full bg-cyan-400 hidden"></div>
-                                </div>
-                                <span class="text-white">21–50</span>
-                            </div>
-                        </div>
-                        <div class="option-card rounded-xl p-4" data-option="employees" data-value="51–200">
-                            <div class="flex items-center">
-                                <div class="w-5 h-5 rounded-full border-2 border-white/30 mr-3 flex items-center justify-center">
-                                    <div class="w-2.5 h-2.5 rounded-full bg-cyan-400 hidden"></div>
-                                </div>
-                                <span class="text-white">51–200</span>
-                            </div>
-                        </div>
-                        <div class="option-card rounded-xl p-4" data-option="employees" data-value="200+">
-                            <div class="flex items-center">
-                                <div class="w-5 h-5 rounded-full border-2 border-white/30 mr-3 flex items-center justify-center">
-                                    <div class="w-2.5 h-2.5 rounded-full bg-cyan-400 hidden"></div>
-                                </div>
-                                <span class="text-white">200+</span>
-                            </div>
-                        </div>
-                    </div>
-                    <input type="hidden" id="employees" name="employees" required>
-                </div>
-
-                <!-- Step 6 -->
-                <div class="step-content" data-step="6">
-                    <label class="block text-white font-medium mb-4">
-                        How serious are you about fixing this in the next 60 days?
-                    </label>
-                    <div class="space-y-3">
-                        <div class="option-card rounded-xl p-4" data-option="urgency" data-value="Just exploring / Not urgent">
-                            <div class="flex items-center">
-                                <div class="w-5 h-5 rounded-full border-2 border-white/30 mr-3 flex items-center justify-center">
-                                    <div class="w-2.5 h-2.5 rounded-full bg-cyan-400 hidden"></div>
-                                </div>
-                                <span class="text-white">Just exploring / Not urgent</span>
-                            </div>
-                        </div>
-                        <div class="option-card rounded-xl p-4" data-option="urgency" data-value="Interested, but timing is flexible">
-                            <div class="flex items-center">
-                                <div class="w-5 h-5 rounded-full border-2 border-white/30 mr-3 flex items-center justify-center">
-                                    <div class="w-2.5 h-2.5 rounded-full bg-cyan-400 hidden"></div>
-                                </div>
-                                <span class="text-white">Interested, but timing is flexible</span>
-                            </div>
-                        </div>
-                        <div class="option-card rounded-xl p-4" data-option="urgency" data-value="This is a priority to solve in the next 60 days">
-                            <div class="flex items-center">
-                                <div class="w-5 h-5 rounded-full border-2 border-white/30 mr-3 flex items-center justify-center">
-                                    <div class="w-2.5 h-2.5 rounded-full bg-cyan-400 hidden"></div>
-                                </div>
-                                <span class="text-white">This is a priority to solve in the next 60 days</span>
-                            </div>
-                        </div>
-                    </div>
-                    <input type="hidden" id="urgency" name="urgency" required>
-                </div>
-
-                <!-- Navigation Buttons -->
-                <div class="flex gap-4 mt-8">
-                    <button 
-                        type="button" 
-                        id="prevBtn" 
-                        class="btn-secondary px-6 py-3 rounded-xl text-white font-medium hidden"
-                    >
-                        ← Back
-                    </button>
-                    <button 
-                        type="button" 
-                        id="nextBtn" 
-                        class="btn-primary flex-1 px-6 py-3 rounded-xl text-white font-semibold flex items-center justify-center"
-                    >
-                        <span id="btnText">Continue</span>
-                        <span id="btnSpinner" class="spinner ml-2 hidden"></span>
-                    </button>
-                </div>
-
-                <!-- Error Message -->
-                <div id="errorMessage" class="mt-4 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 hidden"></div>
-            </form>
-
-            <!-- Success Screen -->
-            <div id="successScreen" class="hidden text-center">
-                <div class="mb-6">
-                    <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-cyan-400/10 mb-4">
-                        <svg class="w-10 h-10 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-2xl font-bold text-white mb-2">Thanks—got it.</h3>
-                    <p class="text-gray-300 text-lg mb-6">
-                        Based on your answers, the next step is a 30-minute call to map a specific AI employee to the workflows you selected.
-                    </p>
-                    <a 
-                        href="https://calendly.com/your-calendar-link" 
-                        target="_blank"
-                        class="btn-primary inline-block px-8 py-4 rounded-xl text-white font-semibold"
-                    >
-                        → Book your time here
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="text-center mt-8 text-gray-400 text-sm">
-            <p>© 2024 ROBOTS. All rights reserved.</p>
-        </div>
-    </div>
-
     <script>
-        let currentStep = 1;
-        const totalSteps = 6;
-        const formData = {};
-
-        // Get elements
-        const form = document.getElementById('qualificationForm');
-        const prevBtn = document.getElementById('prevBtn');
-        const nextBtn = document.getElementById('nextBtn');
-        const btnText = document.getElementById('btnText');
-        const btnSpinner = document.getElementById('btnSpinner');
-        const currentStepEl = document.getElementById('currentStep');
-        const progressPercent = document.getElementById('progressPercent');
-        const progressBar = document.getElementById('progressBar');
-        const errorMessage = document.getElementById('errorMessage');
-        const successScreen = document.getElementById('successScreen');
-
-        // Option card selection
-        document.querySelectorAll('.option-card').forEach(card => {
-            card.addEventListener('click', function() {
-                const option = this.dataset.option;
-                const value = this.dataset.value;
-                
-                // Remove selection from siblings
-                document.querySelectorAll(`[data-option="${option}"]`).forEach(c => {
-                    c.classList.remove('selected');
-                    c.querySelector('.w-2\\.5').classList.add('hidden');
-                });
-                
-                // Add selection to clicked card
-                this.classList.add('selected');
-                this.querySelector('.w-2\\.5').classList.remove('hidden');
-                
-                // Update hidden input
-                document.getElementById(option).value = value;
-                formData[option] = value;
-            });
-        });
-
-        // Update progress
-        function updateProgress() {
-            const progress = Math.round((currentStep / totalSteps) * 100);
-            currentStepEl.textContent = currentStep;
-            progressPercent.textContent = progress;
-            progressBar.style.width = progress + '%';
-        }
-
-        // Validate current step
-        function validateStep() {
-            const currentStepEl = document.querySelector(`[data-step="${currentStep}"]`);
-            
-            if (currentStep === 1) {
-                const workflows = document.getElementById('workflows').value.trim();
-                if (!workflows) {
-                    showError('Please describe the workflows you want to automate.');
-                    return false;
-                }
-                formData.workflows = workflows;
-            } else if (currentStep === 2) {
-                const vision = document.getElementById('vision').value.trim();
-                if (!vision) {
-                    showError('Please share your 90-day vision.');
-                    return false;
-                }
-                formData.vision = vision;
-            } else if (currentStep === 3) {
-                const company = document.getElementById('company').value.trim();
-                if (!company) {
-                    showError('Please describe your company and ideal customer.');
-                    return false;
-                }
-                formData.company = company;
-            } else if (currentStep === 4) {
-                const role = document.getElementById('role').value;
-                if (!role) {
-                    showError('Please select your role.');
-                    return false;
-                }
-            } else if (currentStep === 5) {
-                const employees = document.getElementById('employees').value;
-                if (!employees) {
-                    showError('Please select your company size.');
-                    return false;
-                }
-            } else if (currentStep === 6) {
-                const urgency = document.getElementById('urgency').value;
-                if (!urgency) {
-                    showError('Please select your urgency level.');
-                    return false;
-                }
-            }
-            
-            hideError();
-            return true;
-        }
-
-        // Show/hide steps
-        function showStep(step) {
-            document.querySelectorAll('.step-content').forEach(el => {
-                el.classList.remove('active', 'slide-in');
-            });
-            
-            const stepEl = document.querySelector(`[data-step="${step}"]`);
-            stepEl.classList.add('active');
-            setTimeout(() => stepEl.classList.add('slide-in'), 10);
-            
-            // Update buttons
-            if (step === 1) {
-                prevBtn.classList.add('hidden');
-            } else {
-                prevBtn.classList.remove('hidden');
-            }
-            
-            if (step === totalSteps) {
-                btnText.textContent = 'Submit';
-            } else {
-                btnText.textContent = 'Continue';
-            }
-            
-            updateProgress();
-        }
-
-        // Error handling
-        function showError(message) {
-            errorMessage.textContent = message;
-            errorMessage.classList.remove('hidden');
-        }
-
-        function hideError() {
-            errorMessage.classList.add('hidden');
-        }
-
-        // Next button
-        nextBtn.addEventListener('click', async () => {
-            if (!validateStep()) return;
-            
-            if (currentStep < totalSteps) {
-                currentStep++;
-                showStep(currentStep);
-            } else {
-                // Submit form
-                await submitForm();
-            }
-        });
-
-        // Previous button
-        prevBtn.addEventListener('click', () => {
-            if (currentStep > 1) {
-                currentStep--;
-                showStep(currentStep);
-            }
-        });
-
-        // Submit form
-        async function submitForm() {
-            // Show loading
-            btnText.classList.add('hidden');
-            btnSpinner.classList.remove('hidden');
-            nextBtn.disabled = true;
-            prevBtn.disabled = true;
-
-            // Prepare the data
-            const submissionData = {
-                ...formData,
-                submittedAt: new Date().toISOString(),
-                userAgent: navigator.userAgent
-            };
-
-            console.log('Submitting form data:', submissionData);
-
-            try {
-                // Option 1: Direct call (use this after fixing CORS in n8n)
-                const webhookUrl = 'https://zerogpt.app.n8n.cloud/webhook-test/form-api-v1';
-                
-                // Option 2: With CORS proxy (use this if you can't fix n8n CORS)
-                // const proxyUrl = 'https://corsproxy.io/?';
-                // const finalUrl = proxyUrl + encodeURIComponent(webhookUrl);
-                
-                const response = await fetch(webhookUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify(submissionData)
-                });
-
-                console.log('Response status:', response.status);
-                console.log('Response headers:', [...response.headers]);
-
-                const responseData = await response.text();
-                console.log('Response data:', responseData);
-
-                if (!response.ok) {
-                    throw new Error(`Server returned ${response.status}: ${responseData}`);
-                }
-
-                // Show success screen
-                form.classList.add('hidden');
-                document.querySelector('.mb-8:has(#currentStep)').classList.add('hidden');
-                successScreen.classList.remove('hidden');
-                successScreen.classList.add('fade-in');
-
-            } catch (error) {
-                console.error('Submission error:', error);
-                
-                // Show detailed error message
-                let errorMsg = 'Oops! Something went wrong. ';
-                
-                if (error.message.includes('Failed to fetch')) {
-                    errorMsg += 'This is likely a CORS issue. Please check your webhook CORS settings in n8n.';
-                } else if (error.message.includes('NetworkError')) {
-                    errorMsg += 'Network error. Please check your internet connection.';
-                } else {
-                    errorMsg += error.message;
-                }
-                
-                showError(errorMsg);
-                
-                // Reset buttons
-                btnText.classList.remove('hidden');
-                btnSpinner.classList.add('hidden');
-                nextBtn.disabled = false;
-                prevBtn.disabled = false;
-            }
-        }
-
-        // Initialize
-        showStep(1);
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: [
+                'Inter',
+                'system-ui',
+                '-apple-system',
+                'BlinkMacSystemFont',
+                '"SF Pro Text"',
+                '"Segoe UI"',
+                'sans-serif',
+              ],
+            },
+            colors: {
+              'page-bg': '#F5F7FF',
+              'page-bg-soft': '#E0ECFF',
+              'text-main': '#0F172A',
+              'text-secondary': '#6B7280',
+              'border-subtle': '#E5E7EB',
+              'input-muted': '#F9FAFB',
+              primary: '#2563EB',
+              'accent-cyan': '#22D3EE',
+              'accent-gold': '#FACC15',
+              success: '#16A34A',
+              error: '#DC2626',
+            },
+          },
+        },
+      };
     </script>
-</body>
+
+    <style>
+      :root {
+        --color-page-bg: #f5f7ff;
+        --color-page-bg-soft: #e0ecff;
+        --color-text-main: #0f172a;
+        --color-text-secondary: #6b7280;
+        --color-border-subtle: #e5e7eb;
+        --color-input-muted: #f9fafb;
+        --color-primary: #2563eb;
+        --color-accent-cyan: #22d3ee;
+        --color-accent-gold: #facc15;
+        --color-success: #16a34a;
+        --color-error: #dc2626;
+      }
+
+      /* Starfield: top ~40%, subtle drift */
+      .starfield-wrapper {
+        pointer-events: none;
+      }
+
+      .starfield {
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(
+            circle at 10% 20%,
+            rgba(255, 255, 255, 0.35) 1px,
+            transparent 0
+          ),
+          radial-gradient(
+            circle at 30% 10%,
+            rgba(210, 230, 255, 0.25) 1.5px,
+            transparent 0
+          ),
+          radial-gradient(
+            circle at 70% 25%,
+            rgba(255, 255, 255, 0.3) 1.5px,
+            transparent 0
+          ),
+          radial-gradient(
+            circle at 85% 15%,
+            rgba(210, 230, 255, 0.25) 1.5px,
+            transparent 0
+          ),
+          radial-gradient(
+            circle at 50% 5%,
+            rgba(255, 255, 255, 0.3) 1px,
+            transparent 0
+          );
+        background-repeat: no-repeat;
+        filter: blur(0.2px);
+        opacity: 0.75;
+        animation: starDrift 26s ease-in-out infinite alternate;
+      }
+
+      @keyframes starDrift {
+        0% {
+          transform: translate3d(0, 0, 0);
+        }
+        50% {
+          transform: translate3d(0, 6px, 0);
+        }
+        100% {
+          transform: translate3d(0, 10px, 0);
+        }
+      }
+
+      /* Glass main card */
+      .glass-card {
+        background: rgba(255, 255, 255, 0.22);
+        border-radius: 1.6rem;
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18),
+          0 0 0 1px rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(18px) saturate(140%);
+        -webkit-backdrop-filter: blur(18px) saturate(140%);
+      }
+
+      /* Glass fields */
+      .glass-field {
+        background: rgba(255, 255, 255, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.55);
+        box-shadow: inset 0 0 0 1px rgba(248, 250, 252, 0.45);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+      }
+
+      .glass-field:focus-visible {
+        outline: none;
+        border-color: rgba(34, 211, 238, 0.95);
+        box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.95),
+          0 0 0 4px rgba(34, 211, 238, 0.26);
+      }
+
+      /* Primary pill button */
+      .primary-btn {
+        border-radius: 9999px;
+        border: 1px solid rgba(34, 211, 238, 0.7);
+        background: #2563eb;
+        box-shadow: 0 0 20px rgba(34, 211, 238, 0.45);
+        transition: transform 0.16s ease-out, box-shadow 0.16s ease-out,
+          background 0.16s ease-out, filter 0.16s ease-out;
+      }
+
+      .primary-btn:hover:not(:disabled) {
+        background-image: linear-gradient(135deg, #2563eb, #22d3ee);
+        box-shadow: 0 0 26px rgba(34, 211, 238, 0.55);
+        filter: brightness(1.02);
+      }
+
+      .primary-btn:active:not(:disabled) {
+        transform: scale(0.97);
+        box-shadow: 0 0 12px rgba(34, 211, 238, 0.4);
+      }
+
+      .primary-btn:disabled {
+        background: rgba(148, 163, 184, 0.7);
+        border-color: rgba(148, 163, 184, 0.7);
+        box-shadow: none;
+      }
+
+      /* Secondary pill button */
+      .secondary-btn {
+        border-radius: 9999px;
+        border: 1px solid rgba(148, 163, 184, 0.5);
+        background: rgba(255, 255, 255, 0.24);
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+        transition: transform 0.16s ease-out, box-shadow 0.16s ease-out,
+          background 0.16s ease-out, border-color 0.16s ease-out;
+      }
+
+      .secondary-btn:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.4);
+        border-color: rgba(148, 163, 184, 0.8);
+        box-shadow: 0 16px 32px rgba(15, 23, 42, 0.12);
+      }
+
+      .secondary-btn:active:not(:disabled) {
+        transform: scale(0.97);
+      }
+
+      /* Step slide transitions */
+      @keyframes slideInFromRight {
+        0% {
+          opacity: 0;
+          transform: translateX(16px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      @keyframes slideInFromLeft {
+        0% {
+          opacity: 0;
+          transform: translateX(-16px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      .step-enter-forward {
+        animation: slideInFromRight 0.22s ease-out;
+      }
+
+      .step-enter-backward {
+        animation: slideInFromLeft 0.22s ease-out;
+      }
+    </style>
+  </head>
+
+  <body class="min-h-screen bg-gradient-to-b from-page-bg to-page-bg-soft text-text-main antialiased">
+    <div id="root"></div>
+
+    <!-- React + ReactDOM + Babel -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+    ></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- App code -->
+    <script type="text/babel">
+      const { useState } = React;
+
+      const TOTAL_STEPS = 6;
+
+      const StarfieldBackground = () => {
+        return (
+          <div className="starfield-wrapper absolute inset-x-0 top-0 h-[40vh] overflow-hidden">
+            <div className="starfield" />
+            <div className="absolute inset-0 bg-gradient-to-b from-white/60 via-white/0 to-white/0" />
+          </div>
+        );
+      };
+
+      const GlassCard = ({ children }) => {
+        return (
+          <div className="glass-card w-full max-w-xl sm:max-w-2xl px-5 py-6 sm:px-8 sm:py-8 md:px-10 md:py-10">
+            {children}
+          </div>
+        );
+      };
+
+      const StepProgressBar = ({ currentStep, totalSteps }) => {
+        const progress = (currentStep / totalSteps) * 100;
+        return (
+          <div className="mb-6 sm:mb-8">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-medium uppercase tracking-[0.12em] text-text-secondary">
+                AI DIGITAL EMPLOYEE MAPPING
+              </p>
+              <p className="text-xs text-text-secondary">
+                Step{' '}
+                <span className="font-medium text-text-main">{currentStep}</span>{' '}
+                of {totalSteps}
+              </p>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-border-subtle">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-primary to-accent-cyan transition-all duration-300 ease-out"
+                style={{ width: progress + '%' }}
+              />
+            </div>
+          </div>
+        );
+      };
+
+      const PrimaryButton = ({ children, className = '', ...rest }) => {
+        return (
+          <button
+            {...rest}
+            className={
+              'primary-btn inline-flex items-center justify-center px-6 py-2.5 text-sm font-medium text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan focus-visible:ring-offset-2 focus-visible:ring-offset-transparent disabled:cursor-not-allowed ' +
+              className
+            }
+          >
+            {children}
+          </button>
+        );
+      };
+
+      const SecondaryButton = ({ children, className = '', ...rest }) => {
+        return (
+          <button
+            {...rest}
+            className={
+              'secondary-btn inline-flex items-center justify-center px-5 py-2 text-sm font-medium text-text-main/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan/80 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent disabled:cursor-not-allowed ' +
+              className
+            }
+          >
+            {children}
+          </button>
+        );
+      };
+
+      const FormField = ({ label, htmlFor, required, hint, children }) => {
+        return (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <label
+                htmlFor={htmlFor}
+                className="text-sm font-medium text-text-main"
+              >
+                {label}
+                {required && <span className="ml-0.5 text-error">*</span>}
+              </label>
+            </div>
+            {children}
+            {hint && (
+              <p className="text-xs text-text-secondary">
+                {hint}
+              </p>
+            )}
+          </div>
+        );
+      };
+
+      const MultiStepForm = () => {
+        const [currentStep, setCurrentStep] = useState(1);
+        const [direction, setDirection] = useState('forward'); // 'forward' | 'backward'
+        const [submitted, setSubmitted] = useState(false);
+
+        const [form, setForm] = useState({
+          role: '',
+          roleOther: '',
+          companyDescription: '',
+          manualWorkPain: '',
+          futureVision90Days: '',
+          aiFitAreas: [],
+          name: '',
+          email: '',
+          companyName: '',
+          companySize: '',
+          website: '',
+        });
+
+        const goToStep = (next, dir) => {
+          if (next < 1 || next > TOTAL_STEPS) return;
+          setDirection(dir);
+          setCurrentStep(next);
+        };
+
+        const handleNext = () => {
+          if (currentStep < TOTAL_STEPS) {
+            goToStep(currentStep + 1, 'forward');
+          }
+        };
+
+        const handleBack = () => {
+          if (currentStep > 1) {
+            goToStep(currentStep - 1, 'backward');
+          }
+        };
+
+        const toggleAiFitArea = (value) => {
+          setForm((prev) => {
+            const exists = prev.aiFitAreas.includes(value);
+            return {
+              ...prev,
+              aiFitAreas: exists
+                ? prev.aiFitAreas.filter((v) => v !== value)
+                : prev.aiFitAreas.concat(value),
+            };
+          });
+        };
+
+        const handleSubmit = () => {
+          setSubmitted(true);
+        };
+
+        const isStepValid = (step) => {
+          switch (step) {
+            case 1:
+              if (!form.role) return false;
+              if (form.role === 'Other' && !form.roleOther.trim()) return false;
+              return true;
+            case 2:
+              return form.companyDescription.trim().length > 10;
+            case 3:
+              return form.manualWorkPain.trim().length > 5;
+            case 4:
+              return form.futureVision90Days.trim().length > 10;
+            case 5:
+              return form.aiFitAreas.length > 0;
+            case 6:
+              return (
+                !!form.name.trim() &&
+                !!form.email.trim() &&
+                !!form.companyName.trim() &&
+                !!form.companySize.trim() &&
+                !!form.website.trim()
+              );
+            default:
+              return true;
+          }
+        };
+
+        const stepAnimationClass =
+          direction === 'forward'
+            ? 'step-enter-forward'
+            : 'step-enter-backward';
+
+        const onFormSubmit = (e) => {
+          e.preventDefault();
+          if (currentStep === TOTAL_STEPS && isStepValid(currentStep)) {
+            handleSubmit();
+          } else if (currentStep < TOTAL_STEPS && isStepValid(currentStep)) {
+            handleNext();
+          }
+        };
+
+        if (submitted) {
+          return (
+            <div className="space-y-6 sm:space-y-7">
+              <StepProgressBar
+                currentStep={TOTAL_STEPS}
+                totalSteps={TOTAL_STEPS}
+              />
+              <div className="step-enter-forward space-y-6 sm:space-y-8">
+                <div className="flex flex-col items-center text-center space-y-4 sm:space-y-5">
+                  <div className="flex items-center justify-center">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full border border-success/40 bg-success/10 shadow-[0_0_24px_rgba(22,163,74,0.35)]">
+                      <svg viewBox="0 0 24 24" className="h-7 w-7" aria-hidden="true">
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          fill="none"
+                          stroke="#16A34A"
+                          strokeWidth="1.6"
+                          className="opacity-80"
+                        />
+                        <path
+                          d="M7 12.5 10.2 16 17 8"
+                          fill="none"
+                          stroke="#16A34A"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h1 className="text-2xl sm:text-3xl font-semibold text-text-main">
+                      We’ve mapped your first digital employee.
+                    </h1>
+                    <p className="text-sm sm:text-base text-text-secondary max-w-xl mx-auto">
+                      Your answers sketched the outline of where AI can quietly take
+                      over manual work without breaking what already works. Next,
+                      we’ll translate this into a concrete “digital employee” scope.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-white/40 bg-white/40 px-4 py-4 sm:px-5 sm:py-5 shadow-[0_16px_40px_rgba(15,23,42,0.10)] backdrop-blur-xl">
+                  <p className="text-xs uppercase tracking-[0.16em] text-text-secondary mb-2">
+                    What happens next
+                  </p>
+                  <ul className="space-y-2 text-sm text-text-secondary">
+                    <li>
+                      • We’ll review your answers and highlight where a digital
+                      employee can take full ownership.
+                    </li>
+                    <li>
+                      • You’ll see a mapped 90-day outcome, not just a list of tools.
+                    </li>
+                    <li>
+                      • From there, you can decide whether to move straight into build mode.
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                  <PrimaryButton type="button">
+                    Schedule a call
+                  </PrimaryButton>
+                  <button
+                    type="button"
+                    className="text-xs sm:text-sm text-text-secondary hover:text-text-main transition-colors"
+                  >
+                    Or, see a sample digital employee plan →
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <form
+            className="space-y-6 sm:space-y-8"
+            onSubmit={onFormSubmit}
+          >
+            <StepProgressBar currentStep={currentStep} totalSteps={TOTAL_STEPS} />
+
+            <div className={'space-y-5 sm:space-y-6 ' + stepAnimationClass}>
+              {/* STEP 1 */}
+              {currentStep === 1 && (
+                <div className="space-y-5 sm:space-y-6">
+                  <div className="space-y-2">
+                    <h1 className="text-2xl sm:text-3xl font-semibold text-text-main">
+                      Your role in the company
+                    </h1>
+                    <p className="text-sm text-text-secondary max-w-xl">
+                      This helps tune the conversation. We adapt the digital employee to
+                      how you actually make decisions.
+                    </p>
+                  </div>
+
+                  <FormField
+                    label="What is your role in the company?"
+                    htmlFor="role"
+                    required
+                  >
+                    <div className="flex flex-wrap gap-2">
+                      {['Founder', 'CEO', 'COO', 'Head of Operations', 'Other'].map(
+                        (roleOption) => {
+                          const isSelected = form.role === roleOption;
+                          return (
+                            <button
+                              key={roleOption}
+                              type="button"
+                              onClick={() =>
+                                setForm((prev) => ({
+                                  ...prev,
+                                  role: roleOption,
+                                }))
+                              }
+                              className={
+                                'px-4 py-2 text-sm transition-colors rounded-full ' +
+                                (isSelected
+                                  ? 'bg-primary text-white shadow-sm'
+                                  : 'glass-field bg-white/60 text-text-secondary hover:bg-white/80')
+                              }
+                            >
+                              {roleOption}
+                            </button>
+                          );
+                        }
+                      )}
+                    </div>
+                    {form.role === 'Other' && (
+                      <div className="mt-3">
+                        <input
+                          id="roleOther"
+                          type="text"
+                          value={form.roleOther}
+                          onChange={(e) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              roleOther: e.target.value,
+                            }))
+                          }
+                          placeholder="Your title"
+                          className="glass-field h-11 w-full rounded-full px-4 text-sm text-text-main placeholder:text-text-secondary/60"
+                        />
+                      </div>
+                    )}
+                  </FormField>
+                </div>
+              )}
+
+              {/* STEP 2 */}
+              {currentStep === 2 && (
+                <div className="space-y-5 sm:space-y-6">
+                  <div className="space-y-2">
+                    <h1 className="text-2xl sm:text-3xl font-semibold text-text-main">
+                      Your company in one paragraph
+                    </h1>
+                    <p className="text-sm text-text-secondary max-w-xl">
+                      A quick snapshot of what you do so we can map AI to actual
+                      revenue and operations, not generic use cases.
+                    </p>
+                  </div>
+
+                  <FormField
+                    label="Briefly describe what your company does."
+                    htmlFor="companyDescription"
+                    required
+                  >
+                    <textarea
+                      id="companyDescription"
+                      value={form.companyDescription}
+                      onChange={(e) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          companyDescription: e.target.value,
+                        }))
+                      }
+                      rows={4}
+                      className="glass-field w-full rounded-2xl px-4 py-3 text-sm text-text-main placeholder:text-text-secondary/60 resize-none"
+                      placeholder="Who you serve, what you sell, and how you deliver value today."
+                    />
+                  </FormField>
+                </div>
+              )}
+
+              {/* STEP 3 */}
+              {currentStep === 3 && (
+                <div className="space-y-5 sm:space-y-6">
+                  <div className="space-y-2">
+                    <h1 className="text-2xl sm:text-3xl font-semibold text-text-main">
+                      Where manual work slows you down
+                    </h1>
+                    <p className="text-sm text-text-secondary max-w-xl">
+                      Point us to the friction: the places where people copy-paste,
+                      chase information, or push the same buttons every day.
+                    </p>
+                  </div>
+
+                  <FormField
+                    label="Where does manual work slow your team down the most right now?"
+                    htmlFor="manualWorkPain"
+                    required
+                    hint="Think about repetitive processes, back-office tasks, or workflows people complain about."
+                  >
+                    <textarea
+                      id="manualWorkPain"
+                      value={form.manualWorkPain}
+                      onChange={(e) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          manualWorkPain: e.target.value,
+                        }))
+                      }
+                      rows={4}
+                      className="glass-field w-full rounded-2xl px-4 py-3 text-sm text-text-main placeholder:text-text-secondary/60 resize-none"
+                      placeholder="For example: lead triage, customer follow-ups, reporting, onboarding, ticket routing..."
+                    />
+                  </FormField>
+                </div>
+              )}
+
+              {/* STEP 4 */}
+              {currentStep === 4 && (
+                <div className="space-y-5 sm:space-y-7">
+                  <div className="space-y-3">
+                    <div className="h-px w-20 rounded-full bg-gradient-to-r from-[#22D3EE] via-white/60 to-[#FACC15]" />
+                    <div className="space-y-2">
+                      <h1 className="text-2xl sm:text-3xl font-semibold text-text-main">
+                        90-day future with a digital employee
+                      </h1>
+                      <p className="text-sm text-text-secondary max-w-xl">
+                        Imagine one digital employee running perfectly for 90 days.
+                        No fatigue, no dropped balls. Describe what would feel
+                        noticeably different in the business.
+                      </p>
+                    </div>
+                  </div>
+
+                  <FormField
+                    label="If you had a digital employee working perfectly for 90 days, what would you want to be different in your business?"
+                    htmlFor="futureVision90Days"
+                    required
+                  >
+                    <textarea
+                      id="futureVision90Days"
+                      value={form.futureVision90Days}
+                      onChange={(e) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          futureVision90Days: e.target.value,
+                        }))
+                      }
+                      rows={5}
+                      className="glass-field w-full rounded-2xl px-4 py-3.5 text-sm text-text-main placeholder:text-text-secondary/60 resize-none"
+                      placeholder="Think in outcomes: fewer hires needed, faster sales cycles, cleaner reporting, less firefighting, more predictable execution..."
+                    />
+                  </FormField>
+                </div>
+              )}
+
+              {/* STEP 5 */}
+              {currentStep === 5 && (
+                <div className="space-y-5 sm:space-y-6">
+                  <div className="space-y-2">
+                    <h1 className="text-2xl sm:text-3xl font-semibold text-text-main">
+                      Where a digital employee could take ownership
+                    </h1>
+                    <p className="text-sm text-text-secondary max-w-xl">
+                      Choose the areas where you would be comfortable letting a
+                      digital employee run defined workflows end-to-end.
+                    </p>
+                  </div>
+
+                  <FormField
+                    label="Which areas sound most interesting for a digital employee to own?"
+                    htmlFor="aiFitAreas"
+                    required
+                  >
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        'Lead qualification',
+                        'Customer support',
+                        'Operations / back-office',
+                        'Reporting & analytics',
+                        'Other',
+                      ].map((option) => {
+                        const isSelected = form.aiFitAreas.includes(option);
+                        return (
+                          <button
+                            key={option}
+                            type="button"
+                            onClick={() => toggleAiFitArea(option)}
+                            className={
+                              'px-4 py-2 text-sm rounded-full transition-colors ' +
+                              (isSelected
+                                ? 'bg-primary text-white shadow-sm'
+                                : 'glass-field bg-white/60 text-text-secondary hover:bg-white/80')
+                            }
+                          >
+                            {option}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </FormField>
+                </div>
+              )}
+
+              {/* STEP 6 */}
+              {currentStep === 6 && (
+                <div className="space-y-5 sm:space-y-6">
+                  <div className="space-y-2">
+                    <h1 className="text-2xl sm:text-3xl font-semibold text-text-main">
+                      Where we can reach you
+                    </h1>
+                    <p className="text-sm text-text-secondary max-w-xl">
+                      A few details so we can send back a concrete digital employee
+                      outline instead of a generic PDF.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+                    <FormField label="Name" htmlFor="name" required>
+                      <input
+                        id="name"
+                        type="text"
+                        value={form.name}
+                        onChange={(e) =>
+                          setForm((prev) => ({ ...prev, name: e.target.value }))
+                        }
+                        className="glass-field h-11 w-full rounded-full px-4 text-sm text-text-main placeholder:text-text-secondary/60"
+                        placeholder="Your name"
+                      />
+                    </FormField>
+
+                    <FormField label="Work email" htmlFor="email" required>
+                      <input
+                        id="email"
+                        type="email"
+                        value={form.email}
+                        onChange={(e) =>
+                          setForm((prev) => ({ ...prev, email: e.target.value }))
+                        }
+                        className="glass-field h-11 w-full rounded-full px-4 text-sm text-text-main placeholder:text-text-secondary/60"
+                        placeholder="you@company.com"
+                      />
+                    </FormField>
+
+                    <FormField
+                      label="Company name"
+                      htmlFor="companyName"
+                      required
+                    >
+                      <input
+                        id="companyName"
+                        type="text"
+                        value={form.companyName}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            companyName: e.target.value,
+                          }))
+                        }
+                        className="glass-field h-11 w-full rounded-full px-4 text-sm text-text-main placeholder:text-text-secondary/60"
+                        placeholder="Company"
+                      />
+                    </FormField>
+
+                    <FormField label="Company size" htmlFor="companySize" required>
+                      <select
+                        id="companySize"
+                        value={form.companySize}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            companySize: e.target.value,
+                          }))
+                        }
+                        className="glass-field h-11 w-full rounded-full px-4 text-sm text-text-main placeholder:text-text-secondary/60 bg-transparent"
+                      >
+                        <option value="">Select...</option>
+                        <option value="1-10">1–10</option>
+                        <option value="11-50">11–50</option>
+                        <option value="51-200">51–200</option>
+                        <option value="201-1000">201–1,000</option>
+                        <option value="1000+">1,000+</option>
+                      </select>
+                    </FormField>
+
+                    <FormField label="Website" htmlFor="website" required>
+                      <input
+                        id="website"
+                        type="url"
+                        value={form.website}
+                        onChange={(e) =>
+                          setForm((prev) => ({ ...prev, website: e.target.value }))
+                        }
+                        className="glass-field h-11 w-full rounded-full px-4 text-sm text-text-main placeholder:text-text-secondary/60"
+                        placeholder="https://"
+                      />
+                    </FormField>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Navigation */}
+            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 pt-1">
+              <div>
+                {currentStep > 1 && (
+                  <SecondaryButton type="button" onClick={handleBack}>
+                    Back
+                  </SecondaryButton>
+                )}
+              </div>
+              <div className="flex items-center justify-end gap-3">
+                <PrimaryButton
+                  type="submit"
+                  disabled={!isStepValid(currentStep)}
+                >
+                  {currentStep === TOTAL_STEPS
+                    ? 'Submit & map my digital employee'
+                    : 'Next'}
+                </PrimaryButton>
+              </div>
+            </div>
+          </form>
+        );
+      };
+
+      const App = () => {
+        return (
+          <div className="min-h-screen bg-gradient-to-b from-page-bg to-page-bg-soft text-text-main antialiased">
+            <div className="relative flex min-h-screen items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
+              <StarfieldBackground />
+              <div className="relative z-10 w-full flex flex-col items-center">
+                <div className="mb-5 sm:mb-8 text-center">
+                  <p className="text-xs font-medium uppercase tracking-[0.22em] text-text-secondary">
+                    AI DIGITAL EMPLOYEES
+                  </p>
+                  <h2 className="mt-2 text-xl sm:text-2xl font-semibold text-text-main">
+                    Quietly retire manual work, one digital employee at a time.
+                  </h2>
+                </div>
+                <GlassCard>
+                  <MultiStepForm />
+                </GlassCard>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<App />);
+    </script>
+  </body>
 </html>
