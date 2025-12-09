@@ -6,11 +6,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap"
+    rel="stylesheet"
+  />
 
-  <!-- Tailwind CDN -->
+  <!-- Tailwind CDN (v3) -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -49,21 +52,32 @@
     };
   </script>
 
-  <!-- React, ReactDOM, Babel -->
+  <!-- React + ReactDOM (UMD) -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+  <!-- Framer Motion UMD -->
+  <script src="https://unpkg.com/framer-motion@7.6.19/dist/framer-motion.umd.js"></script>
+
+  <!-- Babel Standalone -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- Framer Motion -->
-  <script src="https://unpkg.com/framer-motion/dist/framer-motion.umd.js"></script>
-
   <style>
+    :root {
+      color-scheme: light;
+    }
+
     body {
       min-height: 100vh;
       margin: 0;
       font-family: 'Inter', -apple-system, system-ui, 'SF Pro Text', 'Segoe UI', sans-serif;
       background: linear-gradient(to bottom, #F5F7FF, #E0ECFF);
       color: #0F172A;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #root {
+      min-height: 100vh;
     }
 
     .glass-card {
@@ -78,9 +92,13 @@
 <body>
   <div id="root"></div>
 
-  <script type="text/babel">
+  <!-- App code -->
+  <script type="text/babel" data-presets="env,react">
     const { useState, useMemo } = React;
-    const { motion, AnimatePresence } = window['framer-motion'];
+
+    // Framer Motion UMD global fallback
+    const fmGlobal = window.Motion || window.FramerMotion || window['framer-motion'] || {};
+    const { motion, AnimatePresence } = fmGlobal;
 
     const TOTAL_STEPS = 6;
 
@@ -105,6 +123,7 @@
       email: '',
     };
 
+    // --- ROI engine ---
     function computeRoi(data) {
       const weeksPerMonth = 4.3;
       const automationPercentage = 0.7;
@@ -203,6 +222,8 @@
       return errors;
     }
 
+    /* ---------------- Layout & shell ---------------- */
+
     function MainLayout({ children }) {
       return (
         <div className="relative min-h-screen flex items-center justify-center px-4 py-10">
@@ -215,6 +236,7 @@
     function GlassCard({ children }) {
       return (
         <div className="relative glass-card max-w-2xl w-full px-6 py-6 md:px-8 md:py-8">
+          {/* Cyan accent line at top */}
           <div className="absolute left-8 right-8 top-0 h-px bg-gradient-to-r from-brand-cyan/70 via-white to-brand-cyan/70" />
           {children}
         </div>
@@ -230,6 +252,33 @@
         { top: '18%', left: '85%', size: 1, opacity: 0.28 },
         { top: '5%', left: '60%', size: 1, opacity: 0.3 },
       ];
+
+      // If Motion isn't available for some reason, render static stars
+      if (!motion) {
+        return (
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-[40vh] overflow-hidden">
+            <div className="relative w-full h-full">
+              {stars.map((star, idx) => (
+                <div
+                  key={idx}
+                  className="absolute rounded-full"
+                  style={{
+                    top: star.top,
+                    left: star.left,
+                    width: star.size,
+                    height: star.size,
+                    background:
+                      idx % 2 === 0
+                        ? 'rgba(255,255,255,0.35)'
+                        : 'rgba(210,230,255,0.25)',
+                    opacity: star.opacity,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      }
 
       return (
         <div className="pointer-events-none absolute inset-x-0 top-0 h-[40vh] overflow-hidden">
@@ -251,17 +300,19 @@
                     idx % 2 === 0
                       ? 'rgba(255,255,255,0.35)'
                       : 'rgba(210,230,255,0.25)',
-                  opacity: star.opacity,
-                }}
-              />
+                    opacity: star.opacity,
+                  }}
+                />
+              ))}
             ))}
           </motion.div>
         </div>
       );
     }
 
-    function PrimaryButton(props) {
-      const { children, disabled, onClick, href, target, rel } = props;
+    /* ---------------- Reusable controls ---------------- */
+
+    function PrimaryButton({ children, disabled, onClick, href, target, rel }) {
       const className =
         'inline-flex items-center justify-center rounded-full bg-[#2563EB] text-white ' +
         'border border-[#22D3EE]/70 px-5 py-2.5 text-sm font-medium ' +
@@ -446,6 +497,8 @@
         </div>
       );
     }
+
+    /* ---------------- Step components ---------------- */
 
     function Step1Workflows({ data, errors, onFieldChange }) {
       return (
@@ -634,6 +687,8 @@
       );
     }
 
+    /* ---------------- Root App ---------------- */
+
     function App() {
       const [step, setStep] = useState(1);
       const [formData, setFormData] = useState(initialFormData);
@@ -716,7 +771,7 @@
               const json = await response.json();
               if (json && json.message) message = json.message;
             } catch (e) {
-              // ignore JSON errors
+              // ignore JSON error
             }
             throw new Error(message);
           }
@@ -774,10 +829,15 @@
 
       const currentTitle = STEP_TITLES[step];
 
+      // If AnimatePresence isn't available, just render without animations
+      const Wrapper = AnimatePresence || React.Fragment;
+      const MotionDiv = motion?.div || 'div';
+
       return (
         <MainLayout>
           <Starfield />
           <GlassCard>
+            {/* Progress + step meta */}
             <div className="mb-6 space-y-3">
               <div className="flex items-center justify-between text-xs text-brand-muted">
                 <span>{`Step ${step} of ${TOTAL_STEPS}`}</span>
@@ -791,13 +851,13 @@
               </div>
             </div>
 
-            <AnimatePresence mode="wait">
-              <motion.div
+            <Wrapper mode={AnimatePresence ? 'wait' : undefined}>
+              <MotionDiv
                 key={step}
-                initial={{ opacity: 0, x: 16 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -16 }}
-                transition={{ duration: 0.22 }}
+                initial={AnimatePresence ? { opacity: 0, x: 16 } : undefined}
+                animate={AnimatePresence ? { opacity: 1, x: 0 } : undefined}
+                exit={AnimatePresence ? { opacity: 0, x: -16 } : undefined}
+                transition={AnimatePresence ? { duration: 0.22 } : undefined}
                 className="space-y-6"
               >
                 {step === 1 && (
@@ -843,9 +903,10 @@
                     roi={roi}
                   />
                 )}
-              </motion.div>
-            </AnimatePresence>
+              </MotionDiv>
+            </Wrapper>
 
+            {/* Footer controls */}
             <div className="mt-8 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <SecondaryButton onClick={handleBack} disabled={step === 1 || isSubmitting}>
                 Back
@@ -859,7 +920,11 @@
                   onClick={step === TOTAL_STEPS ? handleSubmit : handleNext}
                   disabled={isSubmitting}
                 >
-                  {step === TOTAL_STEPS ? (isSubmitting ? 'Submitting…' : 'Submit diagnostic') : 'Next'}
+                  {step === TOTAL_STEPS
+                    ? isSubmitting
+                      ? 'Submitting…'
+                      : 'Submit diagnostic'
+                    : 'Next'}
                 </PrimaryButton>
               </div>
             </div>
