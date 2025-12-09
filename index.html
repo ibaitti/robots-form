@@ -1,420 +1,885 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Digital Employee Diagnostic</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', 'SF Pro Text', 'Work Sans', system-ui, sans-serif;
-        }
-        h1, h2, h3, h4, h5, h6 {
-            font-family: 'Space Grotesk', 'Satoshi', system-ui, sans-serif;
-        }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.24);
-            backdrop-filter: blur(18px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            box-shadow: 0 0 40px rgba(34, 211, 238, 0.15);
-        }
-        .star {
-            position: absolute;
-            border-radius: 50%;
-            animation: drift 15s infinite ease-in-out;
-        }
-        @keyframes drift {
-            0%, 100% { transform: translate(0, 0); opacity: 0.3; }
-            50% { transform: translate(10px, -10px); opacity: 0.6; }
-        }
-        .btn-primary {
-            background: #2563EB;
-            border: 1px solid rgba(34, 211, 238, 0.7);
-            box-shadow: 0 0 20px rgba(34, 211, 238, 0.35);
-            transition: all 0.15s;
-        }
-        .btn-primary:hover:not(:disabled) {
-            filter: brightness(1.1);
-        }
-        .btn-primary:active:not(:disabled) {
-            transform: scale(0.95);
-        }
-        .btn-primary:disabled {
-            opacity: 0.6;
-            box-shadow: none;
-            cursor: not-allowed;
-        }
-        .radio-option {
-            transition: all 0.15s;
-        }
-        .radio-option:hover {
-            border-color: rgba(34, 211, 238, 0.5);
-        }
-        .radio-option.selected {
-            background: rgba(37, 99, 235, 0.05);
-            border-color: #22D3EE;
-        }
-        .fade-enter {
-            opacity: 0;
-            transform: translateX(20px);
-        }
-        .fade-exit {
-            opacity: 0;
-            transform: translateX(-20px);
-        }
-        .transition-content {
-            transition: opacity 0.2s, transform 0.2s;
-        }
-    </style>
-</head>
-<body class="min-h-screen" style="background: linear-gradient(to bottom, #F5F7FF, #E0ECFF);">
-    <div id="starfield" style="position: fixed; top: 0; left: 0; right: 0; height: 40vh; overflow: hidden; pointer-events: none;"></div>
+  <meta charset="UTF-8" />
+  <title>AI Digital Employee Diagnostic</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <div id="app" class="relative z-10 min-h-screen flex items-center justify-center px-4 py-12"></div>
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap" rel="stylesheet">
 
-    <script>
-        const starfield = document.getElementById('starfield');
-        for (let i = 0; i < 60; i++) {
-            const star = document.createElement('div');
-            star.className = 'star';
-            star.style.left = Math.random() * 100 + '%';
-            star.style.top = Math.random() * 100 + '%';
-            star.style.width = Math.random() > 0.5 ? '2px' : '1px';
-            star.style.height = star.style.width;
-            star.style.backgroundColor = Math.random() > 0.5 ? 'rgba(210, 230, 255, 0.25)' : 'rgba(255, 255, 255, 0.35)';
-            star.style.animationDelay = Math.random() * 5 + 's';
-            star.style.animationDuration = (Math.random() * 8 + 12) + 's';
-            starfield.appendChild(star);
-        }
-
-        const state = {
-            currentStep: 1,
-            totalSteps: 6,
-            isSubmitting: false,
-            isComplete: false,
-            errors: {},
-            formData: {
-                workflows: '',
-                workflowHoursPerWeek: 10,
-                futureState: '',
-                offerAndICP: '',
-                role: '',
-                companySize: '',
-                urgency: '',
-                avgHourlyRate: 50
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: [
+              'Inter',
+              '-apple-system',
+              'system-ui',
+              'BlinkMacSystemFont',
+              'SF Pro Text',
+              'Segoe UI',
+              'sans-serif',
+            ],
+            display: ['Space Grotesk', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              navy: '#0F172A',
+              muted: '#6B7280',
+              border: '#E5E7EB',
+              input: '#F9FAFB',
+              primary: '#2563EB',
+              cyan: '#22D3EE',
+              gold: '#FACC15',
+              success: '#16A34A',
+              error: '#DC2626',
             },
-            roiMetrics: null
-        };
+          },
+          boxShadow: {
+            cyanGlow: '0 0 40px rgba(34,211,238,0.25)',
+          },
+        },
+      },
+    };
+  </script>
 
-        function calculateROI(data) {
-            const hoursPerMonth = data.workflowHoursPerWeek * 4.33;
-            const costPerMonth = hoursPerMonth * data.avgHourlyRate;
-            const automationPercentage = 0.7;
-            const savingsPerMonth = costPerMonth * automationPercentage;
+  <!-- React, ReactDOM, Babel -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-            return {
-                estimatedHoursPerMonth: Math.round(hoursPerMonth),
-                estimatedCostPerMonth: Math.round(costPerMonth),
-                estimatedSavingsPerMonth: Math.round(savingsPerMonth),
-                assumptions: {
-                    hourlyRate: data.avgHourlyRate,
-                    automationPercentage: automationPercentage
-                }
-            };
+  <!-- Framer Motion -->
+  <script src="https://unpkg.com/framer-motion/dist/framer-motion.umd.js"></script>
+
+  <style>
+    body {
+      min-height: 100vh;
+      margin: 0;
+      font-family: 'Inter', -apple-system, system-ui, 'SF Pro Text', 'Segoe UI', sans-serif;
+      background: linear-gradient(to bottom, #F5F7FF, #E0ECFF);
+      color: #0F172A;
+    }
+
+    .glass-card {
+      border-radius: 1.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 0 40px rgba(34, 211, 238, 0.25);
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useMemo } = React;
+    const { motion, AnimatePresence } = window['framer-motion'];
+
+    const TOTAL_STEPS = 6;
+
+    const STEP_TITLES = {
+      1: 'Workflows',
+      2: '90-Day Future State',
+      3: 'Offer & ICP',
+      4: 'Role',
+      5: 'Company Size',
+      6: 'Urgency & Contact',
+    };
+
+    const initialFormData = {
+      workflows: '',
+      hoursPerWeek: '',
+      hourlyRate: '',
+      futureState: '',
+      offerAndICP: '',
+      role: '',
+      companySize: '',
+      urgency: '',
+      email: '',
+    };
+
+    function computeRoi(data) {
+      const weeksPerMonth = 4.3;
+      const automationPercentage = 0.7;
+
+      const rawHoursPerWeek = parseFloat(data.hoursPerWeek);
+      const hoursPerWeek =
+        Number.isFinite(rawHoursPerWeek) && rawHoursPerWeek > 0 ? rawHoursPerWeek : 0;
+
+      const fallbackHourlyRate = 40;
+      const rawHourlyRate = parseFloat(data.hourlyRate);
+      const hourlyRate =
+        Number.isFinite(rawHourlyRate) && rawHourlyRate > 0 ? rawHourlyRate : fallbackHourlyRate;
+
+      const estimatedHoursPerMonth = hoursPerWeek * weeksPerMonth;
+      const estimatedSavingsHoursPerMonth = estimatedHoursPerMonth * automationPercentage;
+      const estimatedCostPerMonth = estimatedHoursPerMonth * hourlyRate;
+      const estimatedSavingsPerMonth = estimatedSavingsHoursPerMonth * hourlyRate;
+
+      return {
+        estimatedHoursPerMonth,
+        estimatedSavingsHoursPerMonth,
+        estimatedCostPerMonth,
+        estimatedSavingsPerMonth,
+        assumptions: {
+          hourlyRate,
+          automationPercentage,
+          weeksPerMonth,
+        },
+      };
+    }
+
+    function collectMeta() {
+      if (typeof window === 'undefined') return {};
+      const url = window.location.href;
+      const params = new URLSearchParams(window.location.search);
+      const utm = {};
+      params.forEach((value, key) => {
+        if (key.toLowerCase().startsWith('utm_')) {
+          utm[key] = value;
         }
+      });
+      return {
+        url,
+        utm: Object.keys(utm).length ? utm : undefined,
+        userAgent: navigator.userAgent,
+      };
+    }
 
-        function validateStep(step) {
-            const errors = {};
+    function validateStep(step, data) {
+      const errors = {};
 
-            switch (step) {
-                case 1:
-                    if (!state.formData.workflows.trim()) {
-                        errors.workflows = 'Please describe at least one workflow.';
-                    }
-                    break;
-                case 2:
-                    if (!state.formData.futureState.trim()) {
-                        errors.futureState = 'Please share your 90-day vision.';
-                    }
-                    break;
-                case 3:
-                    if (!state.formData.offerAndICP.trim()) {
-                        errors.offerAndICP = 'Please describe your offer and ideal customer.';
-                    }
-                    break;
-                case 4:
-                    if (!state.formData.role) {
-                        errors.role = 'Please select your role.';
-                    }
-                    break;
-                case 5:
-                    if (!state.formData.companySize) {
-                        errors.companySize = 'Please select your company size.';
-                    }
-                    break;
-                case 6:
-                    if (!state.formData.urgency) {
-                        errors.urgency = 'Please select your urgency level.';
-                    }
-                    break;
-            }
-
-            state.errors = errors;
-            return Object.keys(errors).length === 0;
+      if (step === 1) {
+        if (!data.workflows.trim()) {
+          errors.workflows = 'Describe at least one workflow you would hand off.';
         }
+      }
 
-        function handleNext() {
-            if (validateStep(state.currentStep)) {
-                if (state.currentStep === 5) {
-                    state.roiMetrics = calculateROI(state.formData);
-                }
-                state.currentStep = Math.min(state.currentStep + 1, state.totalSteps);
-                render();
-            } else {
-                render();
-            }
+      if (step === 2) {
+        if (!data.futureState.trim()) {
+          errors.futureState = 'Describe your desired 90-day outcome in 1–2 sentences.';
         }
+      }
 
-        function handleBack() {
-            state.currentStep = Math.max(state.currentStep - 1, 1);
-            render();
+      if (step === 3) {
+        if (!data.offerAndICP.trim()) {
+          errors.offerAndICP = 'Describe what you sell and who you sell it to.';
         }
+      }
 
-        async function handleSubmit() {
-            if (!validateStep(state.currentStep)) {
-                render();
-                return;
-            }
+      if (step === 4) {
+        if (!data.role) {
+          errors.role = 'Select the option that best matches your role.';
+        }
+      }
 
-            state.isSubmitting = true;
-            render();
+      if (step === 5) {
+        if (!data.companySize) {
+          errors.companySize = 'Select your current company size.';
+        }
+      }
 
-            const roi = state.roiMetrics || calculateROI(state.formData);
+      if (step === 6) {
+        if (!data.urgency) {
+          errors.urgency = 'Select how serious you are about fixing this.';
+        }
+        if (!data.email.trim()) {
+          errors.email = 'Enter the email where we should send your blueprint.';
+        } else {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(data.email.trim())) {
+            errors.email = 'Enter a valid business email address.';
+          }
+        }
+      }
 
-            const payload = {
-                submissionId: 'sub_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-                timestamp: new Date().toISOString(),
-                answers: {
-                    workflows: state.formData.workflows,
-                    futureState: state.formData.futureState,
-                    offerAndICP: state.formData.offerAndICP,
-                    role: state.formData.role,
-                    companySize: state.formData.companySize,
-                    urgency: state.formData.urgency
-                },
-                roi: roi,
-                inputs: {
-                    workflowHoursPerWeek: state.formData.workflowHoursPerWeek,
-                    avgHourlyRate: state.formData.avgHourlyRate
-                },
-                meta: {
-                    userAgent: navigator.userAgent,
-                    url: window.location.href
-                }
-            };
+      return errors;
+    }
 
+    function MainLayout({ children }) {
+      return (
+        <div className="relative min-h-screen flex items-center justify-center px-4 py-10">
+          <div className="absolute inset-0 bg-gradient-to-b from-[#F5F7FF] to-[#E0ECFF]" />
+          {children}
+        </div>
+      );
+    }
+
+    function GlassCard({ children }) {
+      return (
+        <div className="relative glass-card max-w-2xl w-full px-6 py-6 md:px-8 md:py-8">
+          <div className="absolute left-8 right-8 top-0 h-px bg-gradient-to-r from-brand-cyan/70 via-white to-brand-cyan/70" />
+          {children}
+        </div>
+      );
+    }
+
+    function Starfield() {
+      const stars = [
+        { top: '8%', left: '12%', size: 2, opacity: 0.35 },
+        { top: '14%', left: '48%', size: 1, opacity: 0.25 },
+        { top: '22%', left: '70%', size: 2, opacity: 0.32 },
+        { top: '30%', left: '25%', size: 1, opacity: 0.28 },
+        { top: '18%', left: '85%', size: 1, opacity: 0.28 },
+        { top: '5%', left: '60%', size: 1, opacity: 0.3 },
+      ];
+
+      return (
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[40vh] overflow-hidden">
+          <motion.div
+            className="relative w-full h-full"
+            animate={{ x: [0, 10, 0], y: [0, 6, 0] }}
+            transition={{ duration: 28, repeat: Infinity, ease: 'linear' }}
+          >
+            {stars.map((star, idx) => (
+              <div
+                key={idx}
+                className="absolute rounded-full"
+                style={{
+                  top: star.top,
+                  left: star.left,
+                  width: star.size,
+                  height: star.size,
+                  background:
+                    idx % 2 === 0
+                      ? 'rgba(255,255,255,0.35)'
+                      : 'rgba(210,230,255,0.25)',
+                  opacity: star.opacity,
+                }}
+              />
+            ))}
+          </motion.div>
+        </div>
+      );
+    }
+
+    function PrimaryButton(props) {
+      const { children, disabled, onClick, href, target, rel } = props;
+      const className =
+        'inline-flex items-center justify-center rounded-full bg-[#2563EB] text-white ' +
+        'border border-[#22D3EE]/70 px-5 py-2.5 text-sm font-medium ' +
+        'shadow-[0_0_20px_rgba(34,211,238,0.35)] hover:brightness-110 ' +
+        'transition-all duration-150 active:scale-95 disabled:opacity-60 ' +
+        'disabled:shadow-none disabled:cursor-not-allowed';
+
+      if (href) {
+        return (
+          <a href={href} target={target} rel={rel} aria-disabled={disabled} className={className}>
+            {children}
+          </a>
+        );
+      }
+
+      return (
+        <button type="button" className={className} onClick={onClick} disabled={disabled}>
+          {children}
+        </button>
+      );
+    }
+
+    function SecondaryButton({ children, disabled, onClick }) {
+      return (
+        <button
+          type="button"
+          className="inline-flex items-center justify-center rounded-full border border-brand-border px-4 py-2 text-xs md:text-sm font-medium text-brand-muted hover:bg-white/50 hover:text-brand-navy transition disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={onClick}
+          disabled={disabled}
+        >
+          {children}
+        </button>
+      );
+    }
+
+    function TextAreaField({
+      label,
+      value,
+      onChange,
+      helperText,
+      error,
+      autoFocus,
+      rows = 4,
+      goldAccent,
+    }) {
+      return (
+        <div
+          className={
+            'rounded-2xl border ' +
+            (goldAccent ? 'border-brand-gold/70' : 'border-transparent') +
+            ' bg-white/60 p-3 md:p-4 shadow-sm transition shadow-none focus-within:shadow-cyanGlow focus-within:border-brand-cyan'
+          }
+        >
+          <label className="block text-sm font-medium text-brand-navy mb-1.5">
+            {label}
+          </label>
+          <textarea
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            rows={rows}
+            autoFocus={autoFocus}
+            className="w-full resize-none rounded-xl border border-brand-border bg-brand-input px-3 py-2.5 text-sm text-brand-navy placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-cyan/80 focus:border-transparent"
+          />
+          {helperText && !error && (
+            <p className="mt-1 text-xs text-brand-muted">{helperText}</p>
+          )}
+          {error && <p className="mt-1 text-xs text-brand-error">{error}</p>}
+        </div>
+      );
+    }
+
+    function NumberField({
+      label,
+      value,
+      onChange,
+      suffix,
+      helperText,
+      error,
+    }) {
+      return (
+        <div className="space-y-1.5">
+          <label className="block text-xs font-medium text-brand-navy">{label}</label>
+          <div className="flex items-center gap-2 rounded-xl border border-brand-border bg-brand-input px-3 py-2 focus-within:ring-2 focus-within:ring-brand-cyan/80 focus-within:border-transparent">
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              className="w-full bg-transparent text-sm text-brand-navy placeholder:text-gray-400 focus:outline-none"
+            />
+            {suffix && (
+              <span className="text-xs text-brand-muted whitespace-nowrap">{suffix}</span>
+            )}
+          </div>
+          {helperText && !error && (
+            <p className="text-[11px] text-brand-muted">{helperText}</p>
+          )}
+          {error && <p className="text-[11px] text-brand-error">{error}</p>}
+        </div>
+      );
+    }
+
+    function SegmentedControl({ label, options, value, onChange, error }) {
+      return (
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-medium text-brand-navy">{label}</legend>
+          <div className="flex flex-wrap gap-2">
+            {options.map((opt) => {
+              const selected = value === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => onChange(opt.value)}
+                  className={
+                    'px-4 py-2 rounded-full text-xs md:text-sm border transition ' +
+                    (selected
+                      ? 'bg-brand-primary text-white border-brand-primary shadow-[0_0_20px_rgba(37,99,235,0.4)]'
+                      : 'bg-brand-input text-brand-navy border-brand-border hover:border-brand-primary/60')
+                  }
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+          {error && <p className="text-xs text-brand-error">{error}</p>}
+        </fieldset>
+      );
+    }
+
+    function RoiPreview({ roi, compact }) {
+      const hours = Math.round(roi.estimatedHoursPerMonth);
+      const savingsHours = Math.round(roi.estimatedSavingsHoursPerMonth);
+      const savingsValue = Math.round(roi.estimatedSavingsPerMonth);
+      const hourlyRate = Math.round(roi.assumptions.hourlyRate);
+
+      if (!hours || !savingsValue) {
+        return (
+          <div className="mt-4 rounded-2xl border border-dashed border-brand-border bg-white/50 px-4 py-3 text-xs text-brand-muted">
+            Add rough estimates for hours per week and hourly cost to see your manual work burn and
+            savings preview.
+          </div>
+        );
+      }
+
+      return (
+        <div
+          className={
+            'mt-4 rounded-2xl border border-brand-border bg-white/70 px-4 py-3 ' +
+            (compact ? '' : 'md:px-5 md:py-4')
+          }
+        >
+          <p className="text-xs font-medium text-brand-navy mb-2">
+            Manual work burn &amp; automation preview
+          </p>
+          <ul className="space-y-1.5 text-[11px] md:text-xs text-brand-muted">
+            <li>
+              <span className="font-medium text-brand-navy">
+                Manual work burn:&nbsp;
+              </span>
+              ~{hours} hours/month on the workflows you described.
+            </li>
+            <li>
+              <span className="font-medium text-brand-navy">
+                If we automate ~70%:
+              </span>{' '}
+              that&apos;s roughly {savingsHours} hours/month back to your team.
+            </li>
+            <li>
+              <span className="font-medium text-brand-navy">
+                At ~${hourlyRate}/hour fully-loaded:
+              </span>{' '}
+              that&apos;s ≈ ${savingsValue.toLocaleString()} of capacity freed per month.
+            </li>
+            <li className="text-[10px] text-brand-muted mt-1.5">
+              Directional only. Final numbers depend on exact workflows, routing logic, and model
+              configuration.
+            </li>
+          </ul>
+        </div>
+      );
+    }
+
+    function Step1Workflows({ data, errors, onFieldChange }) {
+      return (
+        <div className="space-y-5">
+          <h1 className="font-display text-2xl md:text-3xl font-semibold text-brand-navy">
+            If you had a digital employee that could handle 3–5 repetitive workflows in the next 30
+            days, which ones would you pick first?
+          </h1>
+          <TextAreaField
+            label="Describe the repetitive workflows you would hand off first"
+            value={data.workflows}
+            onChange={(v) => onFieldChange('workflows', v)}
+            helperText="Examples: inbox triage, lead qualification, repetitive reporting, updating CRM stages, chasing overdue invoices, compiling weekly performance summaries."
+            error={errors.workflows}
+            autoFocus={true}
+            rows={4}
+          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <NumberField
+              label="Approximate hours per week spent on these workflows"
+              value={data.hoursPerWeek}
+              onChange={(v) => onFieldChange('hoursPerWeek', v)}
+              suffix="hours / week"
+              helperText="Rough estimate is enough. If multiple people are involved, sum their hours."
+            />
+            <NumberField
+              label="Average fully-loaded hourly cost of people doing this work"
+              value={data.hourlyRate}
+              onChange={(v) => onFieldChange('hourlyRate', v)}
+              suffix="USD / hour"
+              helperText="Include taxes/benefits if possible. If unsure, estimate $30–$80/h depending on seniority."
+            />
+          </div>
+        </div>
+      );
+    }
+
+    function Step2FutureState({ data, errors, onFieldChange }) {
+      return (
+        <div className="space-y-4 border-t border-brand-gold/70 pt-4">
+          <h1 className="font-display text-2xl md:text-3xl font-semibold text-brand-navy flex items-center gap-2">
+            90 days from now, if this works exactly as you want—what’s the one thing you’d love to
+            be true about your business?
+            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand-gold/40 text-[10px] font-semibold text-brand-navy">
+              90
+            </span>
+          </h1>
+          <TextAreaField
+            label="Describe your ideal 90-day outcome in 1–2 sentences"
+            value={data.futureState}
+            onChange={(v) => onFieldChange('futureState', v)}
+            helperText="Examples: response times under 5 minutes, more qualified leads to sales, more booked calls without extra headcount, 20–40 hours per week freed up, more consistent monthly revenue."
+            error={errors.futureState}
+            rows={3}
+            goldAccent={true}
+          />
+        </div>
+      );
+    }
+
+    function Step3OfferICP({ data, errors, onFieldChange }) {
+      return (
+        <div className="space-y-4">
+          <h1 className="font-display text-2xl md:text-3xl font-semibold text-brand-navy">
+            What does your company sell, and who is your ideal customer?
+          </h1>
+          <TextAreaField
+            label="Offer & ideal customer"
+            value={data.offerAndICP}
+            onChange={(v) => onFieldChange('offerAndICP', v)}
+            helperText="Example: 'We sell a B2B SaaS for revenue teams, typically working with tech-enabled B2B companies doing $1–10M ARR with 5–30 sales reps.'"
+            error={errors.offerAndICP}
+            rows={3}
+          />
+        </div>
+      );
+    }
+
+    function Step4Role({ data, errors, onFieldChange }) {
+      const options = [
+        { label: 'Founder / Owner', value: 'Founder / Owner' },
+        { label: 'C-Level / VP', value: 'C-Level / VP' },
+        { label: 'Operations / Systems', value: 'Operations / Systems' },
+        { label: 'Marketing / Sales', value: 'Marketing / Sales' },
+        { label: 'Other', value: 'Other' },
+      ];
+
+      return (
+        <div className="space-y-4">
+          <h1 className="font-display text-2xl md:text-3xl font-semibold text-brand-navy">
+            Which best describes your role?
+          </h1>
+          <SegmentedControl
+            label="Select your role"
+            options={options}
+            value={data.role}
+            onChange={(v) => onFieldChange('role', v)}
+            error={errors.role}
+          />
+        </div>
+      );
+    }
+
+    function Step5CompanySize({ data, errors, onFieldChange }) {
+      const options = [
+        { label: '1–5', value: '1–5' },
+        { label: '6–20', value: '6–20' },
+        { label: '21–50', value: '21–50' },
+        { label: '51–200', value: '51–200' },
+        { label: '200+', value: '200+' },
+      ];
+
+      return (
+        <div className="space-y-4">
+          <h1 className="font-display text-2xl md:text-3xl font-semibold text-brand-navy">
+            How many employees are in your company?
+          </h1>
+          <SegmentedControl
+            label="Current team size"
+            options={options}
+            value={data.companySize}
+            onChange={(v) => onFieldChange('companySize', v)}
+            error={errors.companySize}
+          />
+        </div>
+      );
+    }
+
+    function Step6UrgencyEmail({ data, errors, onFieldChange, roi }) {
+      const options = [
+        {
+          label: 'Just exploring / Not urgent',
+          value: 'Just exploring / Not urgent',
+        },
+        {
+          label: 'Interested, timing flexible',
+          value: 'Interested, but timing is flexible',
+        },
+        {
+          label: 'Priority in next 60 days',
+          value: 'This is a priority to solve in the next 60 days',
+        },
+      ];
+
+      return (
+        <div className="space-y-5">
+          <h1 className="font-display text-2xl md:text-3xl font-semibold text-brand-navy">
+            How serious are you about fixing this in the next 60 days?
+          </h1>
+          <SegmentedControl
+            label="Urgency"
+            options={options}
+            value={data.urgency}
+            onChange={(v) => onFieldChange('urgency', v)}
+            error={errors.urgency}
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-brand-navy">
+                Where should we send your AI Digital Employee Blueprint?
+              </label>
+              <div className="rounded-xl border border-brand-border bg-brand-input px-3 py-2 focus-within:ring-2 focus-within:ring-brand-cyan/80 focus-within:border-transparent">
+                <input
+                  type="email"
+                  value={data.email}
+                  onChange={(e) => onFieldChange('email', e.target.value)}
+                  className="w-full bg-transparent text-sm text-brand-navy placeholder:text-gray-400 focus:outline-none"
+                  placeholder="you@company.com"
+                />
+              </div>
+              {errors.email && (
+                <p className="text-xs text-brand-error">{errors.email}</p>
+              )}
+              {!errors.email && (
+                <p className="text-xs text-brand-muted">
+                  We&apos;ll use this only to send your blueprint and follow-up context on the
+                  diagnostic—no spam sequence.
+                </p>
+              )}
+            </div>
+
+            <RoiPreview roi={roi} />
+          </div>
+        </div>
+      );
+    }
+
+    function App() {
+      const [step, setStep] = useState(1);
+      const [formData, setFormData] = useState(initialFormData);
+      const [errors, setErrors] = useState({});
+      const [isSubmitting, setIsSubmitting] = useState(false);
+      const [isSubmitted, setIsSubmitted] = useState(false);
+      const [submitError, setSubmitError] = useState(null);
+      const [meta] = useState(() => collectMeta());
+
+      const roi = useMemo(
+        () => computeRoi(formData),
+        [formData.hoursPerWeek, formData.hourlyRate]
+      );
+
+      function handleFieldChange(field, value) {
+        setFormData((prev) => ({ ...prev, [field]: value }));
+        setErrors((prev) => ({ ...prev, [field]: undefined }));
+      }
+
+      function runValidationForStep(currentStep) {
+        const stepErrors = validateStep(currentStep, formData);
+        if (Object.keys(stepErrors).length > 0) {
+          setErrors((prev) => ({ ...prev, ...stepErrors }));
+          return false;
+        }
+        setErrors((prev) => {
+          const copy = { ...prev };
+          Object.keys(stepErrors).forEach((key) => {
+            delete copy[key];
+          });
+          return copy;
+        });
+        return true;
+      }
+
+      function handleNext() {
+        if (!runValidationForStep(step)) return;
+        if (step < TOTAL_STEPS) {
+          setStep((s) => s + 1);
+        }
+      }
+
+      function handleBack() {
+        if (step > 1 && !isSubmitting) {
+          setStep((s) => s - 1);
+          setSubmitError(null);
+        }
+      }
+
+      async function handleSubmit() {
+        if (!runValidationForStep(6)) return;
+
+        setIsSubmitting(true);
+        setSubmitError(null);
+
+        try {
+          const response = await fetch('/api/diagnostic', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              answers: {
+                workflows: formData.workflows,
+                futureState: formData.futureState,
+                offerAndICP: formData.offerAndICP,
+                role: formData.role,
+                companySize: formData.companySize,
+                urgency: formData.urgency,
+                email: formData.email,
+              },
+              roi,
+              meta,
+            }),
+          });
+
+          if (!response.ok) {
+            let message = 'Submission failed.';
             try {
-                console.log('Submission payload:', payload);
-                await new Promise(resolve => setTimeout(resolve, 1500));
-                state.isComplete = true;
-            } catch (error) {
-                console.error('Submission error:', error);
-                alert('There was an issue submitting your diagnostic. Please try again.');
-            } finally {
-                state.isSubmitting = false;
-                render();
+              const json = await response.json();
+              if (json && json.message) message = json.message;
+            } catch (e) {
+              // ignore JSON errors
             }
+            throw new Error(message);
+          }
+
+          setIsSubmitted(true);
+        } catch (err) {
+          const message =
+            err instanceof Error
+              ? err.message
+              : 'Unexpected error while submitting diagnostic.';
+          setSubmitError(message);
+        } finally {
+          setIsSubmitting(false);
         }
+      }
 
-        function renderProgressBar() {
-            const progress = (state.currentStep / state.totalSteps) * 100;
-            return '<div class="w-full h-1.5 bg-gray-300 rounded-full overflow-hidden mb-6"><div class="h-full rounded-full transition-all duration-300" style="width: ' + progress + '%; background: linear-gradient(to right, #2563EB, #22D3EE);"></div></div>';
-        }
+      if (isSubmitted) {
+        return (
+          <MainLayout>
+            <Starfield />
+            <GlassCard>
+              <div className="flex flex-col gap-4">
+                <div className="h-px w-20 bg-gradient-to-r from-brand-cyan via-white to-brand-cyan" />
+                <h1 className="font-display text-3xl md:text-4xl font-semibold text-brand-navy">
+                  Thanks—got it.
+                </h1>
+                <p className="text-sm md:text-base text-brand-muted">
+                  Based on your answers, the next step is a 30-minute call to map a specific AI
+                  digital employee to the workflows you selected and validate the assumptions behind
+                  the ROI model.
+                </p>
 
-        function renderStep1() {
-            return '<div class="space-y-6"><div><h2 class="text-2xl font-semibold text-[#0F172A] mb-3">If you had a digital employee that could handle 3–5 repetitive workflows in the next 30 days, which ones would you pick first?</h2><p class="text-sm text-[#6B7280] mb-4">Examples: inbox triage, lead qualification, repetitive reporting, CRM updates, scheduling, data entry, customer follow-ups.</p></div><textarea id="workflows" rows="5" placeholder="List the workflows you would automate first..." class="w-full px-4 py-3 rounded-xl bg-[#F9FAFB] border ' + (state.errors.workflows ? 'border-red-600' : 'border-gray-300') + ' text-[#0F172A] placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent resize-none">' + state.formData.workflows + '</textarea>' + (state.errors.workflows ? '<p class="text-red-600 text-xs mt-1">' + state.errors.workflows + '</p>' : '') + '<div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label class="block text-sm font-medium text-[#0F172A] mb-1.5">Hours per week on these workflows</label><input type="number" id="workflowHours" min="1" max="168" value="' + state.formData.workflowHoursPerWeek + '" class="w-full px-4 py-2.5 rounded-xl bg-[#F9FAFB] border border-gray-300 text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent"><p class="text-xs text-[#6B7280] mt-1.5">Approximate total time spent</p></div><div><label class="block text-sm font-medium text-[#0F172A] mb-1.5">Avg. hourly cost ($)</label><input type="number" id="avgHourlyRate" min="10" max="500" value="' + state.formData.avgHourlyRate + '" class="w-full px-4 py-2.5 rounded-xl bg-[#F9FAFB] border border-gray-300 text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent"><p class="text-xs text-[#6B7280] mt-1.5">Fully-loaded cost per hour</p></div></div></div>';
-        }
+                <RoiPreview roi={roi} compact={true} />
 
-        function renderStep2() {
-            return '<div class="space-y-6"><div class="border-t-2 border-[#FACC15] pt-1 -mt-1"><div class="flex items-center gap-2 mb-3"><div class="w-2 h-2 rounded-full bg-[#FACC15]"></div><span class="text-xs font-medium text-[#FACC15] uppercase tracking-wide">Future Vision</span></div><h2 class="text-2xl font-semibold text-[#0F172A] mb-3">90 days from now, if this works exactly as you want—what is the one thing you would love to be true about your business?</h2><p class="text-sm text-[#6B7280] mb-4">Think about: faster response times, more qualified leads, more booked calls, hours saved per week, increased monthly revenue.</p></div><textarea id="futureState" rows="4" placeholder="In 90 days, I want..." class="w-full px-4 py-3 rounded-xl bg-[#F9FAFB] border ' + (state.errors.futureState ? 'border-red-600' : 'border-gray-300') + ' text-[#0F172A] placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent resize-none">' + state.formData.futureState + '</textarea>' + (state.errors.futureState ? '<p class="text-red-600 text-xs mt-1">' + state.errors.futureState + '</p>' : '') + '</div>';
-        }
+                <div className="mt-4 flex flex-col gap-3">
+                  <PrimaryButton
+                    href="[CALENDAR_LINK_PLACEHOLDER]"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Book your time
+                  </PrimaryButton>
+                  <p className="text-xs md:text-sm text-brand-muted">
+                    You&apos;ll also receive a personalized{' '}
+                    <span className="font-medium">AI Digital Employee Blueprint</span> at{' '}
+                    <span className="font-mono text-brand-navy">{formData.email}</span> with a
+                    breakdown of workflows, automation opportunities, and ROI assumptions.
+                  </p>
+                </div>
+              </div>
+            </GlassCard>
+          </MainLayout>
+        );
+      }
 
-        function renderStep3() {
-            return '<div class="space-y-6"><div><h2 class="text-2xl font-semibold text-[#0F172A] mb-3">What does your company sell, and who is your ideal customer?</h2><p class="text-sm text-[#6B7280] mb-4">Help us understand your business so we can tailor the AI digital employee to your needs.</p></div><textarea id="offerAndICP" rows="4" placeholder="We sell... to..." class="w-full px-4 py-3 rounded-xl bg-[#F9FAFB] border ' + (state.errors.offerAndICP ? 'border-red-600' : 'border-gray-300') + ' text-[#0F172A] placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#22D3EE] focus:border-transparent resize-none">' + state.formData.offerAndICP + '</textarea>' + (state.errors.offerAndICP ? '<p class="text-red-600 text-xs mt-1">' + state.errors.offerAndICP + '</p>' : '') + '</div>';
-        }
+      const currentTitle = STEP_TITLES[step];
 
-        function renderStep4() {
-            const roles = [
-                { value: 'founder', label: 'Founder / Owner' },
-                { value: 'executive', label: 'C-Level / VP' },
-                { value: 'operations', label: 'Operations / Systems' },
-                { value: 'marketing', label: 'Marketing / Sales' },
-                { value: 'other', label: 'Other' }
-            ];
+      return (
+        <MainLayout>
+          <Starfield />
+          <GlassCard>
+            <div className="mb-6 space-y-3">
+              <div className="flex items-center justify-between text-xs text-brand-muted">
+                <span>{`Step ${step} of ${TOTAL_STEPS}`}</span>
+                <span className="font-medium text-brand-navy">{currentTitle}</span>
+              </div>
+              <div className="h-1.5 w-full rounded-full bg-brand-border overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-brand-primary to-brand-cyan"
+                  style={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
+                />
+              </div>
+            </div>
 
-            let html = '<div class="space-y-6"><div><h2 class="text-2xl font-semibold text-[#0F172A] mb-3">Which best describes your role?</h2></div><div class="space-y-3">';
-            
-            roles.forEach(function(role) {
-                const isSelected = state.formData.role === role.value;
-                html += '<label class="radio-option flex items-center px-4 py-3.5 rounded-xl cursor-pointer border ' + (isSelected ? 'selected' : 'bg-[#F9FAFB] border-gray-300') + '"><input type="radio" name="role" value="' + role.value + '" ' + (isSelected ? 'checked' : '') + ' class="w-4 h-4 text-[#2563EB] border-gray-300 focus:ring-[#22D3EE] focus:ring-2"><span class="ml-3 text-[#0F172A] font-medium">' + role.label + '</span></label>';
-            });
-            
-            html += '</div>' + (state.errors.role ? '<p class="text-red-600 text-sm">' + state.errors.role + '</p>' : '') + '</div>';
-            return html;
-        }
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={step}
+                initial={{ opacity: 0, x: 16 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -16 }}
+                transition={{ duration: 0.22 }}
+                className="space-y-6"
+              >
+                {step === 1 && (
+                  <Step1Workflows
+                    data={formData}
+                    errors={errors}
+                    onFieldChange={handleFieldChange}
+                  />
+                )}
+                {step === 2 && (
+                  <Step2FutureState
+                    data={formData}
+                    errors={errors}
+                    onFieldChange={handleFieldChange}
+                  />
+                )}
+                {step === 3 && (
+                  <Step3OfferICP
+                    data={formData}
+                    errors={errors}
+                    onFieldChange={handleFieldChange}
+                  />
+                )}
+                {step === 4 && (
+                  <Step4Role
+                    data={formData}
+                    errors={errors}
+                    onFieldChange={handleFieldChange}
+                  />
+                )}
+                {step === 5 && (
+                  <Step5CompanySize
+                    data={formData}
+                    errors={errors}
+                    onFieldChange={handleFieldChange}
+                  />
+                )}
+                {step === 6 && (
+                  <Step6UrgencyEmail
+                    data={formData}
+                    errors={errors}
+                    onFieldChange={handleFieldChange}
+                    roi={roi}
+                  />
+                )}
+              </motion.div>
+            </AnimatePresence>
 
-        function renderStep5() {
-            const sizes = [
-                { value: '1-5', label: '1–5' },
-                { value: '6-20', label: '6–20' },
-                { value: '21-50', label: '21–50' },
-                { value: '51-200', label: '51–200' },
-                { value: '200+', label: '200+' }
-            ];
+            <div className="mt-8 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <SecondaryButton onClick={handleBack} disabled={step === 1 || isSubmitting}>
+                Back
+              </SecondaryButton>
 
-            let html = '<div class="space-y-6"><div><h2 class="text-2xl font-semibold text-[#0F172A] mb-3">How many employees are in your company?</h2></div><div class="space-y-3">';
-            
-            sizes.forEach(function(size) {
-                const isSelected = state.formData.companySize === size.value;
-                html += '<label class="radio-option flex items-center px-4 py-3.5 rounded-xl cursor-pointer border ' + (isSelected ? 'selected' : 'bg-[#F9FAFB] border-gray-300') + '"><input type="radio" name="companySize" value="' + size.value + '" ' + (isSelected ? 'checked' : '') + ' class="w-4 h-4 text-[#2563EB] border-gray-300 focus:ring-[#22D3EE] focus:ring-2"><span class="ml-3 text-[#0F172A] font-medium">' + size.label + '</span></label>';
-            });
-            
-            html += '</div>' + (state.errors.companySize ? '<p class="text-red-600 text-sm">' + state.errors.companySize + '</p>' : '') + '</div>';
-            return html;
-        }
+              <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center sm:gap-3">
+                {submitError && (
+                  <p className="text-xs text-brand-error max-w-xs text-right">{submitError}</p>
+                )}
+                <PrimaryButton
+                  onClick={step === TOTAL_STEPS ? handleSubmit : handleNext}
+                  disabled={isSubmitting}
+                >
+                  {step === TOTAL_STEPS ? (isSubmitting ? 'Submitting…' : 'Submit diagnostic') : 'Next'}
+                </PrimaryButton>
+              </div>
+            </div>
 
-        function renderStep6() {
-            const urgencies = [
-                { value: 'exploring', label: 'Just exploring / Not urgent' },
-                { value: 'interested', label: 'Interested, but timing is flexible' },
-                { value: 'priority', label: 'This is a priority to solve in the next 60 days' }
-            ];
+            {isSubmitting && (
+              <div className="mt-4 flex items-center gap-2 text-xs text-brand-muted">
+                <div className="h-4 w-4 rounded-full border-2 border-brand-primary border-t-transparent animate-spin" />
+                <span>Submitting your diagnostic…</span>
+              </div>
+            )}
+          </GlassCard>
+        </MainLayout>
+      );
+    }
 
-            let html = '<div class="space-y-6"><div><h2 class="text-2xl font-semibold text-[#0F172A] mb-3">How serious are you about fixing this in the next 60 days?</h2></div><div class="space-y-3">';
-            
-            urgencies.forEach(function(urgency) {
-                const isSelected = state.formData.urgency === urgency.value;
-                html += '<label class="radio-option flex items-center px-4 py-3.5 rounded-xl cursor-pointer border ' + (isSelected ? 'selected' : 'bg-[#F9FAFB] border-gray-300') + '"><input type="radio" name="urgency" value="' + urgency.value + '" ' + (isSelected ? 'checked' : '') + ' class="w-4 h-4 text-[#2563EB] border-gray-300 focus:ring-[#22D3EE] focus:ring-2"><span class="ml-3 text-[#0F172A] font-medium">' + urgency.label + '</span></label>';
-            });
-            
-            html += '</div>' + (state.errors.urgency ? '<p class="text-red-600 text-sm">' + state.errors.urgency + '</p>' : '');
-            
-            if (state.roiMetrics) {
-                html += '<div class="mt-8 p-5 rounded-xl border border-[#22D3EE]/30" style="background: linear-gradient(to bottom right, rgba(37, 99, 235, 0.05), rgba(34, 211, 238, 0.05));"><h3 class="text-sm font-semibold text-[#0F172A] uppercase tracking-wide mb-4">Your Manual Work Burn</h3><div class="space-y-3"><div><p class="text-xs text-[#6B7280] mb-1">Hours per month</p><p class="text-2xl font-semibold text-[#0F172A]">~' + state.roiMetrics.estimatedHoursPerMonth + ' hours</p></div><div><p class="text-xs text-[#6B7280] mb-1">Current monthly cost</p><p class="text-2xl font-semibold text-[#0F172A]">$' + state.roiMetrics.estimatedCostPerMonth.toLocaleString() + '</p></div><div class="pt-3 border-t border-gray-300"><p class="text-xs text-[#6B7280] mb-1">Potential monthly savings (70% automation)</p><p class="text-2xl font-semibold text-[#16A34A]">$' + state.roiMetrics.estimatedSavingsPerMonth.toLocaleString() + '</p></div></div></div>';
-            }
-            
-            html += '</div>';
-            return html;
-        }
-
-        function renderSuccessScreen() {
-            return '<div class="w-full max-w-2xl glass-card rounded-3xl px-8 py-12 text-center transition-content"><div class="mb-6"><div class="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center"><svg class="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg></div><h1 class="text-4xl font-semibold text-[#0F172A] mb-4">Thanks—got it.</h1><p class="text-lg text-[#0F172A] leading-relaxed max-w-xl mx-auto mb-8">Based on your answers, the next step is a 30-minute call to map a specific AI digital employee to the workflows you selected.</p></div><div class="space-y-4"><button onclick="window.open(\'https://calendly.com\', \'_blank\')" class="btn-primary text-white px-8 py-3 rounded-full font-medium text-base">Book your time</button><p class="text-sm text-[#6B7280]">A personalized AI Digital Employee Blueprint will be sent to your email address.</p></div></div>';
-        }
-
-        function render() {
-            const app = document.getElementById('app');
-
-            if (state.isComplete) {
-                app.innerHTML = renderSuccessScreen();
-                return;
-            }
-
-            const stepFunctions = [null, renderStep1, renderStep2, renderStep3, renderStep4, renderStep5, renderStep6];
-            const stepContent = stepFunctions[state.currentStep]();
-
-            let html = '<div class="w-full max-w-2xl glass-card rounded-3xl px-6 py-6 md:px-8 md:py-8 transition-content">';
-            html += renderProgressBar();
-            html += '<div class="mb-6"><p class="text-sm font-medium text-[#6B7280] mb-1">Step ' + state.currentStep + ' of ' + state.totalSteps + '</p></div>';
-            html += '<div class="mb-8">' + stepContent + '</div>';
-            html += '<div class="flex items-center justify-between pt-6 border-t border-gray-300">';
-            
-            if (state.currentStep > 1) {
-                html += '<button onclick="handleBack()" class="text-[#6B7280] hover:text-[#0F172A] transition-colors font-medium">← Back</button>';
-            } else {
-                html += '<div></div>';
-            }
-            
-            if (state.currentStep < state.totalSteps) {
-                html += '<button onclick="handleNext()" class="btn-primary text-white px-8 py-3 rounded-full font-medium text-base">Next →</button>';
-            } else {
-                html += '<button onclick="handleSubmit()" ' + (state.isSubmitting ? 'disabled' : '') + ' class="btn-primary text-white px-8 py-3 rounded-full font-medium text-base">' + (state.isSubmitting ? 'Submitting...' : 'Complete Diagnostic') + '</button>';
-            }
-            
-            html += '</div></div>';
-            app.innerHTML = html;
-
-            attachEventListeners();
-        }
-
-        function attachEventListeners() {
-            const workflows = document.getElementById('workflows');
-            if (workflows) {
-                workflows.addEventListener('input', function(e) {
-                    state.formData.workflows = e.target.value;
-                    delete state.errors.workflows;
-                });
-            }
-
-            const workflowHours = document.getElementById('workflowHours');
-            if (workflowHours) {
-                workflowHours.addEventListener('input', function(e) {
-                    state.formData.workflowHoursPerWeek = parseInt(e.target.value) || 10;
-                });
-            }
-
-            const avgHourlyRate = document.getElementById('avgHourlyRate');
-            if (avgHourlyRate) {
-                avgHourlyRate.addEventListener('input', function(e) {
-                    state.formData.avgHourlyRate = parseInt(e.target.value) || 50;
-                });
-            }
-
-            const futureState = document.getElementById('futureState');
-            if (futureState) {
-                futureState.addEventListener('input', function(e) {
-                    state.formData.futureState = e.target.value;
-                    delete state.errors.futureState;
-                });
-            }
-
-            const offerAndICP = document.getElementById('offerAndICP');
-            if (offerAndICP) {
-                offerAndICP.addEventListener('input', function(e) {
-                    state.formData.offerAndICP = e.target.value;
-                    delete state.errors.offerAndICP;
-                });
-            }
-
-            const roleInputs = document.querySelectorAll('input[name="role"]');
-            roleInputs.forEach(function(input) {
-                input.addEventListener('change', function(e) {
-                    state.formData.role = e.target.value;
-                    delete state.errors.role;
-                    render();
-                });
-            });
-
-            const companySizeInputs = document.querySelectorAll('input[name="companySize"]');
-            companySizeInputs.forEach(function(input) {
-                input.addEventListener('change', function(e) {
-                    state.formData.companySize = e.target.value;
-                    delete state.errors.companySize;
-                    render();
-                });
-            });
-
-            const urgencyInputs = document.querySelectorAll('input[name="urgency"]');
-            urgencyInputs.forEach(function(input) {
-                input.addEventListener('change', function(e) {
-                    state.formData.urgency = e.target.value;
-                    delete state.errors.urgency;
-                    render();
-                });
-            });
-        }
-
-        render();
-    </script>
+    const rootElement = document.getElementById('root');
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(<App />);
+  </script>
 </body>
 </html>
+```
