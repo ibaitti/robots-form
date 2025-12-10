@@ -1,577 +1,1358 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { ChevronRight, ChevronLeft, Check, Lock, AlertCircle, Clock, TrendingUp, Calendar } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pre-Call Qualification • ROBOTS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-/**
- * CONFIGURATION & CONSTANTS
- */
-const CONFIG = {
-  CALENDAR_URL: "https://cal.com/ibaitti",
-  API_URL: "/api/submit",
-  DEMO_MODE: true
-};
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-const AGENT_NAMES = ['Atlas', 'Nova', 'Relay', 'Helix', 'Circuit'];
+  <style>
+    :root {
+      --bg-page-start: #F4F5FB;
+      --bg-page-end: #E7F0FF;
+      --bg-card-glass: rgba(255,255,255,0.9);
+      --text-primary: #020617;
+      --text-secondary: #6B7280;
+      --text-tertiary: #9CA3AF;
+      --border-soft: rgba(148,163,184,0.35);
+      --border-strong: #E2E8F0;
+      --accent-cyan: #06B6D4;
+      --accent-gold: #F4C15D;
+      --danger: #DC2626;
+      --success: #16A34A;
 
-/**
- * TYPES
- */
-type FormValues = {
-  workflows: string;
-  hoursPerWeek: string;
-  vision90Day: string;
-  businessAndCustomer: string;
-  role: string;
-  companySize: string;
-  urgency: string;
-  agentName: string;
-};
-
-type StepConfig = {
-  id: number;
-  label: string;
-  title: string;
-  question: string;
-  isGold?: boolean;
-};
-
-const STEPS: StepConfig[] = [
-  { id: 1, label: 'Context', title: '01. Immediate workflows', question: 'If you had a digital employee that could handle 3–5 repetitive workflows in the next 30 days, which ones would you pick first?' },
-  { id: 2, label: 'Money Leaks', title: '02. 90-Day Vision', question: '90 days from now, if this works exactly as you want—what\'s the one thing you\'d love to be true about your business?', isGold: true },
-  { id: 3, label: 'Workload Map', title: '03. Business & Customer', question: 'What does your company sell, and who is your ideal customer?' },
-  { id: 4, label: 'Automation Fit', title: '04. Your Role', question: 'Which title best describes your role?' },
-  { id: 5, label: 'Automation Fit', title: '05. Company Size', question: 'How many people are in your organization?' },
-  { id: 6, label: 'ROI Preview', title: '06. Urgency', question: 'How critical is solving this problem right now?' },
-];
-
-/**
- * UI COMPONENTS
- */
-
-const Starfield = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let width = window.innerWidth;
-    let height = window.innerHeight;
-    canvas.width = width;
-    canvas.height = height;
-
-    const stars: { x: number; y: number; size: number; opacity: number; speed: number }[] = [];
-    const starCount = 150;
-
-    for (let i = 0; i < starCount; i++) {
-      stars.push({
-        x: Math.random() * width,
-        y: Math.random() * height * 0.6,
-        size: Math.random() * 2,
-        opacity: Math.random(),
-        speed: Math.random() * 0.2
-      });
+      --shadow-card: 0 16px 40px rgba(15,23,42,0.10);
+      --shadow-card-hover: 0 20px 60px rgba(15,23,42,0.14);
     }
 
-    const animate = () => {
-      ctx.clearRect(0, 0, width, height);
-      stars.forEach(star => {
-        ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity * 0.35})`;
-        ctx.beginPath();
-        ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-        ctx.fill();
-
-        star.y -= star.speed;
-        if (star.y < 0) star.y = height * 0.6;
-      });
-      requestAnimationFrame(animate);
-    };
-
-    animate();
-
-    const handleResize = () => {
-      width = window.innerWidth;
-      height = window.innerHeight;
-      canvas.width = width;
-      canvas.height = height;
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  return (
-    <canvas 
-      ref={canvasRef} 
-      className="fixed top-0 left-0 w-full h-[60vh] pointer-events-none z-0 opacity-60"
-    />
-  );
-};
-
-const Button = ({ 
-  children, variant = 'primary', className = '', loading, disabled, onClick 
-}: any) => {
-  const baseStyle = "transition-all duration-200 font-medium flex items-center justify-center gap-2 active:scale-95 disabled:active:scale-100 disabled:cursor-not-allowed";
-  
-  const variants = {
-    primary: `rounded-full bg-[#2563EB] text-white px-8 py-3.5 shadow-lg hover:shadow-blue-500/30 hover:bg-[#1d4ed8] disabled:bg-blue-300 font-heading tracking-wide`,
-    secondary: `bg-transparent border border-slate-200 text-slate-700 px-6 py-3 rounded-full hover:border-cyan-500 hover:bg-cyan-50/20 disabled:border-slate-100 disabled:text-slate-300 font-medium`
-  };
-
-  return (
-    <button 
-      onClick={onClick}
-      disabled={disabled || loading}
-      className={`${baseStyle} ${variants[variant]} ${className}`}
-    >
-      {loading ? (
-        <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-      ) : children}
-    </button>
-  );
-};
-
-/**
- * MAIN APP COMPONENT
- */
-export default function App() {
-  // 1. Force load fonts and define custom classes via style tag
-  useEffect(() => {
-    const link = document.createElement('link');
-    link.href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap";
-    link.rel = "stylesheet";
-    document.head.appendChild(link);
-  }, []);
-
-  const [step, setStep] = useState(0); 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState<FormValues>({
-    workflows: '',
-    hoursPerWeek: '',
-    vision90Day: '',
-    businessAndCustomer: '',
-    role: '',
-    companySize: '',
-    urgency: '',
-    agentName: 'Nova'
-  });
-
-  useEffect(() => {
-    const randomName = AGENT_NAMES[Math.floor(Math.random() * AGENT_NAMES.length)];
-    setFormData(prev => ({ ...prev, agentName: randomName }));
-  }, []);
-
-  const roi = useMemo(() => {
-    const hours = parseFloat(formData.hoursPerWeek) || 0;
-    const monthlyHours = hours * 4.33;
-    const loadedHourlyCost = 50;
-    const monthlyBurn = monthlyHours * loadedHourlyCost;
-    const automationRate = 0.7;
-    const savings = monthlyBurn * automationRate;
-    
-    return {
-      monthlyHours: Math.round(monthlyHours),
-      monthlyBurn: Math.round(monthlyBurn),
-      savings: Math.round(savings)
-    };
-  }, [formData.hoursPerWeek]);
-
-  const handleInputChange = (field: keyof FormValues, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    setError(null);
-  };
-
-  const validateStep = (currentStep: number) => {
-    switch (currentStep) {
-      case 1: return formData.workflows.length > 2 && formData.hoursPerWeek.length > 0;
-      case 2: return formData.vision90Day.length > 2;
-      case 3: return formData.businessAndCustomer.length > 2;
-      case 4: return !!formData.role;
-      case 5: return !!formData.companySize;
-      case 6: return !!formData.urgency;
-      default: return true;
+    * {
+      box-sizing: border-box;
     }
-  };
 
-  const handleNext = () => {
-    if (validateStep(step)) {
-      if (step === 6) {
-        handleSubmit();
-      } else {
-        setStep(prev => prev + 1);
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: var(--text-primary);
+      background: linear-gradient(135deg, var(--bg-page-start) 0%, var(--bg-page-end) 100%);
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+    }
+
+    .starfield {
+      position: fixed;
+      inset: 0;
+      height: 35vh;
+      pointer-events: none;
+      background-image:
+        radial-gradient(circle at 10% 10%, rgba(255,255,255,0.4) 0, rgba(255,255,255,0.4) 1px, transparent 2px),
+        radial-gradient(circle at 40% 30%, rgba(255,255,255,0.35) 0, rgba(255,255,255,0.35) 1px, transparent 2px),
+        radial-gradient(circle at 75% 15%, rgba(255,255,255,0.3) 0, rgba(255,255,255,0.3) 1px, transparent 2px);
+      background-repeat: no-repeat;
+      background-size: 400px 400px, 500px 500px, 600px 600px;
+      opacity: 0.75;
+      z-index: 0;
+    }
+
+    .page-shell {
+      position: relative;
+      width: 100%;
+      max-width: 900px;
+      padding: 24px 16px 32px;
+      margin: 0 auto;
+      min-height: 100vh;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .page-title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .page-title {
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      font-size: 22px;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .page-subtitle {
+      margin: 0;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .page-logo {
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      font-size: 13px;
+      letter-spacing: 0.16em;
+      font-weight: 600;
+      text-transform: uppercase;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.5);
+      background: rgba(255,255,255,0.9);
+      white-space: nowrap;
+    }
+
+    .card {
+      margin-top: 14px;
+      background: var(--bg-card-glass);
+      backdrop-filter: blur(16px);
+      border-radius: 22px;
+      border: 1px solid var(--border-soft);
+      box-shadow: var(--shadow-card);
+      padding: 18px 18px 14px;
+      transition: box-shadow 150ms ease, transform 150ms ease;
+    }
+
+    .card:hover {
+      box-shadow: var(--shadow-card-hover);
+      transform: translateY(-1px);
+    }
+
+    @media (min-width: 768px) {
+      .card {
+        padding: 22px 24px 16px;
       }
-    } else {
-      setError("Please fill out the required fields to continue.");
     }
-  };
 
-  const handleBack = () => {
-    if (step > 0) setStep(prev => prev - 1);
-  };
+    .card-top-strip {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
 
-  const handleSubmit = async () => {
-    setLoading(true);
-    const payload = {
-      ...formData,
-      hoursPerWeek: parseFloat(formData.hoursPerWeek),
-      roi: {
-        ...roi,
-        hourlyCost: 50,
-        automationRate: 0.7
+    .step-counter {
+      font-size: 11px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    .step-counter strong {
+      font-weight: 600;
+    }
+
+    .progress-container {
+      flex: 1;
+      height: 5px;
+      border-radius: 999px;
+      background: #E2E8F0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      box-shadow: 0 0 14px rgba(6,182,212,0.55);
+      transition: width 180ms ease, background 180ms ease;
+    }
+
+    .progress-fill-cyan {
+      background: var(--accent-cyan);
+    }
+
+    .progress-fill-gold {
+      background: linear-gradient(90deg, #FDE68A, #F4C15D);
+      box-shadow: 0 0 18px rgba(244,193,93,0.55);
+    }
+
+    .step-phase {
+      font-size: 11px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      position: relative;
+      padding-bottom: 1px;
+    }
+
+    .step-phase::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      height: 2px;
+      width: 20px;
+      background: var(--accent-cyan);
+      border-radius: 999px;
+    }
+
+    .step-phase-gold-dot::before {
+      content: "";
+      position: absolute;
+      right: -10px;
+      top: 2px;
+      width: 5px;
+      height: 5px;
+      border-radius: 999px;
+      background: var(--accent-gold);
+      box-shadow: 0 0 6px rgba(244,193,93,0.9);
+    }
+
+    .intro-card {
+      border-radius: 16px;
+      padding: 10px 12px;
+      border: 1px solid rgba(226,232,240,0.9);
+      background: rgba(248,250,252,0.9);
+      margin-bottom: 12px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .intro-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 4px;
+    }
+
+    .intro-list {
+      padding-left: 16px;
+      margin: 0;
+    }
+
+    .intro-list li {
+      margin-bottom: 2px;
+    }
+
+    .steps-container {
+      margin-top: 4px;
+      min-height: 230px;
+    }
+
+    .step-view {
+      display: none;
+    }
+
+    .step-view.active {
+      display: block;
+    }
+
+    .step-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+      margin-bottom: 4px;
+    }
+
+    .step-heading {
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      font-size: 18px;
+      font-weight: 500;
+      margin: 0 0 6px;
+    }
+
+    .step-question {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin: 0 0 10px;
+    }
+
+    .field-group {
+      margin-bottom: 12px;
+    }
+
+    label.field-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .field-hint {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      margin-bottom: 4px;
+    }
+
+    .input,
+    .textarea {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--border-strong);
+      padding: 8px 10px;
+      font-size: 13px;
+      font-family: inherit;
+      background: #F9FAFB;
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color 140ms ease, box-shadow 140ms ease, background 140ms ease;
+      resize: vertical;
+      min-height: 96px;
+    }
+
+    .input {
+      min-height: auto;
+    }
+
+    .input:focus,
+    .textarea:focus {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 0 1px rgba(6,182,212,0.6);
+      background: #ffffff;
+    }
+
+    .textarea-gold {
+      border-color: rgba(244,193,93,0.7);
+      box-shadow: 0 0 26px rgba(244,193,93,0.32);
+      background: #FFFBEB;
+    }
+
+    .textarea-gold:focus {
+      border-color: rgba(244,193,93,0.9);
+      box-shadow: 0 0 30px rgba(244,193,93,0.45);
+    }
+
+    .field-error {
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--danger);
+      min-height: 14px;
+    }
+
+    .radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .radio-option {
+      border-radius: 999px;
+      border: 1px solid var(--border-strong);
+      padding: 7px 10px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #ffffff;
+      cursor: pointer;
+      transition: border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
+    }
+
+    .radio-input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .radio-mark {
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border-strong);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .radio-mark-inner {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: transparent;
+    }
+
+    .radio-label-text {
+      flex: 1;
+    }
+
+    .radio-option.selected {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 0 1px rgba(6,182,212,0.35);
+      background: rgba(6,182,212,0.07);
+    }
+
+    .radio-option.selected .radio-mark {
+      border-color: var(--accent-cyan);
+    }
+
+    .radio-option.selected .radio-mark-inner {
+      background: var(--accent-cyan);
+    }
+
+    .radio-option:focus-within {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 0 1px rgba(6,182,212,0.6);
+    }
+
+    .roi-layout {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 10px;
+    }
+
+    @media (max-width: 720px) {
+      .roi-layout {
+        grid-template-columns: 1fr;
       }
-    };
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log("Simulating backend submission:", payload);
-      setStep(7);
-    } catch (err) {
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
     }
-  };
 
-  const currentStepConfig = STEPS.find(s => s.id === step);
-  const progressPercent = ((step) / 6) * 100;
+    .roi-card {
+      border-radius: 14px;
+      border: 1px solid var(--border-strong);
+      padding: 10px 11px;
+      background: #ffffff;
+      position: relative;
+      overflow: hidden;
+      font-size: 12px;
+    }
 
-  return (
-    <div className="min-h-screen font-body text-slate-800 relative overflow-x-hidden selection:bg-cyan-200 selection:text-cyan-900 bg-[#F8FAFC]">
-      {/* 2. Critical Font Definitions */}
-      <style>{`
-        .font-heading { font-family: 'Space Grotesk', sans-serif; }
-        .font-body { font-family: 'Inter', sans-serif; }
-        /* Smooth fade ins */
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-up { animation: fadeIn 0.5s ease-out forwards; }
-      `}</style>
+    .roi-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
 
-      {/* Backgrounds - Improved Gradient */}
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-blue-50 via-slate-50 to-white -z-20" />
-      <Starfield />
+    .roi-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+      gap: 6px 8px;
+    }
 
-      {/* Main Container */}
-      <div className="relative min-h-screen flex flex-col items-center justify-center p-4 py-12 md:py-20">
-        
-        {/* Header - Fixed Z-Index & Positioning */}
-        <header className="absolute top-0 left-0 right-0 w-full z-50 flex justify-center pt-6 pb-4">
-          <div className="w-full max-w-6xl px-6 flex justify-between items-center">
-            <div className="flex flex-col">
-              <h1 className="font-heading font-bold text-2xl tracking-tighter text-slate-900 leading-none">ROBOTS</h1>
-              <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase mt-1">AI Employees</span>
+    .roi-label {
+      color: var(--text-secondary);
+    }
+
+    .roi-value {
+      text-align: right;
+      font-weight: 500;
+    }
+
+    .roi-value-success {
+      color: var(--success);
+    }
+
+    .roi-note {
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+
+    .roi-cyan-bar {
+      position: absolute;
+      right: 10px;
+      bottom: 7px;
+      width: 70px;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--accent-cyan);
+      box-shadow: 0 0 10px rgba(6,182,212,0.8);
+    }
+
+    .wizard-footer {
+      margin-top: 14px;
+      padding-top: 9px;
+      border-top: 1px solid rgba(226,232,240,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .footer-left-note {
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+
+    .button-row {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border-radius: 999px;
+      padding: 9px 18px;
+      font-size: 13px;
+      font-weight: 500;
+      border: 1px solid transparent;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease, transform 60ms ease;
+      white-space: nowrap;
+      min-width: 84px;
+    }
+
+    .btn-primary {
+      background: #2563EB;
+      color: #ffffff;
+      border-color: transparent;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, #2563EB, #4F46E5);
+      box-shadow: 0 0 0 1px rgba(37,99,235,0.25);
+    }
+
+    .btn-primary:active:not(:disabled) {
+      background: #1D4ED8;
+      transform: scale(0.96);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: #0F172A;
+      border-color: #E2E8F0;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      border-color: var(--accent-cyan);
+      background: rgba(6,182,212,0.04);
+    }
+
+    .btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    .btn-primary:disabled {
+      background: #93C5FD;
+      color: #E5E7EB;
+    }
+
+    .global-error {
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--danger);
+      text-align: right;
+      min-height: 14px;
+    }
+
+    .trust-strip {
+      margin-top: 10px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .trust-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.45);
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(10px);
+    }
+
+    .trust-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 0 2px rgba(34,197,94,0.35);
+    }
+
+    .trust-meta {
+      color: var(--text-tertiary);
+    }
+
+    .footer-strip {
+      margin-top: 14px;
+      padding-top: 6px;
+      font-size: 11px;
+      color: var(--text-tertiary);
+      text-align: center;
+    }
+
+    .completion-screen {
+      display: none;
+      margin-top: 10px;
+    }
+
+    .completion-screen.active {
+      display: block;
+    }
+
+    .completion-header {
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      font-size: 19px;
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+
+    .completion-subtext {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+    }
+
+    .completion-recap {
+      border-radius: 14px;
+      border: 1px solid var(--border-strong);
+      padding: 9px 11px;
+      background: #ffffff;
+      font-size: 12px;
+      margin-bottom: 10px;
+    }
+
+    .completion-recap-title {
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .completion-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 2px;
+    }
+
+    .completion-label {
+      color: var(--text-secondary);
+    }
+
+    .completion-value {
+      font-weight: 500;
+      text-align: right;
+    }
+
+    .completion-value-success {
+      color: var(--success);
+    }
+
+    .agent-tag {
+      font-size: 11px;
+      margin-bottom: 6px;
+      color: var(--text-secondary);
+    }
+
+    .agent-name-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.7);
+      background: rgba(248,250,252,0.95);
+    }
+
+    .agent-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent-cyan);
+    }
+
+    a.link-cta {
+      text-decoration: none;
+      color: inherit;
+    }
+  </style>
+</head>
+<body>
+<div class="starfield"></div>
+
+<div class="page-shell">
+  <header class="page-header">
+    <div class="page-title-block">
+      <h1 class="page-title">Pre-Call Qualification • 6 steps</h1>
+      <p class="page-subtitle">6 short questions to see where an AI employee can replace manual work.</p>
+    </div>
+    <div class="page-logo">ROBOTS</div>
+  </header>
+
+  <main class="card" aria-live="polite">
+    <div class="card-top-strip">
+      <div class="step-counter">
+        Step <strong id="step-counter-current">1</strong> of <strong id="step-counter-total">6</strong>
+      </div>
+      <div class="progress-container" aria-hidden="true">
+        <div id="progress-bar-fill" class="progress-bar-fill progress-fill-cyan"></div>
+      </div>
+      <div id="step-phase-label" class="step-phase">Context</div>
+    </div>
+
+    <!-- How this works – only shown on Step 1 -->
+    <section id="intro-card" class="intro-card">
+      <div class="intro-label">How this works</div>
+      <ul class="intro-list">
+        <li>List 3–5 repetitive workflows that eat time.</li>
+        <li>We estimate burn and savings with an AI employee.</li>
+        <li>If it’s a fit, you’ll book a 30-minute mapping call.</li>
+      </ul>
+    </section>
+
+    <div id="wizard-container">
+      <div class="steps-container">
+        <!-- Step 1 -->
+        <section id="step-1" class="step-view active" aria-label="Step 1">
+          <div class="step-label">Context</div>
+          <h2 class="step-heading">01. Immediate workflows</h2>
+          <p class="step-question">
+            If a digital employee could take over 3–5 repetitive tasks in the next 30 days, what would you choose first?
+          </p>
+
+          <div class="field-group">
+            <label class="field-label" for="workflows">Repetitive workflows</label>
+            <div class="field-hint">Example: lead triage, follow-up emails, CRM updates.</div>
+            <textarea id="workflows" class="textarea" minlength="10" maxlength="2000"
+                      aria-describedby="error-workflows"></textarea>
+            <div id="error-workflows" class="field-error"></div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="hoursPerWeek">Hours per week on these workflows</label>
+            <div class="field-hint">Rough total across you and the team. &gt; 0 to see ROI.</div>
+            <input id="hoursPerWeek" class="input" type="number" inputmode="decimal" min="0" max="168" step="0.5"
+                   aria-describedby="error-hoursPerWeek" />
+            <div id="error-hoursPerWeek" class="field-error"></div>
+          </div>
+        </section>
+
+        <!-- Step 2 -->
+        <section id="step-2" class="step-view" aria-label="Step 2">
+          <div class="step-label">Money leaks</div>
+          <h2 class="step-heading">02. 90-day outcome</h2>
+          <p class="step-question">
+            In 90 days, if this works perfectly, what’s the one result you want?
+          </p>
+
+          <div class="field-group">
+            <label class="field-label" for="vision90Day">Your 90-day outcome</label>
+            <textarea id="vision90Day" class="textarea textarea-gold" minlength="10" maxlength="2000"
+                      aria-describedby="error-vision90Day"></textarea>
+            <div id="error-vision90Day" class="field-error"></div>
+          </div>
+        </section>
+
+        <!-- Step 3 -->
+        <section id="step-3" class="step-view" aria-label="Step 3">
+          <div class="step-label">Workload map</div>
+          <h2 class="step-heading">03. Business & customer</h2>
+          <p class="step-question">
+            What do you sell, and who’s your ideal customer?
+          </p>
+
+          <div class="field-group">
+            <label class="field-label" for="businessAndCustomer">Your business in one short paragraph</label>
+            <textarea id="businessAndCustomer" class="textarea" minlength="10" maxlength="2000"
+                      aria-describedby="error-businessAndCustomer"></textarea>
+            <div id="error-businessAndCustomer" class="field-error"></div>
+          </div>
+        </section>
+
+        <!-- Step 4 -->
+        <section id="step-4" class="step-view" aria-label="Step 4">
+          <div class="step-label">Automation fit</div>
+          <h2 class="step-heading">04. Your role</h2>
+          <p class="step-question">Which best describes your role?</p>
+
+          <div class="field-group">
+            <div class="radio-group" id="role-group" aria-describedby="error-role">
+              <label class="radio-option" data-value="founder_owner">
+                <input class="radio-input" type="radio" name="role" value="founder_owner" />
+                <span class="radio-mark"><span class="radio-mark-inner"></span></span>
+                <span class="radio-label-text">Founder / Owner</span>
+              </label>
+              <label class="radio-option" data-value="c_level_vp">
+                <input class="radio-input" type="radio" name="role" value="c_level_vp" />
+                <span class="radio-mark"><span class="radio-mark-inner"></span></span>
+                <span class="radio-label-text">C-Level / VP</span>
+              </label>
+              <label class="radio-option" data-value="operations_systems">
+                <input class="radio-input" type="radio" name="role" value="operations_systems" />
+                <span class="radio-mark"><span class="radio-mark-inner"></span></span>
+                <span class="radio-label-text">Operations / Systems</span>
+              </label>
+              <label class="radio-option" data-value="marketing_sales">
+                <input class="radio-input" type="radio" name="role" value="marketing_sales" />
+                <span class="radio-mark"><span class="radio-mark-inner"></span></span>
+                <span class="radio-label-text">Marketing / Sales</span>
+              </label>
+              <label class="radio-option" data-value="other">
+                <input class="radio-input" type="radio" name="role" value="other" />
+                <span class="radio-mark"><span class="radio-mark-inner"></span></span>
+                <span class="radio-label-text">Other</span>
+              </label>
             </div>
-            <div className="hidden md:flex items-center gap-4 bg-white/80 backdrop-blur-md px-5 py-2.5 rounded-full border border-white/50 shadow-sm ring-1 ring-slate-200/50">
-              <div className="flex items-center gap-2 text-xs font-semibold text-emerald-600">
-                <Lock size={12} strokeWidth={2.5} /> Secure
+            <div id="error-role" class="field-error"></div>
+          </div>
+        </section>
+
+        <!-- Step 5 -->
+        <section id="step-5" class="step-view" aria-label="Step 5">
+          <div class="step-label">Automation fit</div>
+          <h2 class="step-heading">05. Company size</h2>
+          <p class="step-question">How big is your company today?</p>
+
+          <div class="field-group">
+            <div class="radio-group" id="companySize-group" aria-describedby="error-companySize">
+              <label class="radio-option" data-value="1_5">
+                <input class="radio-input" type="radio" name="companySize" value="1_5" />
+                <span class="radio-mark"><span class="radio-mark-inner"></span></span>
+                <span class="radio-label-text">1–5</span>
+              </label>
+              <label class="radio-option" data-value="6_20">
+                <input class="radio-input" type="radio" name="companySize" value="6_20" />
+                <span class="radio-mark"><span class="radio-mark-inner"></span></span>
+                <span class="radio-label-text">6–20</span>
+              </label>
+              <label class="radio-option" data-value="21_50">
+                <input class="radio-input" type="radio" name="companySize" value="21_50" />
+                <span class="radio-mark"><span class="radio-mark-inner"></span></span>
+                <span class="radio-label-text">21–50</span>
+              </label>
+              <label class="radio-option" data-value="51_200">
+                <input class="radio-input" type="radio" name="companySize" value="51_200" />
+                <span class="radio-mark"><span class="radio-mark-inner"></span></span>
+                <span class="radio-label-text">51–200</span>
+              </label>
+              <label class="radio-option" data-value="200_plus">
+                <input class="radio-input" type="radio" name="companySize" value="200_plus" />
+                <span class="radio-mark"><span class="radio-mark-inner"></span></span>
+                <span class="radio-label-text">200+</span>
+              </label>
+            </div>
+            <div id="error-companySize" class="field-error"></div>
+          </div>
+        </section>
+
+        <!-- Step 6 -->
+        <section id="step-6" class="step-view" aria-label="Step 6">
+          <div class="step-label">ROI preview</div>
+          <h2 class="step-heading">06. Urgency & ROI</h2>
+          <p class="step-question">How urgent is it to get an AI employee in place?</p>
+
+          <div class="roi-layout">
+            <div>
+              <div class="field-group">
+                <label class="field-label">Timeline & urgency</label>
+                <div class="radio-group" id="urgency-group" aria-describedby="error-urgency">
+                  <label class="radio-option" data-value="info_gathering">
+                    <input class="radio-input" type="radio" name="urgency" value="info_gathering" />
+                    <span class="radio-mark"><span class="radio-mark-inner"></span></span>
+                    <span class="radio-label-text">Just researching / gathering info.</span>
+                  </label>
+                  <label class="radio-option" data-value="sometime">
+                    <input class="radio-input" type="radio" name="urgency" value="sometime" />
+                    <span class="radio-mark"><span class="radio-mark-inner"></span></span>
+                    <span class="radio-label-text">Open to this sometime this year.</span>
+                  </label>
+                  <label class="radio-option" data-value="critical_60_days">
+                    <input class="radio-input" type="radio" name="urgency" value="critical_60_days" />
+                    <span class="radio-mark"><span class="radio-mark-inner"></span></span>
+                    <span class="radio-label-text">Critical in the next 60 days.</span>
+                  </label>
+                </div>
+                <div id="error-urgency" class="field-error"></div>
               </div>
-              <div className="w-px h-3 bg-slate-300" />
-              <span className="text-xs font-medium text-slate-500">Time: &lt; 2:30</span>
+
+              <div class="field-group">
+                <label class="field-label" for="hourlyCost">Average hourly cost ($)</label>
+                <div class="field-hint">Fully loaded cost. Adjust if needed.</div>
+                <input id="hourlyCost" class="input" type="number" inputmode="decimal" min="10" max="500" step="5"
+                       aria-describedby="error-hourlyCost" />
+                <div id="error-hourlyCost" class="field-error"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="roi-card" aria-live="polite">
+                <div class="roi-title">Manual work burn (estimate)</div>
+                <div class="roi-grid">
+                  <div class="roi-label">Hours per week on workflows</div>
+                  <div id="roi-hoursPerWeek" class="roi-value">–</div>
+
+                  <div class="roi-label">Hours burnt / month</div>
+                  <div id="roi-monthlyHours" class="roi-value">–</div>
+
+                  <div class="roi-label">Money burnt / month</div>
+                  <div id="roi-monthlyBurn" class="roi-value">–</div>
+
+                  <div class="roi-label">Potential savings / month (70% automation)</div>
+                  <div id="roi-savings" class="roi-value roi-value-success">–</div>
+                </div>
+                <div id="roi-note-message" class="roi-note">
+                  Set hours &gt; 0 in Step 1 to see a concrete ROI preview.
+                </div>
+                <div class="roi-cyan-bar"></div>
+              </div>
             </div>
           </div>
-        </header>
+        </section>
+      </div>
 
-        {/* Content Card - Improved Glassmorphism & Shadow */}
-        <div className="w-full max-w-[680px] bg-white/70 backdrop-blur-xl rounded-[32px] border border-white/60 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.08)] ring-1 ring-white/50 relative overflow-hidden transition-all duration-500 my-8">
-          
-          {/* STEP 0: INTRO */}
-          {step === 0 && (
-            <div className="p-8 md:p-14 animate-fade-up">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50/80 border border-blue-100 text-blue-700 text-[11px] font-bold uppercase tracking-wider mb-6">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"/>
-                Pre-Call Qualification
-              </div>
-              
-              <h2 className="font-heading text-4xl md:text-[3.25rem] font-bold text-slate-900 leading-[1.05] tracking-tight mb-8">
-                Identify where an <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">AI employee</span> fits in your business.
-              </h2>
-              
-              <div className="grid gap-6 mb-12">
-                {[
-                  { title: "Map Workflows", desc: "Identify 3-5 repetitive tasks for immediate handoff." },
-                  { title: "Calculate ROI", desc: "See your manual work burn rate and potential savings." },
-                  { title: "Deployment Plan", desc: "Book a 30-minute mapping call to build your agent." }
-                ].map((item, idx) => (
-                  <div key={idx} className="flex gap-5 items-start group">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white text-slate-500 flex items-center justify-center font-heading font-bold border border-slate-200 shadow-sm group-hover:border-cyan-200 group-hover:text-cyan-600 group-hover:bg-cyan-50 transition-colors">
-                      {idx + 1}
-                    </div>
-                    <div>
-                      <h3 className="font-heading font-bold text-lg text-slate-900 mb-1">{item.title}</h3>
-                      <p className="text-slate-500 text-[15px] leading-relaxed font-body">{item.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button onClick={() => setStep(1)} className="w-full sm:w-auto shadow-blue-600/20">
-                  Start Qualification <ChevronRight size={18} />
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* STEPS 1-6: WIZARD */}
-          {step > 0 && step < 7 && currentStepConfig && (
-            <div className="flex flex-col h-full animate-fade-up">
-              
-              {/* Progress Strip */}
-              <div className="border-b border-slate-100/80 bg-white/40 px-8 py-5 flex flex-col gap-2.5">
-                <div className="flex justify-between items-end mb-1">
-                  <span className="text-sm font-medium text-slate-400 font-heading">
-                    Step <strong className="text-slate-900">{step}</strong> <span className="text-slate-300">/</span> 6
-                  </span>
-                  <span className={`text-[11px] font-bold tracking-wider uppercase border-b-2 ${currentStepConfig.isGold ? 'text-amber-500 border-amber-400' : 'text-cyan-600 border-cyan-400'} pb-0.5`}>
-                    {currentStepConfig.label}
-                  </span>
-                </div>
-                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full transition-all duration-500 ease-out rounded-full ${currentStepConfig.isGold ? 'bg-gradient-to-r from-amber-300 to-amber-500' : 'bg-cyan-500 shadow-[0_0_12px_rgba(6,182,212,0.4)]'}`}
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Step Content */}
-              <div className="p-8 md:p-12 flex-1 flex flex-col">
-                <h3 className="font-heading text-2xl md:text-3xl font-semibold text-slate-900 mb-10 leading-tight">
-                  {currentStepConfig.question}
-                </h3>
-
-                <div className="flex-1 space-y-6">
-                  {/* STEP 1 INPUTS */}
-                  {step === 1 && (
-                    <>
-                      <div className="relative group">
-                        <textarea 
-                          autoFocus
-                          placeholder="e.g. Data entry from emails to CRM, generating weekly reports, qualifying inbound leads..."
-                          className="w-full h-36 p-5 bg-white border border-slate-200 rounded-2xl focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 outline-none transition-all resize-none text-lg text-slate-700 placeholder:text-slate-300 font-body shadow-sm"
-                          value={formData.workflows}
-                          onChange={(e) => handleInputChange('workflows', e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-3">
-                        <label className="text-sm font-semibold text-slate-700 block ml-1">Hours/week spent on these workflows</label>
-                        <input 
-                          type="number"
-                          inputMode="decimal"
-                          placeholder="0"
-                          className="w-full p-5 bg-white border border-slate-200 rounded-2xl focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 outline-none transition-all font-heading text-xl text-slate-800 shadow-sm"
-                          value={formData.hoursPerWeek}
-                          onChange={(e) => handleInputChange('hoursPerWeek', e.target.value)}
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {/* STEP 2 INPUT (GOLD) */}
-                  {step === 2 && (
-                    <div className="relative">
-                      <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-200 to-yellow-400 rounded-2xl blur opacity-20" />
-                      <textarea 
-                        autoFocus
-                        placeholder="e.g. I want to double my lead velocity without hiring another SDR..."
-                        className="relative w-full h-52 p-6 bg-[#FFFCF5] border border-amber-200 rounded-2xl focus:border-amber-400 focus:shadow-[0_0_30px_rgba(245,158,11,0.1)] outline-none transition-all resize-none text-xl text-slate-800 font-body placeholder:text-amber-900/20"
-                        value={formData.vision90Day}
-                        onChange={(e) => handleInputChange('vision90Day', e.target.value)}
-                      />
-                    </div>
-                  )}
-
-                  {/* STEP 3 INPUT */}
-                  {step === 3 && (
-                    <textarea 
-                      autoFocus
-                      placeholder="Describe your product/service and who buys it..."
-                      className="w-full h-52 p-6 bg-white border border-slate-200 rounded-2xl focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 outline-none transition-all resize-none text-lg text-slate-700 shadow-sm"
-                      value={formData.businessAndCustomer}
-                      onChange={(e) => handleInputChange('businessAndCustomer', e.target.value)}
-                    />
-                  )}
-
-                  {/* STEP 4 RADIO */}
-                  {step === 4 && (
-                    <div className="grid gap-3">
-                      {[
-                        { val: 'founder_owner', label: 'Founder / Owner' },
-                        { val: 'c_level_vp', label: 'C-Level / VP' },
-                        { val: 'operations_systems', label: 'Operations / Systems' },
-                        { val: 'marketing_sales', label: 'Marketing / Sales' },
-                        { val: 'other', label: 'Other' }
-                      ].map((opt) => (
-                        <label key={opt.val} className={`group flex items-center p-5 border rounded-2xl cursor-pointer transition-all ${formData.role === opt.val ? 'border-cyan-500 bg-cyan-50/50 shadow-md ring-1 ring-cyan-500/20' : 'bg-white border-slate-200 hover:border-cyan-300 hover:shadow-sm'}`}>
-                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${formData.role === opt.val ? 'border-cyan-500' : 'border-slate-300 group-hover:border-cyan-400'}`}>
-                            {formData.role === opt.val && <div className="w-3 h-3 bg-cyan-500 rounded-full" />}
-                          </div>
-                          <input 
-                            type="radio" 
-                            name="role" 
-                            value={opt.val} 
-                            checked={formData.role === opt.val}
-                            onChange={(e) => handleInputChange('role', e.target.value)}
-                            className="hidden"
-                          />
-                          <span className={`ml-4 font-medium text-lg ${formData.role === opt.val ? 'text-slate-900' : 'text-slate-600'}`}>{opt.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* STEP 5 RADIO */}
-                  {step === 5 && (
-                    <div className="grid gap-3">
-                      {['1-5', '6-20', '21-50', '51-200', '200+'].map((opt) => {
-                        const val = opt.replace('+', '_plus').replace('-', '_'); // simple mapping
-                        return (
-                          <label key={val} className={`group flex items-center p-5 border rounded-2xl cursor-pointer transition-all ${formData.companySize === val ? 'border-cyan-500 bg-cyan-50/50 shadow-md ring-1 ring-cyan-500/20' : 'bg-white border-slate-200 hover:border-cyan-300 hover:shadow-sm'}`}>
-                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${formData.companySize === val ? 'border-cyan-500' : 'border-slate-300 group-hover:border-cyan-400'}`}>
-                              {formData.companySize === val && <div className="w-3 h-3 bg-cyan-500 rounded-full" />}
-                            </div>
-                            <input 
-                              type="radio" 
-                              name="companySize" 
-                              value={val}
-                              checked={formData.companySize === val}
-                              onChange={(e) => handleInputChange('companySize', e.target.value)}
-                              className="hidden"
-                            />
-                            <span className={`ml-4 font-medium text-lg ${formData.companySize === val ? 'text-slate-900' : 'text-slate-600'}`}>{opt} Employees</span>
-                          </label>
-                        )
-                      })}
-                    </div>
-                  )}
-
-                  {/* STEP 6 & ROI */}
-                  {step === 6 && (
-                    <div className="flex flex-col md:flex-row gap-8">
-                      <div className="flex-1 space-y-3">
-                        {[
-                          { val: 'info_gathering', label: 'Just gathering info', icon: <Clock size={20} /> },
-                          { val: 'sometime', label: 'Needed sometime soon', icon: <Calendar size={20} /> },
-                          { val: 'critical_60_days', label: 'Critical (Next 60 days)', icon: <AlertCircle size={20} /> }
-                        ].map((opt) => (
-                          <label key={opt.val} className={`group flex items-center p-5 border rounded-2xl cursor-pointer transition-all ${formData.urgency === opt.val ? 'border-cyan-500 bg-cyan-50/50 shadow-md ring-1 ring-cyan-500/20' : 'bg-white border-slate-200 hover:border-cyan-300 hover:shadow-sm'}`}>
-                             <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${formData.urgency === opt.val ? 'border-cyan-500' : 'border-slate-300 group-hover:border-cyan-400'}`}>
-                              {formData.urgency === opt.val && <div className="w-3 h-3 bg-cyan-500 rounded-full" />}
-                            </div>
-                            <input 
-                              type="radio" 
-                              name="urgency" 
-                              value={opt.val}
-                              checked={formData.urgency === opt.val}
-                              onChange={(e) => handleInputChange('urgency', e.target.value)}
-                              className="hidden"
-                            />
-                            <span className={`ml-4 font-medium text-lg ${formData.urgency === opt.val ? 'text-slate-900' : 'text-slate-600'}`}>
-                                {opt.label}
-                            </span>
-                          </label>
-                        ))}
-                      </div>
-
-                      {/* ROI CARD */}
-                      <div className="md:w-72 bg-gradient-to-br from-slate-50 to-white border border-slate-200 rounded-2xl p-6 flex flex-col gap-5 shadow-lg relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-500/5 rounded-full blur-2xl -mr-10 -mt-10" />
-                        
-                        <div className="flex items-center gap-2 text-cyan-700 font-heading font-bold text-xs uppercase tracking-wider">
-                           <TrendingUp size={14} strokeWidth={2.5} /> Manual Work Burn
-                        </div>
-                        
-                        <div className="space-y-1">
-                          <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Hours burnt / month</p>
-                          <p className="font-heading font-bold text-2xl text-slate-800">{roi.monthlyHours}h</p>
-                        </div>
-                        
-                        <div className="space-y-1">
-                          <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Est. Monthly Cost ($50/hr)</p>
-                          <p className="font-heading font-bold text-2xl text-slate-800">${roi.monthlyBurn.toLocaleString()}</p>
-                        </div>
-
-                        <div className="h-px bg-slate-200 w-full" />
-                        
-                        <div className="space-y-1">
-                          <p className="text-xs text-emerald-600 font-bold uppercase tracking-wide">Potential Savings (70%)</p>
-                          <p className="font-heading font-bold text-3xl text-emerald-600 tracking-tight">${roi.savings.toLocaleString()}<span className="text-base text-emerald-600/60 font-medium ml-1">/mo</span></p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Error Message */}
-                {error && (
-                  <div className="mt-6 p-4 bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl flex items-center gap-3 animate-in slide-in-from-top-2">
-                    <AlertCircle size={18} /> <span className="font-medium">{error}</span>
-                  </div>
-                )}
-
-                {/* Navigation */}
-                <div className="mt-10 flex justify-between items-center pt-8 border-t border-slate-100">
-                  <button 
-                    onClick={handleBack}
-                    className="text-slate-400 hover:text-slate-600 font-medium px-4 py-2 transition-colors flex items-center gap-2 group"
-                  >
-                    <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" /> Back
-                  </button>
-                  <Button onClick={handleNext} loading={loading} className="shadow-blue-600/20">
-                     {step === 6 ? 'View Results' : 'Next Step'} <ChevronRight size={18} className="ml-1" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 7: COMPLETION */}
-          {step === 7 && (
-            <div className="p-12 md:p-16 text-center animate-fade-up">
-              <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-[0_0_0_8px_rgba(16,185,129,0.1)] border border-emerald-100">
-                <Check size={40} strokeWidth={3} />
-              </div>
-              
-              <h2 className="font-heading text-4xl md:text-5xl font-bold text-slate-900 mb-6 tracking-tight">
-                Quietly retire manual work.
-              </h2>
-              
-              <p className="text-slate-500 text-xl leading-relaxed max-w-lg mx-auto mb-10 font-body">
-                We'll review your answers and map exactly where your new AI employee, <span className="font-bold text-cyan-600 bg-cyan-50 px-2 py-0.5 rounded-md border border-cyan-100">{formData.agentName}</span>, can take ownership. 
-              </p>
-
-              <div className="bg-gradient-to-b from-slate-50 to-white border border-slate-200 rounded-2xl p-6 mb-10 max-w-sm mx-auto shadow-sm">
-                 <div className="flex justify-between items-center mb-3">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Projected Savings</span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-100">High Confidence</span>
-                 </div>
-                 <div className="text-4xl font-heading font-bold text-slate-800 tracking-tight">
-                    ${(roi.savings * 12).toLocaleString()} <span className="text-base text-slate-400 font-medium">/yr</span>
-                 </div>
-              </div>
-
-              <div className="flex flex-col items-center gap-5">
-                <Button 
-                   onClick={() => window.open(CONFIG.CALENDAR_URL, '_blank')} 
-                   className="w-full sm:w-auto text-lg px-10 py-5 shadow-xl shadow-blue-900/10 hover:shadow-blue-900/20"
-                >
-                   Schedule Mapping Call <Calendar size={20} />
-                </Button>
-                <p className="text-sm text-slate-400 font-medium">
-                   Opens calendar for a 30-min strategy session.
-                </p>
-              </div>
-            </div>
-          )}
-          
+      <div class="wizard-footer">
+        <div class="footer-left-note" id="step-footer-note">
+          We’ll email a short blueprint after you submit.
         </div>
+        <div class="button-row">
+          <button id="back-button" type="button" class="btn btn-secondary">Back</button>
+          <button id="next-button" type="button" class="btn btn-primary">Next</button>
+          <button id="submit-button" type="button" class="btn btn-primary" style="display:none;">
+            <span id="submit-button-label">Submit answers</span>
+          </button>
+        </div>
+      </div>
 
-        {/* Footer */}
-        <footer className="mt-12 text-center text-slate-400 text-xs font-medium uppercase tracking-wider">
-          <p>© 2025 ROBOTS Inc. All systems operational.</p>
-        </footer>
+      <div id="global-error" class="global-error"></div>
+    </div>
 
+    <!-- Completion screen -->
+    <div id="completion-screen" class="completion-screen" aria-live="polite">
+      <div class="completion-header">
+        Quietly retire manual work, one digital employee at a time.
+      </div>
+      <div class="completion-subtext">
+        We’ll review your answers, map where a digital employee can take full ownership,
+        and outline a 90-day outcome instead of just listing tools.
+      </div>
+
+      <div class="agent-tag">
+        For this conversation, your AI employee is:
+        <span class="agent-name-pill">
+          <span class="agent-dot"></span>
+          <strong id="completion-agent-name"></strong>
+        </span>
+      </div>
+
+      <div class="completion-recap">
+        <div class="completion-recap-title">ROI snapshot</div>
+        <div class="completion-row">
+          <span class="completion-label">Hours/week on workflows</span>
+          <span id="completion-hoursPerWeek" class="completion-value">–</span>
+        </div>
+        <div class="completion-row">
+          <span class="completion-label">Hours burnt / month</span>
+          <span id="completion-monthlyHours" class="completion-value">–</span>
+        </div>
+        <div class="completion-row">
+          <span class="completion-label">Money burnt / month</span>
+          <span id="completion-monthlyBurn" class="completion-value">–</span>
+        </div>
+        <div class="completion-row">
+          <span class="completion-label">Potential savings / month</span>
+          <span id="completion-savings" class="completion-value completion-value-success">–</span>
+        </div>
+        <div class="completion-row">
+          <span class="completion-label">Company size</span>
+          <span id="completion-companySize" class="completion-value">–</span>
+        </div>
+        <div class="completion-row">
+          <span class="completion-label">Urgency</span>
+          <span id="completion-urgency" class="completion-value">–</span>
+        </div>
+      </div>
+
+      <div class="button-row" style="margin-top:8px;">
+        <a href="https://cal.com/ibaitti" target="_blank" rel="noopener noreferrer" class="link-cta">
+          <button type="button" class="btn btn-primary">
+            Schedule a call
+          </button>
+        </a>
+      </div>
+      <div class="footer-left-note" style="margin-top:4px; text-align:right;">
+        Opens a 30-minute mapping call in a new tab.
       </div>
     </div>
-  );
-}
+  </main>
+
+  <div class="trust-strip">
+    <div class="trust-pill">
+      <span class="trust-dot"></span>
+      <span>Connection secure • Encrypted</span>
+    </div>
+    <div class="trust-meta">Average completion &lt; 2:30</div>
+  </div>
+
+  <div class="footer-strip">© 2025 ROBOTS Inc. All systems operational.</div>
+</div>
+
+<script>
+  // ---- Config ----
+  const TOTAL_STEPS = 6;
+  const STEP_PHASES = [
+    'Context',
+    'Money Leaks',
+    'Workload Map',
+    'Automation Fit',
+    'ROI Preview',
+    'Call Setup'
+  ];
+
+  const AGENT_NAMES = ['Atlas', 'Nova', 'Relay', 'Helix', 'Circuit', 'Ion', 'Lucid', 'Vertex'];
+
+  const N8N_WEBHOOK_URL = 'https://zerogpt.app.n8n.cloud/webhook-test/form-one';
+  const CALENDAR_URL = 'https://cal.com/ibaitti';
+  const HOURLY_COST_DEFAULT = 50;
+  const HOURS_MAX = 168;
+  const HOURS_REALISTIC_WARNING_THRESHOLD = 100;
+  const HOURLY_MIN = 10;
+  const HOURLY_MAX = 500;
+  const AUTOMATION_RATE = 0.7;
+
+  // ---- Simple analytics stub ----
+  function trackEvent(name, data) {
+    console.log('[analytics]', name, data || {});
+  }
+
+  // ---- Utils ----
+  function generateUUIDv4() {
+    if (crypto && crypto.randomUUID) return crypto.randomUUID();
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function truncateText(str, maxLen) {
+    if (typeof str !== 'string') return '';
+    return str.length <= maxLen ? str : str.slice(0, maxLen);
+  }
+
+  function formatCurrency(num) {
+    if (isNaN(num)) return '–';
+    return '$' + num.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  }
+
+  function formatNumber(num) {
+    if (isNaN(num)) return '–';
+    return num.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  }
+
+  function mapCompanySizeLabel(value) {
+    switch (value) {
+      case '1_5': return '1–5';
+      case '6_20': return '6–20';
+      case '21_50': return '21–50';
+      case '51_200': return '51–200';
+      case '200_plus': return '200+';
+      default: return '–';
+    }
+  }
+
+  function mapUrgencyLabel(value) {
+    switch (value) {
+      case 'info_gathering': return 'Just researching / gathering info.';
+      case 'sometime': return 'Open to this sometime this year.';
+      case 'critical_60_days': return 'Critical in the next 60 days.';
+      default: return '–';
+    }
+  }
+
+  // ROI computation
+  function computeROI(hoursPerWeek, hourlyCost, automationRate) {
+    const h = Math.max(0, Number(hoursPerWeek) || 0);
+    const c = clamp(Number(hourlyCost) || HOURLY_COST_DEFAULT, HOURLY_MIN, HOURLY_MAX);
+    const a = automationRate;
+    const monthlyHours = h * 4.33;
+    const monthlyBurn = monthlyHours * c;
+    const savings = monthlyBurn * a;
+    return {
+      hoursPerWeek: h,
+      monthlyHours,
+      monthlyBurn,
+      savings,
+      hourlyCost: c,
+      automationRate: a
+    };
+  }
+
+  // ---- State ----
+  const state = {
+    currentStep: 1,
+    navLocked: false,
+    formValues: {
+      workflows: '',
+      hoursPerWeek: 0,
+      vision90Day: '',
+      businessAndCustomer: '',
+      role: '',
+      companySize: '',
+      urgency: '',
+      agentName: ''
+    },
+    roi: {
+      hoursPerWeek: 0,
+      monthlyHours: 0,
+      monthlyBurn: 0,
+      savings: 0,
+      hourlyCost: HOURLY_COST_DEFAULT,
+      automationRate: AUTOMATION_RATE
+    },
+    submissionId: null,
+    submitted: false,
+    submitting: false
+  };
+
+  // ---- DOM refs ----
+  const stepCounterCurrentEl = document.getElementById('step-counter-current');
+  const stepCounterTotalEl = document.getElementById('step-counter-total');
+  const progressBarFillEl = document.getElementById('progress-bar-fill');
+  const stepPhaseLabelEl = document.getElementById('step-phase-label');
+  const introCardEl = document.getElementById('intro-card');
+
+  const backButtonEl = document.getElementById('back-button');
+  const nextButtonEl = document.getElementById('next-button');
+  const submitButtonEl = document.getElementById('submit-button');
+  const submitButtonLabelEl = document.getElementById('submit-button-label');
+  const globalErrorEl = document.getElementById('global-error');
+
+  const wizardContainerEl = document.getElementById('wizard-container');
+  const completionScreenEl = document.getElementById('completion-screen');
+
+  const workflowsEl = document.getElementById('workflows');
+  const hoursPerWeekEl = document.getElementById('hoursPerWeek');
+  const vision90DayEl = document.getElementById('vision90Day');
+  const businessAndCustomerEl = document.getElementById('businessAndCustomer');
+  const hourlyCostEl = document.getElementById('hourlyCost');
+
+  const errorWorkflowsEl = document.getElementById('error-workflows');
+  const errorHoursPerWeekEl = document.getElementById('error-hoursPerWeek');
+  const errorVision90DayEl = document.getElementById('error-vision90Day');
+  const errorBusinessAndCustomerEl = document.getElementById('error-businessAndCustomer');
+  const errorRoleEl = document.getElementById('error-role');
+  const errorCompanySizeEl = document.getElementById('error-companySize');
+  const errorUrgencyEl = document.getElementById('error-urgency');
+  const errorHourlyCostEl = document.getElementById('error-hourlyCost');
+
+  const roiHoursPerWeekEl = document.getElementById('roi-hoursPerWeek');
+  const roiMonthlyHoursEl = document.getElementById('roi-monthlyHours');
+  const roiMonthlyBurnEl = document.getElementById('roi-monthlyBurn');
+  const roiSavingsEl = document.getElementById('roi-savings');
+  const roiNoteMessageEl = document.getElementById('roi-note-message');
+
+  const completionAgentNameEl = document.getElementById('completion-agent-name');
+  const completionHoursPerWeekEl = document.getElementById('completion-hoursPerWeek');
+  const completionMonthlyHoursEl = document.getElementById('completion-monthlyHours');
+  const completionMonthlyBurnEl = document.getElementById('completion-monthlyBurn');
+  const completionSavingsEl = document.getElementById('completion-savings');
+  const completionCompanySizeEl = document.getElementById('completion-companySize');
+  const completionUrgencyEl = document.getElementById('completion-urgency');
+
+  // ---- Init ----
+  function init() {
+    stepCounterTotalEl.textContent = String(TOTAL_STEPS);
+
+    // Assign agent name once
+    const agentName = AGENT_NAMES[Math.floor(Math.random() * AGENT_NAMES.length)];
+    state.formValues.agentName = agentName;
+    completionAgentNameEl.textContent = agentName;
+
+    // Defaults
+    hourlyCostEl.value = String(HOURLY_COST_DEFAULT);
+    state.roi.hourlyCost = HOURLY_COST_DEFAULT;
+
+    // Events
+    backButtonEl.addEventListener('click', () => goToStep(state.currentStep - 1));
+    nextButtonEl.addEventListener('click', onNext);
+    submitButtonEl.addEventListener('click', onSubmit);
+
+    workflowsEl.addEventListener('input', () => clearFieldError(errorWorkflowsEl));
+    hoursPerWeekEl.addEventListener('input', () => {
+      clearFieldError(errorHoursPerWeekEl);
+      syncHoursAndRecalculateROI();
+    });
+    vision90DayEl.addEventListener('input', () => clearFieldError(errorVision90DayEl));
+    businessAndCustomerEl.addEventListener('input', () => clearFieldError(errorBusinessAndCustomerEl));
+    hourlyCostEl.addEventListener('input', () => {
+      clearFieldError(errorHourlyCostEl);
+      syncHourlyCostAndRecalculateROI();
+    });
+
+    setupRadioGroup('role-group', 'role', errorRoleEl);
+    setupRadioGroup('companySize-group', 'companySize', errorCompanySizeEl);
+    setupRadioGroup('urgency-group', 'urgency', errorUrgencyEl);
+
+    updateStepView();
+    trackEvent('step_viewed', { stepIndex: state.currentStep });
+  }
+
+  function setupRadioGroup(groupId, stateKey, errorEl) {
+    const groupEl = document.getElementById(groupId);
+    if (!groupEl) return;
+
+    groupEl.addEventListener('click', (event) => {
+      const label = event.target.closest('.radio-option');
+      if (!label) return;
+      const value = label.getAttribute('data-value');
+      if (!value) return;
+
+      state.formValues[stateKey] = value;
+      clearFieldError(errorEl);
+
+      Array.from(groupEl.querySelectorAll('.radio-option')).forEach(opt => {
+        opt.classList.toggle('selected', opt === label);
+        const input = opt.querySelector('.radio-input');
+        if (input) input.checked = opt === label;
+      });
+    });
+  }
+
+  // ---- Step navigation ----
+  function onNext() {
+    if (state.navLocked) return;
+    state.navLocked = true;
+
+    if (!validateStep(state.currentStep, true)) {
+      state.navLocked = false;
+      return;
+    }
+    goToStep(state.currentStep + 1);
+
+    setTimeout(() => {
+      state.navLocked = false;
+    }, 180);
+  }
+
+  function goToStep(step) {
+    if (step < 1) step = 1;
+    if (step > TOTAL_STEPS) step = TOTAL_STEPS;
+    if (step === state.currentStep) return;
+
+    state.currentStep = step;
+    updateStepView();
+    trackEvent('step_viewed', { stepIndex: state.currentStep });
+  }
+
+  function updateStepView() {
+    const stepViews = document.querySelectorAll('.step-view');
+    stepViews.forEach(view => {
+      const id = view.id;
+      const n = parseInt(id.split('-')[1], 10);
+      view.classList.toggle('active', n === state.currentStep);
+    });
+
+    stepCounterCurrentEl.textContent = String(state.currentStep);
+    const phase = STEP_PHASES[state.currentStep - 1] || '';
+    stepPhaseLabelEl.textContent = phase;
+    stepPhaseLabelEl.classList.toggle('step-phase-gold-dot', state.currentStep === 2);
+
+    // Show "How this works" only on Step 1
+    introCardEl.style.display = state.currentStep === 1 ? 'block' : 'none';
+
+    const progressPct = (state.currentStep - 1) / (TOTAL_STEPS - 1) * 100;
+    progressBarFillEl.style.width = progressPct + '%';
+    if (state.currentStep === 2) {
+      progressBarFillEl.classList.remove('progress-fill-cyan');
+      progressBarFillEl.classList.add('progress-fill-gold');
+    } else {
+      progressBarFillEl.classList.add('progress-fill-cyan');
+      progressBarFillEl.classList.remove('progress-fill-gold');
+    }
+
+    backButtonEl.style.visibility = state.currentStep === 1 ? 'hidden' : 'visible';
+    nextButtonEl.style.display = state.currentStep === TOTAL_STEPS ? 'none' : 'inline-flex';
+    submitButtonEl.style.display = state.currentStep === TOTAL_STEPS ? 'inline-flex' : 'none';
+
+    globalErrorEl.textContent = '';
+
+    if (state.currentStep === 6) {
+      syncHoursAndRecalculateROI();
+      syncHourlyCostAndRecalculateROI();
+    }
+  }
+
+  // ---- Validation ----
+  function clearFieldError(el) {
+    if (el) el.textContent = '';
+    globalErrorEl.textContent = '';
+  }
+
+  function validateStep(stepNumber, focusOnError) {
+    let valid = true;
+    let firstInvalidElement = null;
+
+    if (stepNumber === 1) {
+      const workflows = workflowsEl.value.trim();
+      const hoursStr = hoursPerWeekEl.value.trim();
+      let hoursVal = parseFloat(hoursStr);
+
+      if (workflows.length < 10) {
+        errorWorkflowsEl.textContent = 'Add a bit more detail (10+ characters).';
+        valid = false;
+        if (!firstInvalidElement) firstInvalidElement = workflowsEl;
+      } else {
+        errorWorkflowsEl.textContent = '';
+      }
+
+      if (!hoursStr) {
+        errorHoursPerWeekEl.textContent = 'Enter an estimated hours/week.';
+        valid = false;
+        if (!firstInvalidElement) firstInvalidElement = hoursPerWeekEl;
+      } else {
+        if (isNaN(hoursVal) || hoursVal <= 0) {
+          errorHoursPerWeekEl.textContent = 'Hours/week must be greater than 0.';
+          valid = false;
+          if (!firstInvalidElement) firstInvalidElement = hoursPerWeekEl;
+        } else {
+          hoursVal = clamp(hoursVal, 0, HOURS_MAX);
+          hoursPerWeekEl.value = String(hoursVal);
+          errorHoursPerWeekEl.textContent = '';
+
+          if (hoursVal > HOURS_REALISTIC_WARNING_THRESHOLD) {
+            roiNoteMessageEl.textContent = 'This looks high. We capped extreme values for a realistic preview.';
+          }
+        }
+      }
+    } else if (stepNumber === 2) {
+      const vision = vision90DayEl.value.trim();
+      if (vision.length < 10) {
+        errorVision90DayEl.textContent = 'Give a short sentence about your ideal 90-day result.';
+        valid = false;
+        if (!firstInvalidElement) firstInvalidElement = vision90DayEl;
+      } else {
+        errorVision90DayEl.textContent = '';
+      }
+    } else if (stepNumber === 3) {
+      const bc = businessAndCustomerEl.value.trim();
+      if (bc.length < 10) {
+        errorBusinessAndCustomerEl.textContent = 'Quickly describe your product and buyer.';
+        valid = false;
+        if (!firstInvalidElement) firstInvalidElement = businessAndCustomerEl;
+      } else {
+        errorBusinessAndCustomerEl.textContent = '';
+      }
+    } else if (stepNumber === 4) {
+      if (!state.formValues.role) {
+        errorRoleEl.textContent = 'Pick the role that fits best.';
+        valid = false;
+      } else {
+        errorRoleEl.textContent = '';
+      }
+    } else if (stepNumber === 5) {
+      if (!state.formValues.companySize) {
+        errorCompanySizeEl.textContent = 'Select a company size.';
+        valid = false;
