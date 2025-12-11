@@ -2,859 +2,1488 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
     <title>ROBOTS [$] – AI Employee ROI Calculator</title>
 
-    <!-- CDNs -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script
-      crossorigin
-      src="https://unpkg.com/react@18/umd/react.production.min.js"
-    ></script>
-    <script
-      crossorigin
-      src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"
-    ></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
 
-    <style>
-      :root {
-        --bg-page-start: #f4f5fb;
-        --bg-page-end: #e7f0ff;
-        --bg-card-solid: #ffffff;
-        --bg-card-glass: rgba(255, 255, 255, 0.82);
-        --text-primary: #020617;
-        --text-secondary: #6b7280;
-        --text-tertiary: #9ca3af;
-        --border-soft: #e2e8f0;
-        --border-strong: #cbd5f5;
-        --cta-primary: #1f4fdb;
-        --cta-primary-hover: #1f4fdb;
-        --cta-primary-press: #1d4ed8;
-        --accent-cyan: #06b6d4;
-        --accent-cyan-soft: rgba(6, 182, 212, 0.1);
-        --danger: #ff3b30;
-        --warning: #f97316;
-        --success: #16a34a;
-      }
-      body {
-        background: linear-gradient(
-          135deg,
-          var(--bg-page-start) 0%,
-          var(--bg-page-end) 100%
-        );
-        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-          "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        color: var(--text-primary);
-        min-height: 100vh;
-      }
-    </style>
+    <!-- React 18 UMD -->
+    <script
+      crossorigin
+      src="https://unpkg.com/react@18/umd/react.development.js"
+    ></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+    ></script>
+
+    <!-- Framer Motion UMD -->
+    <script src="https://unpkg.com/framer-motion@10.18.0/dist/framer-motion.js"></script>
+
+    <!-- Babel Standalone (TypeScript + JSX) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   </head>
-  <body>
-    <div id="root"></div>
+  <body
+    class="min-h-screen antialiased"
+    style="background: linear-gradient(135deg, #F4F5FB 0%, #E7F0FF 100%);"
+  >
+    <div
+      id="root"
+      class="flex min-h-screen items-center justify-center px-4 py-10"
+    ></div>
 
     <script type="text/babel" data-presets="typescript,react">
       const { useState, useMemo, useEffect, useRef } = React;
-      const { motion, AnimatePresence } = window.Motion;
 
-      // --- CONFIG ---
-      const WEBHOOK_URL = "https://zerogpt.app.n8n.cloud/webhook-test/form-one";
-      const BOOKING_URL = "https://cal.com/ibaitti";
+      // Framer Motion UMD globals (covering different versions)
+      const motionLib: any =
+        (window as any).Motion ||
+        (window as any).framerMotion ||
+        (window as any)['framer-motion'] ||
+        {};
 
-      // --- TYPES ---
-      // (Implicit in JS, but structured as defined in spec)
+      const { motion, AnimatePresence } = motionLib;
 
-      // --- COMPONENTS ---
+      const WEBHOOK_URL = 'https://zerogpt.app.n8n.cloud/webhook-test/form-one';
+      const BOOKING_URL = 'https://cal.com/ibaitti';
 
-      const Button = ({
-        variant = "default",
-        size = "default",
-        className = "",
-        children,
-        disabled,
-        onClick,
-        type = "button",
-      }) => {
-        const baseStyles =
-          "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none";
+      const WEEKS_PER_MONTH = 4.33;
+      const WEEKS_PER_YEAR = 52;
+      const AUTOMATION_FACTOR = 0.7;
 
-        const variants = {
-          default: "bg-[#1F4FDB] text-white hover:bg-[#1D4ED8] shadow-sm",
-          destructive: "bg-red-500 text-white hover:bg-red-600",
-          outline:
-            "border border-slate-200 bg-transparent hover:bg-slate-100 text-slate-900",
-          secondary: "bg-slate-100 text-slate-900 hover:bg-slate-200",
-          ghost: "hover:bg-slate-100 hover:text-slate-900",
-          link: "text-[#1F4FDB] underline-offset-4 hover:underline",
-        };
-
-        const sizes = {
-          default: "h-10 py-2 px-4",
-          sm: "h-9 px-3 rounded-md",
-          lg: "h-11 px-8 rounded-md",
-          icon: "h-10 w-10",
-        };
-
-        return (
-          <motion.button
-            whileHover= scale: disabled ? 1 : 1.02 
-            whileTap= scale: disabled ? 1 : 0.98 
-            className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
-            onClick={onClick}
-            disabled={disabled}
-            type={type}
-          >
-            {children}
-          </motion.button>
-        );
+      type Answers = {
+        workflows: string[];
+        impactVision: string;
+        offer: string;
+        role: string;
+        teamSize: string;
+        timeline: string;
+        hourlyCost: string;
+        hoursPerWeek: string;
       };
 
-      const InputWithTags = ({
-        value = [],
-        onChange,
-        placeholder = "Type and press Enter...",
-        limit = 10,
-      }) => {
-        const [inputValue, setInputValue] = useState("");
+      type RoiResult = {
+        hourlyCost: number;
+        hoursPerWeek: number;
+        weeklyManual: number;
+        monthlyManual: number;
+        yearlyManual: number;
+        monthlySavings: number;
+        yearlySavings: number;
+        hoursSavedYear: number;
+      };
 
-        const handleKeyDown = (e) => {
-          if (e.key === "Enter" && inputValue.trim()) {
-            e.preventDefault();
-            if (value.length < limit && !value.includes(inputValue.trim())) {
-              onChange([...value, inputValue.trim()]);
-              setInputValue("");
+      const initialAnswers: Answers = {
+        workflows: [],
+        impactVision: '',
+        offer: '',
+        role: '',
+        teamSize: '',
+        timeline: '',
+        hourlyCost: '',
+        hoursPerWeek: '',
+      };
+
+      const stageLabels: Record<number, string> = {
+        0: 'Welcome',
+        1: 'Workflows',
+        2: 'Impact',
+        3: 'Offer & ICP',
+        4: 'Role',
+        5: 'Team size',
+        6: 'ROI preview',
+        7: 'Results',
+      };
+
+      const TOTAL_STEPS = 6;
+
+      function getProgressStep(stageIndex: number): number {
+        if (stageIndex <= 0) return 0;
+        if (stageIndex >= 6) return 6;
+        return stageIndex;
+      }
+
+      function computeRoi(hourlyCost: number, hoursPerWeek: number): RoiResult {
+        const safeHourly =
+          Number.isFinite(hourlyCost) && hourlyCost > 0 ? hourlyCost : 0;
+        const safeHours =
+          Number.isFinite(hoursPerWeek) && hoursPerWeek > 0 ? hoursPerWeek : 0;
+
+        const weeklyManual = safeHourly * safeHours;
+        const monthlyManual = weeklyManual * WEEKS_PER_MONTH;
+        const yearlyManual = weeklyManual * WEEKS_PER_YEAR;
+
+        const monthlySavings = monthlyManual * AUTOMATION_FACTOR;
+        const yearlySavings = yearlyManual * AUTOMATION_FACTOR;
+
+        const hoursSavedYear =
+          safeHours * WEEKS_PER_YEAR * AUTOMATION_FACTOR;
+
+        return {
+          hourlyCost: safeHourly,
+          hoursPerWeek: safeHours,
+          weeklyManual,
+          monthlyManual,
+          yearlyManual,
+          monthlySavings,
+          yearlySavings,
+          hoursSavedYear,
+        };
+      }
+
+      function computeRoiFromAnswers(answers: Answers): RoiResult {
+        const hourly = parseFloat(answers.hourlyCost || '0');
+        const hours = parseFloat(answers.hoursPerWeek || '0');
+        return computeRoi(hourly, hours);
+      }
+
+      function formatCurrency(amount: number): string {
+        if (!Number.isFinite(amount) || amount <= 0) return '$0';
+        try {
+          return amount.toLocaleString('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            maximumFractionDigits: 0,
+          });
+        } catch {
+          return `$${Math.round(amount)}`;
+        }
+      }
+
+      function formatNumber(amount: number): string {
+        if (!Number.isFinite(amount) || amount <= 0) return '0';
+        try {
+          return Math.round(amount).toLocaleString('en-US');
+        } catch {
+          return String(Math.round(amount));
+        }
+      }
+
+      function sendWebhook(stageIndex: number, answers: Answers) {
+        const roi = computeRoiFromAnswers(answers);
+        const payload = {
+          timestamp: new Date().toISOString(),
+          stageIndex,
+          stageLabel: stageLabels[stageIndex] || '',
+          answers,
+          roi,
+          meta: {
+            userAgent: navigator.userAgent,
+            path: window.location.pathname,
+            version: 'form-one-v1',
+          },
+        };
+
+        try {
+          fetch(WEBHOOK_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+            keepalive: true,
+          }).catch(() => {
+            // fail silently
+          });
+        } catch {
+          // fail silently
+        }
+      }
+
+      type ButtonVariant =
+        | 'primary'
+        | 'secondary'
+        | 'outline'
+        | 'ghost'
+        | 'link'
+        | 'destructive';
+
+      type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+        variant?: ButtonVariant;
+      };
+
+      const Button: React.FC<ButtonProps> = ({
+        variant = 'primary',
+        className = '',
+        ...props
+      }) => {
+        const base =
+          'inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-medium transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2 focus-visible:ring-offset-slate-100 disabled:cursor-not-allowed disabled:opacity-60';
+        const variants: Record<ButtonVariant, string> = {
+          primary:
+            'bg-[#1F4FDB] text-white shadow-md shadow-slate-900/20 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-900/25',
+          secondary:
+            'bg-slate-900 text-white shadow-sm shadow-slate-900/20 hover:-translate-y-0.5 hover:bg-slate-800',
+          outline:
+            'border border-[#CBD5F5] bg-white/80 text-slate-800 hover:bg-slate-50 hover:-translate-y-0.5',
+          ghost:
+            'text-slate-700 hover:bg-slate-100 hover:-translate-y-0.5',
+          link: 'text-[#1F4FDB] px-0 py-0 hover:underline',
+          destructive:
+            'bg-[#FF3B30] text-white shadow-md shadow-red-500/25 hover:bg-red-600 hover:-translate-y-0.5',
+        };
+
+        const classes = `${base} ${variants[variant]} ${className}`;
+
+        return <button className={classes} {...props} />;
+      };
+
+      type InputWithTagsProps = {
+        value: string[];
+        onChange: (value: string[]) => void;
+        placeholder?: string;
+      };
+
+      const InputWithTags: React.FC<InputWithTagsProps> = ({
+        value,
+        onChange,
+        placeholder,
+      }) => {
+        const [input, setInput] = useState('');
+
+        const handleKeyDown = (
+          event: React.KeyboardEvent<HTMLInputElement>
+        ) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            const next = input.trim();
+            if (!next) return;
+            if (!value.includes(next)) {
+              onChange([...value, next]);
             }
+            setInput('');
+          } else if (
+            event.key === 'Backspace' &&
+            !input &&
+            value.length > 0
+          ) {
+            onChange(value.slice(0, -1));
           }
         };
 
-        const removeTag = (tag) => {
-          onChange(value.filter((t) => t !== tag));
+        const removeTag = (tag: string) => {
+          onChange(value.filter((item) => item !== tag));
         };
 
         return (
-          <div className="space-y-3">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={value.length >= limit}
-              placeholder={
-                value.length >= limit ? "Limit reached" : placeholder
-              }
-              className="w-full bg-[#11111108] backdrop-blur-sm border border-slate-200 rounded-lg px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all"
-            />
+          <div className="rounded-2xl border border-[#E2E8F0] bg-white/70 px-3 py-2.5 shadow-inner shadow-slate-900/5 backdrop-blur">
             <div className="flex flex-wrap gap-2">
-              <AnimatePresence>
-                {value.map((tag) => (
-                  <motion.span
+              {AnimatePresence ? (
+                <AnimatePresence initial={false}>
+                  {value.map((tag) => (
+                    <motion.span
+                      key={tag}
+                      layout
+                      initial={{ opacity: 0, scale: 0.8, y: 4 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.8, y: -4 }}
+                      transition={{ duration: 0.16 }}
+                      className="inline-flex items-center gap-1 rounded-full bg-slate-900/5 px-2.5 py-1 text-xs font-medium text-slate-700"
+                    >
+                      <span>{tag}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeTag(tag)}
+                        className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] text-slate-500 hover:bg-slate-300/30"
+                      >
+                        ×
+                      </button>
+                    </motion.span>
+                  ))}
+                </AnimatePresence>
+              ) : (
+                value.map((tag) => (
+                  <span
                     key={tag}
-                    initial= opacity: 0, scale: 0.8 
-                    animate= opacity: 1, scale: 1 
-                    exit= opacity: 0, scale: 0.8 
-                    className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-slate-800 text-white shadow-sm"
+                    className="inline-flex items-center gap-1 rounded-full bg-slate-900/5 px-2.5 py-1 text-xs font-medium text-slate-700"
                   >
-                    {tag}
+                    <span>{tag}</span>
                     <button
+                      type="button"
                       onClick={() => removeTag(tag)}
-                      className="ml-2 hover:text-red-300 focus:outline-none"
+                      className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] text-slate-500 hover:bg-slate-300/30"
                     >
                       ×
                     </button>
-                  </motion.span>
-                ))}
+                  </span>
+                ))
+              )}
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={
+                  placeholder || 'Type a workflow and press Enter'
+                }
+                className="flex-1 min-w-[120px] border-none bg-transparent text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none"
+              />
+            </div>
+            <p className="mt-1 text-[11px] text-slate-400">
+              Press <span className="font-semibold text-slate-500">Enter</span>{' '}
+              to add each workflow.
+            </p>
+          </div>
+        );
+      };
+
+      type SelectOption = {
+        value: string;
+        label: string;
+        description?: string;
+      };
+
+      type SelectProps = {
+        placeholder?: string;
+        value: string;
+        onChange: (value: string) => void;
+        options: SelectOption[];
+      };
+
+      const Select: React.FC<SelectProps> = ({
+        placeholder = 'Select…',
+        value,
+        onChange,
+        options,
+      }) => {
+        const [open, setOpen] = useState(false);
+        const ref = useRef<HTMLDivElement | null>(null);
+
+        useEffect(() => {
+          if (!open) return;
+          const handleClick = (event: MouseEvent) => {
+            if (!ref.current) return;
+            if (!ref.current.contains(event.target as Node)) {
+              setOpen(false);
+            }
+          };
+          document.addEventListener('mousedown', handleClick);
+          return () => {
+            document.removeEventListener('mousedown', handleClick);
+          };
+        }, [open]);
+
+        const selected = options.find(
+          (option) => option.value === value
+        );
+
+        const toggleOpen = () => setOpen((prev) => !prev);
+
+        const handleSelect = (val: string) => {
+          onChange(val);
+          setOpen(false);
+        };
+
+        return (
+          <div className="relative" ref={ref}>
+            <button
+              type="button"
+              onClick={toggleOpen}
+              className="flex w-full items-center justify-between rounded-2xl border border-[#E2E8F0] bg-[#F9FAFB] px-3 py-2.5 text-left text-sm text-slate-800 shadow-inner shadow-slate-900/5 transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2 focus-visible:ring-offset-slate-100"
+            >
+              <span className={selected ? '' : 'text-slate-400'}>
+                {selected ? selected.label : placeholder}
+              </span>
+              <span className="ml-3 inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-300 text-[10px] text-slate-500">
+                ▼
+              </span>
+            </button>
+            {AnimatePresence ? (
+              <AnimatePresence>
+                {open && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 4, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 4, scale: 0.98 }}
+                    transition={{ duration: 0.18, ease: 'easeOut' }}
+                    className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white/95 shadow-xl shadow-slate-900/10 backdrop-blur"
+                  >
+                    <ul className="max-h-64 overflow-y-auto py-1">
+                      {options.map((option) => {
+                        const active = option.value === value;
+                        return (
+                          <li key={option.value}>
+                            <button
+                              type="button"
+                              onClick={() => handleSelect(option.value)}
+                              className={`flex w-full flex-col items-start px-3 py-2 text-left text-sm transition hover:bg-slate-50 ${
+                                active ? 'bg-slate-50' : ''
+                              }`}
+                            >
+                              <div className="flex w-full items-center justify-between gap-2">
+                                <span className="text-slate-800">
+                                  {option.label}
+                                </span>
+                                {active && (
+                                  <span className="rounded-full bg-[#06B6D4]/10 px-2 py-0.5 text-[11px] font-semibold text-[#06B6D4]">
+                                    Selected
+                                  </span>
+                                )}
+                              </div>
+                              {option.description && (
+                                <span className="mt-0.5 text-[11px] text-slate-500">
+                                  {option.description}
+                                </span>
+                              )}
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </motion.div>
+                )}
               </AnimatePresence>
+            ) : (
+              open && (
+                <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white/95 shadow-xl shadow-slate-900/10 backdrop-blur">
+                  <ul className="max-h-64 overflow-y-auto py-1">
+                    {options.map((option) => {
+                      const active = option.value === value;
+                      return (
+                        <li key={option.value}>
+                          <button
+                            type="button"
+                            onClick={() => handleSelect(option.value)}
+                            className={`flex w-full flex-col items-start px-3 py-2 text-left text-sm transition hover:bg-slate-50 ${
+                              active ? 'bg-slate-50' : ''
+                            }`}
+                          >
+                            <div className="flex w-full items-center justify-between gap-2">
+                              <span className="text-slate-800">
+                                {option.label}
+                              </span>
+                              {active && (
+                                <span className="rounded-full bg-[#06B6D4]/10 px-2 py-0.5 text-[11px] font-semibold text-[#06B6D4]">
+                                  Selected
+                                </span>
+                              )}
+                            </div>
+                            {option.description && (
+                              <span className="mt-0.5 text-[11px] text-slate-500">
+                                {option.description}
+                              </span>
+                            )}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )
+            )}
+          </div>
+        );
+      };
+
+      type InteractiveHoverButtonProps = {
+        href: string;
+        children: React.ReactNode;
+      };
+
+      const InteractiveHoverButton: React.FC<
+        InteractiveHoverButtonProps
+      > = ({ href, children }) => {
+        return (
+          <a href={href} target="_blank" rel="noreferrer">
+            <button
+              type="button"
+              className="group relative inline-flex items-center overflow-hidden rounded-full bg-[#1F4FDB] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-900/30 transition-transform duration-150 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2 focus-visible:ring-offset-slate-100"
+            >
+              <span className="pointer-events-none absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+              <span className="relative z-10 inline-flex items-center gap-2">
+                {children}
+                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/15 text-xs transition-transform duration-200 group-hover:translate-x-1">
+                  →
+                </span>
+              </span>
+            </button>
+          </a>
+        );
+      };
+
+      type HeaderProps = {
+        currentStage: number;
+      };
+
+      const Header: React.FC<HeaderProps> = ({ currentStage }) => {
+        const progressStep = getProgressStep(currentStage);
+        const progressPercentage =
+          progressStep <= 0
+            ? 0
+            : Math.min(100, (progressStep / TOTAL_STEPS) * 100);
+
+        return (
+          <header className="mb-6 space-y-4 md:mb-8">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-[#CBD5F5] bg-white/80 px-3 py-1 text-[11px] font-semibold tracking-[0.22em] text-slate-700 shadow-sm shadow-slate-900/5">
+                  <span>ROBOTS [$]</span>
+                  <span className="h-1 w-1 rounded-full bg-emerald-500" />
+                  <span className="text-slate-400">QUALIFIER</span>
+                </div>
+                <h1 className="mt-3 text-xl font-semibold text-slate-900 md:text-2xl">
+                  AI employees that work while you sleep
+                </h1>
+                <p className="mt-1 max-w-xl text-sm text-slate-500">
+                  Map where a digital employee plugs into your business and
+                  what it’s worth in saved time and payroll.
+                </p>
+              </div>
+              <div className="hidden text-xs text-right text-slate-500 md:block">
+                <p className="font-medium text-emerald-600">
+                  Encrypted session
+                </p>
+                <p className="text-[11px] text-slate-400">
+                  Answers stay between you and ROBOTS [$].
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-[11px] text-slate-500">
+                <span>
+                  {progressStep === 0
+                    ? 'Warm-up · Getting context'
+                    : `Step ${progressStep} of ${TOTAL_STEPS}`}
+                </span>
+                <span className="font-medium text-slate-600">
+                  {stageLabels[currentStage] || 'Qualification'}
+                </span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-slate-200/80">
+                {motion ? (
+                  <motion.div
+                    initial={false}
+                    animate={{ width: `${progressPercentage}%` }}
+                    transition={{ duration: 0.25, ease: 'easeOut' }}
+                    className="h-full rounded-full"
+                    style={{ backgroundColor: '#06B6D4' }}
+                  />
+                ) : (
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${progressPercentage}%`,
+                      backgroundColor: '#06B6D4',
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+          </header>
+        );
+      };
+
+      type StageProps = {
+        answers: Answers;
+        onUpdate: (patch: Partial<Answers>) => void;
+      };
+
+      const StageIntro: React.FC<{
+        onStart: () => void;
+        onSkipToRoi: () => void;
+      }> = ({ onStart, onSkipToRoi }) => {
+        return (
+          <div className="space-y-5">
+            <h2 className="text-lg font-semibold text-slate-900 md:text-xl">
+              In 6 questions, we’ll pinpoint where an AI employee fits in your
+              business.
+            </h2>
+            <p className="text-sm text-slate-600">
+              We’ll map the workflows it can own, quantify the time it frees
+              up, and calculate how fast it pays for itself.
+            </p>
+            <ul className="space-y-2 text-sm text-slate-600">
+              <li className="flex items-start gap-2">
+                <span className="mt-1 h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                <span>
+                  Estimate payroll savings based on your real numbers.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-1 h-1.5 w-1.5 rounded-full bg-sky-500" />
+                <span>
+                  See where a digital employee plugs into your current
+                  workflows.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-1 h-1.5 w-1.5 rounded-full bg-slate-400" />
+                <span>
+                  No emails, no spam. Just an instant ROI snapshot.
+                </span>
+              </li>
+            </ul>
+            <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center">
+              <Button
+                onClick={onStart}
+                variant="primary"
+                className="w-full sm:w-auto"
+              >
+                Start the 6-question scan
+              </Button>
+              <Button
+                onClick={onSkipToRoi}
+                variant="ghost"
+                className="w-full text-sm text-slate-600 sm:w-auto"
+              >
+                Skip to ROI only
+              </Button>
             </div>
           </div>
         );
       };
 
-      const InteractiveHoverButton = ({ text = "Book a call", onClick }) => {
-        return (
-          <motion.button
-            className="group relative w-32 h-10 rounded-full bg-[#1F4FDB] text-white overflow-hidden shadow-md"
-            onClick={onClick}
-            whileHover="hover"
-          >
-            <motion.div
-              className="absolute inset-0 flex items-center justify-center"
-              variants={{ hover: { x: -50, opacity: 0 } }}
-            >
-              <span className="mr-2">{text}</span>
-              <div className="w-1.5 h-1.5 rounded-full bg-cyan-300" />
-            </motion.div>
-            <motion.div
-              className="absolute inset-0 flex items-center justify-center bg-cyan-500"
-              initial= x: "100%" 
-              variants={{ hover: { x: 0 } }}
-              transition= type: "tween", ease: "easeInOut", duration: 0.3 
-            >
-              <span className="mr-1">{text}</span>
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M14 5l7 7m0 0l-7 7m7-7H3"
-                />
-              </svg>
-            </motion.div>
-          </motion.button>
-        );
-      };
-
-      const Select = ({
-        label,
-        options,
-        value,
-        onChange,
-        placeholder = "Select...",
+      const StageWorkflows: React.FC<StageProps> = ({
+        answers,
+        onUpdate,
       }) => {
-        const [isOpen, setIsOpen] = useState(false);
-        const containerRef = useRef(null);
-
-        useEffect(() => {
-          const handleClickOutside = (event) => {
-            if (
-              containerRef.current &&
-              !containerRef.current.contains(event.target)
-            ) {
-              setIsOpen(false);
-            }
-          };
-          document.addEventListener("mousedown", handleClickOutside);
-          return () =>
-            document.removeEventListener("mousedown", handleClickOutside);
-        }, []);
-
-        const selectedLabel = options.find((o) => o.value === value)?.label;
-
         return (
-          <div className="relative" ref={containerRef}>
-            <button
-              type="button"
-              onClick={() => setIsOpen(!isOpen)}
-              className={`w-full flex items-center justify-between bg-[#F9FAFB] border ${
-                isOpen ? "border-cyan-500 ring-1 ring-cyan-500" : "border-slate-200"
-              } rounded-lg px-4 py-3 text-left transition-all focus:outline-none`}
-            >
-              <span
-                className={selectedLabel ? "text-slate-900" : "text-slate-400"}
-              >
-                {selectedLabel || placeholder}
-              </span>
-              <motion.svg
-                animate= rotate: isOpen ? 180 : 0 
-                className="w-5 h-5 text-slate-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </motion.svg>
-            </button>
-            <AnimatePresence>
-              {isOpen && (
-                <motion.div
-                  initial= opacity: 0, y: -10 
-                  animate= opacity: 1, y: 4 
-                  exit= opacity: 0, y: -10 
-                  className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl max-h-60 overflow-auto"
-                >
-                  {options.map((option) => (
-                    <button
-                      key={option.value}
-                      onClick={() => {
-                        onChange(option.value);
-                        setIsOpen(false);
-                      }}
-                      className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-slate-50 text-sm text-slate-700"
-                    >
-                      <span>{option.label}</span>
-                      {value === option.value && (
-                        <span className="text-cyan-500">✓</span>
-                      )}
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-slate-900">
+              If you could deploy a digital employee to automate 3–5 repetitive
+              workflows, where would you start?
+            </h2>
+            <p className="text-sm text-slate-600">
+              Think about tasks that happen every day or every week and follow
+              a clear set of rules. For example: lead qualification, outbound
+              messages, reporting, follow-up, data entry.
+            </p>
+            <InputWithTags
+              value={answers.workflows}
+              onChange={(workflows) => onUpdate({ workflows })}
+              placeholder="e.g. Lead qualification, demo follow-up, weekly reporting"
+            />
           </div>
         );
       };
 
-      // --- APP LOGIC ---
-
-      const STEPS = [
-        "Intro",
-        "Context",
-        "Money Leaks",
-        "Workload Map",
-        "Automation Fit",
-        "Automation Fit", // Step 5 has same label group? Or distinct? Spec says "Step 4: Automation Fit", "Step 5: Automation Fit".
-        "ROI Preview",
-        "Results",
-      ];
-
-      const STEP_LABELS = {
-        1: "Context",
-        2: "Money Leaks",
-        3: "Workload Map",
-        4: "Automation Fit",
-        5: "ROI Preview", // Correcting label based on spec progress strip section
-        6: "Call Setup",
+      const StageImpact: React.FC<StageProps> = ({
+        answers,
+        onUpdate,
+      }) => {
+        return (
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-slate-900">
+              Ninety days from today, what is the single most impactful change
+              you want this AI employee to create?
+            </h2>
+            <p className="text-sm text-slate-600">
+              Describe the business outcome, not the feature. For example:
+              shorter response times, higher show-up rates, faster sales
+              cycles, more qualified opportunities.
+            </p>
+            <textarea
+              rows={4}
+              value={answers.impactVision}
+              onChange={(e) =>
+                onUpdate({ impactVision: e.target.value })
+              }
+              className="mt-1 w-full rounded-2xl border border-[#E2E8F0] bg-[#F9FAFB] px-3 py-2.5 text-sm text-slate-800 shadow-inner shadow-slate-900/5 placeholder:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2 focus-visible:ring-offset-slate-100"
+              placeholder="Example: Within 90 days, I want every inbound lead to be contacted in under 2 minutes with a tailored sequence that moves them to a booked call."
+            />
+          </div>
+        );
       };
 
-      const App = () => {
-        const [stage, setStage] = useState(0);
-        const [answers, setAnswers] = useState({
-          workflows: [],
-          impactVision: "",
-          offer: "",
-          role: null,
-          teamSize: null,
-          timeline: null,
-          hourlyCost: null,
-          hoursPerWeek: null,
-        });
-
-        // ROI Calculation
-        const roi = useMemo(() => {
-          const hourly = parseFloat(answers.hourlyCost) || 0;
-          const hours = parseFloat(answers.hoursPerWeek) || 0;
-          const weeklyManual = hourly * hours;
-          const monthlyManual = weeklyManual * 4.33;
-          const yearlyManual = weeklyManual * 52;
-          const automationFactor = 0.7;
-          const monthlySavings = monthlyManual * automationFactor;
-          const yearlySavings = yearlyManual * automationFactor;
-          const hoursSavedYear = Math.floor(hours * 52 * automationFactor);
-
-          return {
-            weeklyManual,
-            monthlyManual,
-            yearlyManual,
-            monthlySavings,
-            yearlySavings,
-            hoursSavedYear,
-          };
-        }, [answers.hourlyCost, answers.hoursPerWeek]);
-
-        // Webhook Effect
-        useEffect(() => {
-          const payload = {
-            timestamp: new Date().toISOString(),
-            stageIndex: stage,
-            stageLabel: STEPS[stage] || "unknown",
-            answers,
-            roi,
-            meta: {
-              userAgent: window.navigator.userAgent,
-              path: window.location.pathname,
-              version: "form-one-v1",
-            },
-          };
-
-          fetch(WEBHOOK_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          }).catch((err) => console.error("Webhook fail (silent)", err));
-        }, [stage]);
-
-        // Validation
-        const canProceed = () => {
-          switch (stage) {
-            case 1:
-              return answers.workflows.length > 0;
-            case 2:
-              return !!answers.impactVision;
-            case 3:
-              return !!answers.offer;
-            case 4:
-              return !!answers.role;
-            case 5:
-              return !!answers.teamSize;
-            case 6:
-              return (
-                !!answers.timeline && !!answers.hourlyCost && !!answers.hoursPerWeek
-              );
-            default:
-              return true;
-          }
-        };
-
-        const next = () => canProceed() && setStage((p) => p + 1);
-        const back = () => stage > 0 && setStage((p) => p - 1);
-
-        const formatMoney = (n) =>
-          "$" +
-          Math.floor(n)
-            .toString()
-            .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        const formatNum = (n) =>
-          Math.floor(n)
-            .toString()
-            .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-
-        // --- RENDER ---
+      const StageOffer: React.FC<StageProps> = ({
+        answers,
+        onUpdate,
+      }) => {
         return (
-          <div className="flex flex-col min-h-screen px-4 py-8 max-w-2xl mx-auto relative z-10">
-            {/* HEADER */}
-            <div className="mb-8 text-center sm:text-left">
-              <div className="flex flex-col sm:flex-row items-baseline gap-2 mb-4">
-                <h1 className="text-2xl font-bold tracking-tight">
-                  ROBOTS [$]
-                </h1>
-                <span className="text-slate-500 text-sm">
-                  AI employees that work while you sleep
-                </span>
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-slate-900">
+              What does your company sell, and who is your ideal customer?
+            </h2>
+            <p className="text-sm text-slate-600">
+              This helps us shape what your AI employee actually says and
+              does. Include your primary offer, price points, and the type of
+              customer you most want more of.
+            </p>
+            <textarea
+              rows={4}
+              value={answers.offer}
+              onChange={(e) => onUpdate({ offer: e.target.value })}
+              className="mt-1 w-full rounded-2xl border border-[#E2E8F0] bg-[#F9FAFB] px-3 py-2.5 text-sm text-slate-800 shadow-inner shadow-slate-900/5 placeholder:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2 focus-visible:ring-offset-slate-100"
+              placeholder="Example: We sell a performance-based outbound service to B2B SaaS founders in the US/UK doing $1–10M ARR."
+            />
+          </div>
+        );
+      };
+
+      const StageRole: React.FC<StageProps> = ({
+        answers,
+        onUpdate,
+      }) => {
+        const options: SelectOption[] = [
+          {
+            value: 'founder',
+            label: 'Founder / Owner',
+            description:
+              'You own the business and drive strategic decisions.',
+          },
+          {
+            value: 'c-level',
+            label: 'C-Level / VP',
+            description:
+              'Executive role with P&L or departmental ownership.',
+          },
+          {
+            value: 'ops',
+            label: 'Operations / Systems',
+            description:
+              'You design processes, systems, and internal tooling.',
+          },
+          {
+            value: 'marketing-sales',
+            label: 'Marketing / Sales',
+            description:
+              'You own pipeline, campaigns, or revenue targets.',
+          },
+          {
+            value: 'other',
+            label: 'Other',
+            description:
+              'You influence buying decisions but don’t fit the above.',
+          },
+        ];
+
+        return (
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-slate-900">
+              Which best describes your role in the company?
+            </h2>
+            <p className="text-sm text-slate-600">
+              This helps us understand how close you are to the workflows
+              this AI employee will touch.
+            </p>
+            <Select
+              value={answers.role}
+              onChange={(role) => onUpdate({ role })}
+              options={options}
+              placeholder="Select the role that fits you best"
+            />
+          </div>
+        );
+      };
+
+      const StageTeamSize: React.FC<StageProps> = ({
+        answers,
+        onUpdate,
+      }) => {
+        const options: SelectOption[] = [
+          {
+            value: '1',
+            label: 'Just me (solo)',
+            description: 'You are the business today.',
+          },
+          {
+            value: '2-10',
+            label: '2–10 employees',
+            description: 'Small team wearing multiple hats.',
+          },
+          {
+            value: '11-50',
+            label: '11–50 employees',
+            description: 'Growing team with emerging structure.',
+          },
+          {
+            value: '51-200',
+            label: '51–200 employees',
+            description: 'Established company with defined departments.',
+          },
+          {
+            value: '201-1000',
+            label: '201–1000 employees',
+            description: 'Scaling organization with complex workflows.',
+          },
+          {
+            value: '1000+',
+            label: '1000+ employees',
+            description: 'Enterprise scale operations.',
+          },
+        ];
+
+        return (
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-slate-900">
+              How many people are currently on your team?
+            </h2>
+            <p className="text-sm text-slate-600">
+              Team size helps us calibrate what a single AI employee can
+              take off your plate.
+            </p>
+            <Select
+              value={answers.teamSize}
+              onChange={(teamSize) => onUpdate({ teamSize })}
+              options={options}
+              placeholder="Select your company size"
+            />
+          </div>
+        );
+      };
+
+      const StageRoi: React.FC<StageProps> = ({
+        answers,
+        onUpdate,
+      }) => {
+        const roi = computeRoiFromAnswers(answers);
+        const hasValidInputs =
+          roi.hourlyCost > 0 && roi.hoursPerWeek > 0;
+
+        const timelineOptions: SelectOption[] = [
+          {
+            value: 'exploring',
+            label: 'Gathering info',
+            description:
+              'Just exploring what’s possible with AI employees.',
+          },
+          {
+            value: 'planning',
+            label: 'Planning deployment',
+            description:
+              'Expecting to implement in the next 90 days.',
+          },
+          {
+            value: 'critical-60',
+            label: 'Critical 60-day priority',
+            description:
+              'This is a near-term priority for the next 60 days.',
+          },
+        ];
+
+        return (
+          <div className="space-y-5">
+            <div className="space-y-3">
+              <h2 className="text-lg font-semibold text-slate-900">
+                What’s your timeline and what does this work cost you right
+                now?
+              </h2>
+              <p className="text-sm text-slate-600">
+                We’ll use your real numbers to estimate how much payroll a
+                single AI employee can replace or free up.
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Timeline
+                </p>
+                <Select
+                  value={answers.timeline}
+                  onChange={(timeline) => onUpdate({ timeline })}
+                  options={timelineOptions}
+                  placeholder="When do you want this live?"
+                />
               </div>
 
-              {/* Progress Bar (Stages 1-6) */}
-              {stage > 0 && stage < 7 && (
-                <div className="flex items-center gap-4 text-sm font-medium">
-                  <span className="text-slate-500 whitespace-nowrap">
-                    Step <span className="text-slate-900">{stage}</span> of 6
-                  </span>
-                  <div className="h-2 flex-1 bg-slate-200 rounded-full overflow-hidden">
-                    <motion.div
-                      className="h-full bg-cyan-500"
-                      initial= width: 0 
-                      animate={{ width: `${(stage / 6) * 100}%` }}
-                    />
+              <div className="space-y-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Current manual workload
+                </p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-medium text-slate-500">
+                      Blended hourly cost
+                    </label>
+                    <div className="relative">
+                      <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-xs text-slate-400">
+                        $
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        inputMode="decimal"
+                        value={answers.hourlyCost}
+                        onChange={(e) =>
+                          onUpdate({ hourlyCost: e.target.value })
+                        }
+                        className="w-full rounded-2xl border border-[#E2E8F0] bg-[#F9FAFB] py-2.5 pl-6 pr-3 text-sm text-slate-800 shadow-inner shadow-slate-900/5 placeholder:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2 focus-visible:ring-offset-slate-100"
+                        placeholder="e.g. 40"
+                      />
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Include salary, taxes, tools &amp; overhead.
+                    </p>
                   </div>
-                  <span className="text-slate-400 hidden sm:inline-block w-24 text-right">
-                    {STEP_LABELS[stage] || "Context"}
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-medium text-slate-500">
+                      Hours per week on these tasks
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      inputMode="decimal"
+                      value={answers.hoursPerWeek}
+                      onChange={(e) =>
+                        onUpdate({ hoursPerWeek: e.target.value })
+                      }
+                      className="w-full rounded-2xl border border-[#E2E8F0] bg-[#F9FAFB] px-3 py-2.5 text-sm text-slate-800 shadow-inner shadow-slate-900/5 placeholder:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2 focus-visible:ring-offset-slate-100"
+                      placeholder="e.g. 25"
+                    />
+                    <p className="text-[11px] text-slate-400">
+                      Across you and your team for the workflows above.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-1 rounded-2xl border border-dashed border-[#CBD5F5] bg-white/70 px-3 py-3 shadow-inner shadow-slate-900/5">
+              {hasValidInputs ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
+                    <span>
+                      Live preview · Based on your inputs so far
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-medium text-emerald-700">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      <span>Automation factor: 70%</span>
+                    </span>
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-3">
+                    <div className="rounded-xl bg-slate-50 px-3 py-2.5 text-xs">
+                      <p className="text-[11px] font-medium text-slate-500">
+                        Monthly savings
+                      </p>
+                      <p className="mt-1 text-base font-semibold text-slate-900">
+                        {formatCurrency(roi.monthlySavings)}
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-slate-500">
+                        vs. manual completion of these tasks.
+                      </p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 px-3 py-2.5 text-xs">
+                      <p className="text-[11px] font-medium text-slate-500">
+                        Yearly savings
+                      </p>
+                      <p className="mt-1 text-base font-semibold text-slate-900">
+                        {formatCurrency(roi.yearlySavings)}
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-slate-500">
+                        Assuming consistent workload across 12 months.
+                      </p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 px-3 py-2.5 text-xs">
+                      <p className="text-[11px] font-medium text-slate-500">
+                        Hours reclaimed / year
+                      </p>
+                      <p className="mt-1 text-base font-semibold text-slate-900">
+                        {formatNumber(roi.hoursSavedYear)} hrs
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-slate-500">
+                        Time your team can reallocate to higher leverage
+                        work.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-3 text-xs text-slate-500">
+                  <span>
+                    Enter your hourly cost and weekly hours to see a live
+                    savings preview.
+                  </span>
+                  <span className="hidden rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600 sm:inline">
+                    Real-time ROI, no email required.
                   </span>
                 </div>
               )}
             </div>
+          </div>
+        );
+      };
 
-            {/* MAIN CARD */}
-            <motion.div
-              layout
-              className="bg-white/80 backdrop-blur-md border border-slate-200/50 rounded-2xl shadow-xl p-6 sm:p-8 relative overflow-hidden"
-              initial= opacity: 0, y: 20 
-              animate= opacity: 1, y: 0 
-            >
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={stage}
-                  initial= opacity: 0, x: 20, scale: 0.97 
-                  animate= opacity: 1, x: 0, scale: 1 
-                  exit= opacity: 0, x: -20, scale: 0.97 
-                  transition= duration: 0.3 
-                >
-                  {/* STAGE 0: INTRO */}
-                  {stage === 0 && (
-                    <div className="space-y-6 text-center py-8">
-                      <h2 className="text-3xl font-bold text-slate-900">
-                        In 6 questions, we’ll pinpoint exactly where an AI
-                        employee will fit into your business.
-                      </h2>
-                      <p className="text-slate-600 text-lg">
-                        We'll map your workflows, quantify time & money leaks,
-                        and show potential savings.
-                      </p>
-                      <div className="flex flex-col gap-3 pt-4">
-                        <Button size="lg" onClick={next}>
-                          Start Assessment
-                        </Button>
-                        <Button variant="link" onClick={() => setStage(6)}>
-                          Skip to ROI Calculator
-                        </Button>
+      const StageResults: React.FC<{ answers: Answers }> = ({
+        answers,
+      }) => {
+        const roi = computeRoiFromAnswers(answers);
+
+        return (
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <h2 className="text-lg font-semibold text-slate-900 md:text-xl">
+                Here’s what a ROBOTS [$] AI employee looks like in your
+                numbers.
+              </h2>
+              <p className="text-sm text-slate-600">
+                Based on your inputs, automating these workflows with a digital
+                employee could unlock the following capacity and savings.
+              </p>
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-[minmax(0,1.4fr),minmax(0,1fr)]">
+              <div className="relative overflow-hidden rounded-2xl border border-[#CBD5F5] bg-gradient-to-br from-white/90 via-white/80 to-slate-50/80 p-5 shadow-lg shadow-slate-900/10">
+                <div className="pointer-events-none absolute -top-10 -right-16 h-40 w-40 rounded-full bg-[#1F4FDB]/10 blur-3xl" />
+                <div className="pointer-events-none absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-[#06B6D4]/10 blur-3xl" />
+
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Projected yearly impact
+                </p>
+                <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-2">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                      Payroll savings
+                    </p>
+                    <p className="text-2xl font-semibold text-slate-900 md:text-3xl">
+                      {formatCurrency(roi.yearlySavings)}
+                    </p>
+                  </div>
+                  <div className="h-9 w-px bg-slate-200/80" />
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                      Hours reclaimed
+                    </p>
+                    <p className="text-xl font-semibold text-slate-900 md:text-2xl">
+                      {formatNumber(roi.hoursSavedYear)} hrs / year
+                    </p>
+                  </div>
+                </div>
+
+                <p className="mt-2 text-xs text-slate-500">
+                  Assumes automating ~70% of the workload you described across{' '}
+                  {WEEKS_PER_YEAR} weeks per year.
+                </p>
+
+                <div className="mt-4 grid gap-3 text-xs md:grid-cols-2">
+                  <div className="rounded-xl border border-slate-200 bg-white/80 p-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                      Manual status quo
+                    </p>
+                    <div className="mt-2 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">
+                          Monthly cost
+                        </span>
+                        <span className="font-medium text-slate-900">
+                          {formatCurrency(roi.monthlyManual)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">
+                          Yearly cost
+                        </span>
+                        <span className="font-medium text-slate-900">
+                          {formatCurrency(roi.yearlyManual)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">
+                          Weekly spend
+                        </span>
+                        <span className="font-medium text-slate-900">
+                          {formatCurrency(roi.weeklyManual)}
+                        </span>
                       </div>
                     </div>
-                  )}
-
-                  {/* STAGE 1: CONTEXT */}
-                  {stage === 1 && (
-                    <div className="space-y-6">
-                      <div>
-                        <h2 className="text-xl font-semibold mb-2">
-                          If you could deploy a digital employee to automate 3–5
-                          repetitive workflows within the next 30 days, which
-                          processes would you prioritize?
-                        </h2>
-                        <p className="text-slate-500 text-sm">
-                          Focus on tasks that consume significant time, limit
-                          productivity, or prevent you from focusing on
-                          strategic priorities.
-                        </p>
+                  </div>
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                      With ROBOTS [$] automation
+                    </p>
+                    <div className="mt-2 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-600">
+                          Projected monthly savings
+                        </span>
+                        <span className="font-semibold text-emerald-700">
+                          {formatCurrency(roi.monthlySavings)}
+                        </span>
                       </div>
-                      <InputWithTags
-                        value={answers.workflows}
-                        onChange={(w) =>
-                          setAnswers({ ...answers, workflows: w })
-                        }
-                      />
-                      <div className="flex justify-between pt-4">
-                        <Button variant="ghost" onClick={back}>
-                          Back
-                        </Button>
-                        <Button onClick={next} disabled={!canProceed()}>
-                          Next
-                        </Button>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-600">
+                          Projected yearly savings
+                        </span>
+                        <span className="font-semibold text-emerald-700">
+                          {formatCurrency(roi.yearlySavings)}
+                        </span>
                       </div>
-                    </div>
-                  )}
-
-                  {/* STAGE 2: IMPACT */}
-                  {stage === 2 && (
-                    <div className="space-y-6">
-                      <div>
-                        <h2 className="text-xl font-semibold mb-2">
-                          90 days from today, this AI employee is operating
-                          seamlessly. What is the single most impactful change
-                          you will see in your business?
-                        </h2>
-                        <p className="text-slate-500 text-sm">
-                          1–2 sentences: e.g., more qualified leads, more
-                          appointments, reduced manual work, higher revenue,
-                          more focus time…
-                        </p>
-                      </div>
-                      <textarea
-                        className="w-full bg-[#F9FAFB] border border-slate-200 rounded-lg p-4 h-32 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-all"
-                        value={answers.impactVision}
-                        onChange={(e) =>
-                          setAnswers({
-                            ...answers,
-                            impactVision: e.target.value,
-                          })
-                        }
-                        placeholder="My business will..."
-                      />
-                      <div className="flex justify-between pt-4">
-                        <Button variant="ghost" onClick={back}>
-                          Back
-                        </Button>
-                        <Button onClick={next} disabled={!canProceed()}>
-                          Next
-                        </Button>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-600">
+                          Time freed for higher leverage work
+                        </span>
+                        <span className="font-semibold text-emerald-700">
+                          {formatNumber(roi.hoursSavedYear)} hrs
+                        </span>
                       </div>
                     </div>
-                  )}
-
-                  {/* STAGE 3: OFFER */}
-                  {stage === 3 && (
-                    <div className="space-y-6">
-                      <div>
-                        <h2 className="text-xl font-semibold mb-2">
-                          What does your company sell, and who is your ideal
-                          customer?
-                        </h2>
-                        <p className="text-slate-500 text-sm">
-                          1–2 sentences (for example: we help X achieve Y
-                          through Z).
-                        </p>
-                      </div>
-                      <textarea
-                        className="w-full bg-[#F9FAFB] border border-slate-200 rounded-lg p-4 h-32 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none transition-all"
-                        value={answers.offer}
-                        onChange={(e) =>
-                          setAnswers({ ...answers, offer: e.target.value })
-                        }
-                        placeholder="We help..."
-                      />
-                      <div className="flex justify-between pt-4">
-                        <Button variant="ghost" onClick={back}>
-                          Back
-                        </Button>
-                        <Button onClick={next} disabled={!canProceed()}>
-                          Next
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* STAGE 4: ROLE */}
-                  {stage === 4 && (
-                    <div className="space-y-6">
-                      <h2 className="text-xl font-semibold">
-                        Which best describes your role?
-                      </h2>
-                      <Select
-                        placeholder="Select your role..."
-                        value={answers.role}
-                        onChange={(val) =>
-                          setAnswers({ ...answers, role: val })
-                        }
-                        options={[
-                          {
-                            value: "founder",
-                            label:
-                              "Founder / Owner — You own the company and make key decisions.",
-                          },
-                          {
-                            value: "c-level",
-                            label:
-                              "C-Level / VP — Executive leadership with P&L or functional ownership.",
-                          },
-                          {
-                            value: "ops",
-                            label:
-                              "Operations / Systems — You’re responsible for processes, tooling, and systems.",
-                          },
-                          {
-                            value: "growth",
-                            label:
-                              "Marketing / Sales — You own pipeline, demand, and revenue motion.",
-                          },
-                          {
-                            value: "other",
-                            label:
-                              "Other — Consultant, advisor, individual contributor, etc.",
-                          },
-                        ]}
-                      />
-                      <div className="flex justify-between pt-4">
-                        <Button variant="ghost" onClick={back}>
-                          Back
-                        </Button>
-                        <Button onClick={next} disabled={!canProceed()}>
-                          Next
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* STAGE 5: TEAM SIZE */}
-                  {stage === 5 && (
-                    <div className="space-y-6">
-                      <h2 className="text-xl font-semibold">
-                        How many employees are in your company?
-                      </h2>
-                      <Select
-                        placeholder="Select team size..."
-                        value={answers.teamSize}
-                        onChange={(val) =>
-                          setAnswers({ ...answers, teamSize: val })
-                        }
-                        options={[
-                          { value: "1-5", label: "1–5" },
-                          { value: "6-20", label: "6–20" },
-                          { value: "21-50", label: "21–50" },
-                          { value: "51-200", label: "51–200" },
-                          { value: "200+", label: "200+" },
-                        ]}
-                      />
-                      <div className="flex justify-between pt-4">
-                        <Button variant="ghost" onClick={back}>
-                          Back
-                        </Button>
-                        <Button onClick={next} disabled={!canProceed()}>
-                          Next
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* STAGE 6: ROI INPUTS */}
-                  {stage === 6 && (
-                    <div className="space-y-6">
-                      <h2 className="text-xl font-semibold">
-                        Let's calculate your potential savings.
-                      </h2>
-
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-1">
-                            Timeline
-                          </label>
-                          <Select
-                            placeholder="Select timeline..."
-                            value={answers.timeline}
-                            onChange={(val) =>
-                              setAnswers({ ...answers, timeline: val })
-                            }
-                            options={[
-                              {
-                                value: "info",
-                                label: "Currently gathering information",
-                              },
-                              {
-                                value: "planning",
-                                label: "Planning to address this at some point",
-                              },
-                              {
-                                value: "critical",
-                                label:
-                                  "This is a critical priority that needs to be resolved within 60 days",
-                              },
-                            ]}
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">
-                              Avg Hourly Cost ($)
-                            </label>
-                            <input
-                              type="number"
-                              className="w-full bg-[#F9FAFB] border border-slate-200 rounded-lg p-3 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none"
-                              placeholder="e.g. 40"
-                              value={answers.hourlyCost || ""}
-                              onChange={(e) =>
-                                setAnswers({
-                                  ...answers,
-                                  hourlyCost: e.target.value,
-                                })
-                              }
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">
-                              Hours/Week Spent
-                            </label>
-                            <input
-                              type="number"
-                              className="w-full bg-[#F9FAFB] border border-slate-200 rounded-lg p-3 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none"
-                              placeholder="e.g. 10"
-                              value={answers.hoursPerWeek || ""}
-                              onChange={(e) =>
-                                setAnswers({
-                                  ...answers,
-                                  hoursPerWeek: e.target.value,
-                                })
-                              }
-                            />
-                          </div>
-                        </div>
-
-                        {/* Inline Preview */}
-                        <div className="bg-slate-50 rounded-lg p-4 border border-slate-100 flex justify-between items-center">
-                          <span className="text-sm text-slate-500">
-                            Est. Yearly Savings
-                          </span>
-                          <span className="font-mono font-bold text-green-600 text-lg">
-                            {formatMoney(roi.yearlySavings)}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex justify-between pt-4">
-                        <Button variant="ghost" onClick={back}>
-                          Back
-                        </Button>
-                        <Button onClick={next} disabled={!canProceed()}>
-                          Calculate my savings
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* STAGE 7: RESULTS */}
-                  {stage === 7 && (
-                    <div className="text-center space-y-8">
-                      <div>
-                        <h2 className="text-2xl font-bold text-slate-900">
-                          Based on your answers, here’s what your AI employee
-                          could realistically save.
-                        </h2>
-                        <p className="text-slate-500 mt-2">
-                          Assumes 70% automation of the targeted workflows.
-                        </p>
-                      </div>
-
-                      {/* HERO CARD */}
-                      <div className="relative bg-gradient-to-br from-white to-cyan-50 border border-cyan-100 rounded-2xl p-8 shadow-inner overflow-hidden">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-400/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
-                        
-                        <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                           <div className="text-left">
-                               <div className="text-slate-500 text-sm uppercase tracking-wide font-semibold mb-1">Projected Yearly Savings</div>
-                               <div className="text-5xl font-extrabold text-[#1F4FDB] tracking-tight">{formatMoney(roi.yearlySavings)}</div>
-                           </div>
-                           <div className="text-left md:text-right border-t md:border-t-0 md:border-l border-cyan-100 pt-4 md:pt-0 md:pl-8">
-                               <div className="text-slate-500 text-sm uppercase tracking-wide font-semibold mb-1">Hours Reclaimed / Year</div>
-                               <div className="text-4xl font-bold text-slate-800">{formatNum(roi.hoursSavedYear)}</div>
-                           </div>
-                        </div>
-                      </div>
-
-                      {/* DATA GRID */}
-                      <div className="grid grid-cols-2 gap-4 text-left text-sm">
-                        <div className="p-3 bg-slate-50 rounded-lg">
-                            <div className="text-slate-500">Manual Cost (Mo)</div>
-                            <div className="font-semibold">{formatMoney(roi.monthlyManual)}</div>
-                        </div>
-                         <div className="p-3 bg-slate-50 rounded-lg">
-                            <div className="text-slate-500">Manual Cost (Yr)</div>
-                            <div className="font-semibold">{formatMoney(roi.yearlyManual)}</div>
-                        </div>
-                        <div className="p-3 bg-green-50 rounded-lg border border-green-100">
-                            <div className="text-green-700">Savings (Mo)</div>
-                            <div className="font-bold text-green-700">{formatMoney(roi.monthlySavings)}</div>
-                        </div>
-                         <div className="p-3 bg-green-50 rounded-lg border border-green-100">
-                            <div className="text-green-700">Savings (Yr)</div>
-                            <div className="font-bold text-green-700">{formatMoney(roi.yearlySavings)}</div>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col items-center gap-4 pt-4">
-                        <InteractiveHoverButton
-                          onClick={() => window.open(BOOKING_URL, "_blank")}
-                        />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setStage(6)}
-                        >
-                          Adjust assumptions
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </motion.div>
-              </AnimatePresence>
-            </motion.div>
-
-            {/* FOOTER */}
-            <div className="mt-12 text-center space-y-4">
-              <div className="flex flex-wrap justify-center gap-2">
-                {[
-                  "Salesforce",
-                  "HubSpot",
-                  "Pipedrive",
-                  "Meta",
-                  "WhatsApp",
-                  "Google Workspace",
-                  "Apple Business",
-                ].map((badge) => (
-                  <span
-                    key={badge}
-                    className="px-2 py-1 bg-slate-100 text-slate-500 text-xs rounded-full"
-                  >
-                    {badge}
-                  </span>
-                ))}
+                  </div>
+                </div>
               </div>
-              <div className="flex flex-col sm:flex-row justify-center items-center gap-4 text-xs text-slate-400">
-                <span>● End-to-end encryption ensures your data remains secure.</span>
-                <span>© 2025 ROBOTS. All rights reserved.</span>
+
+              <div className="flex flex-col justify-between gap-4 rounded-2xl border border-[#E2E8F0] bg-white/85 p-4 shadow-md shadow-slate-900/10">
+                <div className="space-y-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    Next step
+                  </p>
+                  <p className="text-sm text-slate-600">
+                    We plug this into your actual workflows (CRM, ad
+                    platforms, messaging, calendar) and deploy an AI employee
+                    that runs them end-to-end.
+                  </p>
+                  <ul className="space-y-1.5 text-xs text-slate-600">
+                    <li className="flex items-start gap-2">
+                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-[#06B6D4]" />
+                      <span>
+                        Connects to tools like Salesforce, HubSpot, Pipedrive
+                        and Meta.
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-slate-500" />
+                      <span>
+                        Handles outreach, follow-up, routing and scheduling
+                        automatically.
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      <span>
+                        Operates 24/7 with deterministic logic you can audit
+                        and control.
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="space-y-3">
+                  <InteractiveHoverButton href={BOOKING_URL}>
+                    Book a call to deploy this
+                  </InteractiveHoverButton>
+                  <p className="text-[11px] text-slate-500">
+                    On the call we’ll validate these numbers against your
+                    actual tools and design a concrete deployment plan.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         );
       };
 
-      const root = ReactDOM.createRoot(document.getElementById("root"));
-      root.render(<App />);
+      function validateStage(
+        stageIndex: number,
+        answers: Answers
+      ): string | null {
+        if (stageIndex === 1) {
+          if (!answers.workflows || answers.workflows.length === 0) {
+            return 'Add at least one workflow you’d like to automate.';
+          }
+        } else if (stageIndex === 2) {
+          if (!answers.impactVision.trim()) {
+            return 'Describe the single most impactful change you want in the next 90 days.';
+          }
+        } else if (stageIndex === 3) {
+          if (!answers.offer.trim()) {
+            return 'Describe what you sell and who you sell it to.';
+          }
+        } else if (stageIndex === 4) {
+          if (!answers.role) {
+            return 'Select the role that best describes you.';
+          }
+        } else if (stageIndex === 5) {
+          if (!answers.teamSize) {
+            return 'Select your current team size.';
+          }
+        } else if (stageIndex === 6) {
+          if (!answers.timeline) {
+            return 'Select your implementation timeline.';
+          }
+          const hourly = parseFloat(answers.hourlyCost || '0');
+          const hours = parseFloat(answers.hoursPerWeek || '0');
+          if (!Number.isFinite(hourly) || hourly <= 0) {
+            return 'Enter a valid blended hourly cost.';
+          }
+          if (!Number.isFinite(hours) || hours <= 0) {
+            return 'Enter the weekly hours spent on these workflows.';
+          }
+        }
+
+        return null;
+      }
+
+      const App: React.FC = () => {
+        const [answers, setAnswers] =
+          useState<Answers>(initialAnswers);
+        const [currentStage, setCurrentStage] = useState<number>(0);
+        const [validationError, setValidationError] = useState<
+          string | null
+        >(null);
+
+        const roi = useMemo(
+          () => computeRoiFromAnswers(answers),
+          [answers.hourlyCost, answers.hoursPerWeek]
+        );
+
+        const updateAnswers = (patch: Partial<Answers>) => {
+          setAnswers((prev) => ({ ...prev, ...patch }));
+          if (validationError) setValidationError(null);
+        };
+
+        const goToStage = (nextStage: number) => {
+          if (nextStage === currentStage) return;
+          sendWebhook(nextStage, answers);
+          setCurrentStage(nextStage);
+          setValidationError(null);
+        };
+
+        const handleNext = () => {
+          if (currentStage === 0) {
+            goToStage(1);
+            return;
+          }
+
+          const error = validateStage(currentStage, answers);
+          if (error) {
+            setValidationError(error);
+            return;
+          }
+
+          if (currentStage === 6) {
+            goToStage(7);
+          } else if (currentStage < 7) {
+            goToStage(currentStage + 1);
+          }
+        };
+
+        const handleBack = () => {
+          if (currentStage === 0) return;
+          if (currentStage === 7) {
+            goToStage(6);
+            return;
+          }
+          goToStage(Math.max(0, currentStage - 1));
+        };
+
+        const handleAdjustAssumptions = () => {
+          goToStage(6);
+        };
+
+        const showBackButton = currentStage > 0;
+
+        return (
+          <div className="w-full max-w-2xl rounded-2xl border border-[#E2E8F0] bg-white/80 p-5 shadow-xl shadow-slate-900/10 backdrop-blur-xl md:p-7">
+            <Header currentStage={currentStage} />
+
+            <div className="min-h-[260px]">
+              {motion && AnimatePresence ? (
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={currentStage}
+                    initial={{
+                      opacity: 0,
+                      y: 12,
+                      scale: 0.97,
+                    }}
+                    animate={{
+                      opacity: 1,
+                      y: 0,
+                      scale: 1,
+                    }}
+                    exit={{
+                      opacity: 0,
+                      y: -12,
+                      scale: 0.97,
+                    }}
+                    transition={{ duration: 0.22, ease: 'easeOut' }}
+                    className="space-y-4"
+                  >
+                    {currentStage === 0 && (
+                      <StageIntro
+                        onStart={() => goToStage(1)}
+                        onSkipToRoi={() => goToStage(6)}
+                      />
+                    )}
+                    {currentStage === 1 && (
+                      <StageWorkflows
+                        answers={answers}
+                        onUpdate={updateAnswers}
+                      />
+                    )}
+                    {currentStage === 2 && (
+                      <StageImpact
+                        answers={answers}
+                        onUpdate={updateAnswers}
+                      />
+                    )}
+                    {currentStage === 3 && (
+                      <StageOffer
+                        answers={answers}
+                        onUpdate={updateAnswers}
+                      />
+                    )}
+                    {currentStage === 4 && (
+                      <StageRole
+                        answers={answers}
+                        onUpdate={updateAnswers}
+                      />
+                    )}
+                    {currentStage === 5 && (
+                      <StageTeamSize
+                        answers={answers}
+                        onUpdate={updateAnswers}
+                      />
+                    )}
+                    {currentStage === 6 && (
+                      <StageRoi
+                        answers={answers}
+                        onUpdate={updateAnswers}
+                      />
+                    )}
+                    {currentStage === 7 && (
+                      <StageResults answers={answers} />
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              ) : (
+                <div className="space-y-4">
+                  {currentStage === 0 && (
+                    <StageIntro
+                      onStart={() => goToStage(1)}
+                      onSkipToRoi={() => goToStage(6)}
+                    />
+                  )}
+                  {currentStage === 1 && (
+                    <StageWorkflows
+                      answers={answers}
+                      onUpdate={updateAnswers}
+                    />
+                  )}
+                  {currentStage === 2 && (
+                    <StageImpact
+                      answers={answers}
+                      onUpdate={updateAnswers}
+                    />
+                  )}
+                  {currentStage === 3 && (
+                    <StageOffer
+                      answers={answers}
+                      onUpdate={updateAnswers}
+                    />
+                  )}
+                  {currentStage === 4 && (
+                    <StageRole
+                      answers={answers}
+                      onUpdate={updateAnswers}
+                    />
+                  )}
+                  {currentStage === 5 && (
+                    <StageTeamSize
+                      answers={answers}
+                      onUpdate={updateAnswers}
+                    />
+                  )}
+                  {currentStage === 6 && (
+                    <StageRoi
+                      answers={answers}
+                      onUpdate={updateAnswers}
+                    />
+                  )}
+                  {currentStage === 7 && (
+                    <StageResults answers={answers} />
+                  )}
+                </div>
+              )}
+            </div>
+
+            {validationError && (
+              <div className="mt-4 rounded-xl border border-[#FF3B30]/40 bg-[#FF3B30]/5 px-3 py-2.5 text-xs text-[#FF3B30]">
+                {validationError}
+              </div>
+            )}
+
+            <div className="mt-5 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-[10px] font-semibold text-slate-600">
+                  ROI
+                </span>
+                <span>
+                  Projected yearly savings:{' '}
+                  <span className="font-semibold text-slate-800">
+                    {formatCurrency(roi.yearlySavings)}
+                  </span>
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                {currentStage === 7 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="hidden text-xs sm:inline-flex"
+                    onClick={handleAdjustAssumptions}
+                  >
+                    Adjust assumptions
+                  </Button>
+                )}
+                {showBackButton && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="text-xs text-slate-600"
+                    onClick={handleBack}
+                  >
+                    Back
+                  </Button>
+                )}
+                {currentStage < 7 && (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    className="text-xs sm:text-sm"
+                    onClick={handleNext}
+                  >
+                    {currentStage === 6
+                      ? 'Calculate my savings'
+                      : 'Next'}
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <footer className="mt-6 border-t border-slate-200/70 pt-4">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className="space-y-1 text-[11px] text-slate-500">
+                  <p>
+                    End-to-end encryption. Your data is processed securely
+                    and never sold.
+                  </p>
+                  <p>© 2025 ROBOTS [$]. All rights reserved.</p>
+                </div>
+                <div className="flex flex-wrap gap-2 text-[10px] font-medium text-slate-500">
+                  {[
+                    'Salesforce',
+                    'HubSpot',
+                    'Pipedrive',
+                    'Meta',
+                    'WhatsApp',
+                    'Google Workspace',
+                    'Apple Business',
+                  ].map((name) => (
+                    <span
+                      key={name}
+                      className="rounded-full border border-slate-300 bg-white/70 px-2.5 py-1 shadow-sm shadow-slate-900/5"
+                    >
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </footer>
+          </div>
+        );
+      };
+
+      const rootElement = document.getElementById('root');
+      if (rootElement) {
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(<App />);
+      }
     </script>
   </body>
 </html>
