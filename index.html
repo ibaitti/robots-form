@@ -1,740 +1,1056 @@
-<!DOCTYPE html>
-<head>
-  <meta charset="UTF-8">
-  <title>Pre-Call Qualification • ROBOTS</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+import React, { useEffect, useState } from "react";
 
-  <!-- Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+type RoleOption =
+  | "Founder/Owner"
+  | "C-Level/VP"
+  | "Operations/Systems"
+  | "Marketing/Sales"
+  | "Other";
 
-  <style>
-    :root {
-      /* Page background: deep, futuristic */
-      --bg-page-start: #020617;
-      --bg-page-end:   #05091a;
+type CompanySizeOption = "1-5" | "6-20" | "21-50" | "51-200" | "200+ employees";
 
-      /* Cards */
-      --bg-card-solid: #050a1f;
-      --bg-card-glass: rgba(7, 12, 36, 0.82);
+type TimelineOption =
+  | "Gathering information"
+  | "Planning to address"
+  | "Critical priority within 60 days";
 
-      /* Text */
-      --text-primary:   #f9faff;
-      --text-secondary: #c7d0e8;
-      --text-tertiary:  #7e88b2;
-      --text-muted:     #5c678f;
+interface FormData {
+  workflows: string;
+  expectedImpact90Days: string;
+  companyDescription: string;
+  userRole: RoleOption | "";
+  companySize: CompanySizeOption | "";
+  implementationTimeline: TimelineOption | "";
+}
 
-      /* Borders */
-      --border-soft:   #1a2440;
-      --border-strong: #3a4b7a;
+interface RoiResult {
+  estimatedAffectedEmployees: number;
+  hoursSavedPerEmployeePerWeek: number;
+  weeklyHoursSaved: number;
+  monthlyHoursSaved: number;
+  blendedHourlyRate: number;
+  weeklyCostSavings: number;
+  monthlyCostSavings: number;
+  savings90Days: number;
+  adjustedSavings90Days: number;
+  savings12Months: number;
+  adjustedSavings12Months: number;
+  urgencyMultiplier: number;
+  manualCost90Days: number;
+  optimizedCost90Days: number;
+}
 
-      /* Brand / luxury accents */
-      --accent-gold:     #f5b544;
-      --accent-electric: #3be4c6;
+type ToastType = "error" | "success";
 
-      /* Backwards-compat with old names */
-      --accent-cyan:      var(--accent-electric);
-      --accent-cyan-soft: rgba(59,228,198,0.12);
+interface ToastState {
+  type: ToastType;
+  message: string;
+}
 
-      /* Primary CTA */
-      --cta-primary:        #f5b544;
-      --cta-primary-hover:  #f8c56b;
-      --cta-primary-press:  #d89a2f;
-      --cta-primary-text:   #091018;
+const TOTAL_STEPS = 8;
+const WEBHOOK_URL =
+  "https://zerogpt.app.n8n.cloud/webhook-test/form-one";
 
-      /* Secondary CTA */
-      --cta-secondary:         transparent;
-      --cta-secondary-border:  #3be4c6;
-      --cta-secondary-text:    #e0fdf8;
-      --cta-secondary-hover:   rgba(59, 228, 198, 0.08);
+const initialFormData: FormData = {
+  workflows: "",
+  expectedImpact90Days: "",
+  companyDescription: "",
+  userRole: "",
+  companySize: "",
+  implementationTimeline: "",
+};
 
-      /* Inputs */
-      --input-bg:             rgba(9, 13, 32, 0.95);
-      --input-border:         #293556;
-      --input-border-focus:   #3be4c6;
-      --input-text:           #f9faff;
-      --input-placeholder:    #6b769c;
-      --input-error-border:   #ff4d6a;
+const AnimatedCounter: React.FC<{
+  value: number;
+  prefix?: string;
+  durationMs?: number;
+  decimals?: number;
+}> = ({ value, prefix = "", durationMs = 900, decimals = 0 }) => {
+  const [displayValue, setDisplayValue] = useState(0);
 
-      /* Status */
-      --danger:        #ff4d6a;
-      --danger-soft:   rgba(255, 77, 106, 0.12);
-      --warning:       #ffc857;
-      --warning-soft:  rgba(255, 200, 87, 0.12);
-      --success:       #2cd380;
-      --success-soft:  rgba(44, 211, 128, 0.12);
-      --info:          #3bb5ff;
-      --info-soft:     rgba(59, 181, 255, 0.12);
+  useEffect(() => {
+    let start: number | null = null;
+    const from = 0;
+    const to = value;
+    const duration = durationMs;
 
-      /* Shadows + focus */
-      --shadow-soft:   0 18px 45px rgba(0, 0, 0, 0.55);
-      --shadow-strong: 0 24px 70px rgba(0, 0, 0, 0.75);
-      --focus-ring:    0 0 0 1px #050a1f, 0 0 0 2px #3be4c6;
+    let frameId: number;
 
-      /* Misc */
-      --chip-bg:       rgba(12, 18, 52, 0.9);
-      --chip-border:   #293556;
-      --chip-text:     #c7d0e8;
+    const step = (timestamp: number) => {
+      if (start === null) start = timestamp;
+      const progress = Math.min((timestamp - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3); // ease-out
+      const current = from + (to - from) * eased;
+      setDisplayValue(current);
+      if (progress < 1) {
+        frameId = requestAnimationFrame(step);
+      }
+    };
 
-      --divider-subtle: rgba(255, 255, 255, 0.05);
-      --divider-strong: rgba(255, 255, 255, 0.12);
+    frameId = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frameId);
+  }, [value, durationMs]);
+
+  const formatted = displayValue.toLocaleString(undefined, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+
+  return <span>{prefix}{formatted}</span>;
+};
+
+const App: React.FC = () => {
+  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof FormData, string>>
+  >({});
+  const [roiResult, setRoiResult] = useState<RoiResult | null>(null);
+  const [toast, setToast] = useState<ToastState | null>(null);
+  const [hasSentWebhook, setHasSentWebhook] = useState(false);
+
+  // Auto-hide toast
+  useEffect(() => {
+    if (!toast) return;
+    const id = window.setTimeout(() => setToast(null), 5000);
+    return () => window.clearTimeout(id);
+  }, [toast]);
+
+  const updateField = <K extends keyof FormData>(
+    key: K,
+    value: FormData[K]
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+    // Clear error for this field when the user modifies it
+    setErrors((prev) => {
+      const { [key]: _removed, ...rest } = prev;
+      return rest;
+    });
+  };
+
+  const isStepValid = (step: number): boolean => {
+    const trimmedWorkflows = formData.workflows.trim();
+    const trimmedImpact = formData.expectedImpact90Days.trim();
+    const trimmedCompany = formData.companyDescription.trim();
+
+    switch (step) {
+      case 1:
+        return true;
+      case 2:
+        return trimmedWorkflows.length >= 20;
+      case 3:
+        return trimmedImpact.length >= 20;
+      case 4:
+        return trimmedCompany.length >= 30;
+      case 5:
+        return !!formData.userRole;
+      case 6:
+        return !!formData.companySize;
+      case 7:
+        return !!formData.implementationTimeline;
+      case 8:
+        return true;
+      default:
+        return false;
     }
+  };
 
-    * {
-      box-sizing: border-box;
-    }
+  const validateStep = (step: number): boolean => {
+    const newErrors: Partial<Record<keyof FormData, string>> = {};
+    const trimmedWorkflows = formData.workflows.trim();
+    const trimmedImpact = formData.expectedImpact90Days.trim();
+    const trimmedCompany = formData.companyDescription.trim();
 
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-    }
-
-    body {
-      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      color: var(--text-secondary);
-      background: linear-gradient(135deg, var(--bg-page-start) 0%, var(--bg-page-end) 100%);
-      display: flex;
-      justify-content: center;
-      align-items: stretch;
-    }
-
-    .starfield {
-      position: fixed;
-      inset: 0;
-      height: 35vh;
-      pointer-events: none;
-      background-image:
-        radial-gradient(circle at 10% 10%, rgba(255,255,255,0.4) 0, rgba(255,255,255,0.4) 1px, transparent 2px),
-        radial-gradient(circle at 40% 30%, rgba(255,255,255,0.35) 0, rgba(255,255,255,0.35) 1px, transparent 2px),
-        radial-gradient(circle at 75% 15%, rgba(255,255,255,0.3) 0, rgba(255,255,255,0.3) 1px, transparent 2px);
-      background-repeat: no-repeat;
-      background-size: 400px 400px, 500px 500px, 600px 600px;
-      opacity: 0.75;
-      z-index: 0;
-    }
-
-    .page-shell {
-      position: relative;
-      width: 100%;
-      max-width: 900px;
-      padding: 24px 16px 32px;
-      margin: 0 auto;
-      min-height: 100vh;
-      z-index: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .page-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-
-    .page-title-block {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .page-title {
-      font-family: 'Space Grotesk', system-ui, sans-serif;
-      font-size: 22px;
-      font-weight: 600;
-      margin: 0;
-      color: var(--text-primary);
-    }
-
-    .page-subtitle {
-      margin: 0;
-      font-size: 13px;
-      color: var(--text-secondary);
-    }
-
-    .page-logo {
-      font-family: 'Space Grotesk', system-ui, sans-serif;
-      font-size: 13px;
-      letter-spacing: 0.16em;
-      font-weight: 600;
-      text-transform: uppercase;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid var(--border-soft);
-      background: rgba(7, 12, 36, 0.95);
-      color: var(--text-secondary);
-      white-space: nowrap;
-    }
-
-    .card {
-      margin-top: 14px;
-      background: var(--bg-card-glass);
-      backdrop-filter: blur(16px);
-      border-radius: 22px;
-      border: 1px solid var(--border-soft);
-      box-shadow: var(--shadow-soft);
-      padding: 18px 18px 14px;
-      transition: box-shadow 150ms ease, transform 150ms ease;
-    }
-
-    .card:hover {
-      box-shadow: var(--shadow-strong);
-      transform: translateY(-1px);
-    }
-
-    @media (min-width: 768px) {
-      .card {
-        padding: 22px 24px 16px;
+    if (step === 2) {
+      if (!trimmedWorkflows) {
+        newErrors.workflows = "This field is required.";
+      } else if (trimmedWorkflows.length < 20) {
+        newErrors.workflows = "Minimum 20 characters required.";
       }
     }
 
-    .card-top-strip {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 14px;
-    }
-
-    .step-counter {
-      font-size: 11px;
-      color: var(--text-secondary);
-      white-space: nowrap;
-    }
-
-    .step-counter strong {
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .progress-container {
-      flex: 1;
-      height: 5px;
-      border-radius: 999px;
-      background: var(--divider-subtle);
-      overflow: hidden;
-      position: relative;
-    }
-
-    .progress-bar-fill {
-      height: 100%;
-      width: 0%;
-      border-radius: 999px;
-      box-shadow: 0 0 14px rgba(59,228,198,0.55);
-      transition: width 180ms ease, background 180ms ease;
-    }
-
-    .progress-fill-cyan {
-      background: var(--accent-electric);
-    }
-
-    .progress-fill-gold {
-      background: linear-gradient(90deg, #fde68a, #f4c15d);
-      box-shadow: 0 0 18px rgba(244,193,93,0.55);
-    }
-
-    .step-phase {
-      font-size: 11px;
-      color: var(--text-secondary);
-      white-space: nowrap;
-      position: relative;
-      padding-bottom: 1px;
-    }
-
-    .step-phase::after {
-      content: "";
-      position: absolute;
-      left: 0;
-      bottom: 0;
-      height: 2px;
-      width: 20px;
-      background: var(--accent-electric);
-      border-radius: 999px;
-    }
-
-    .step-phase-gold-dot::before {
-      content: "";
-      position: absolute;
-      right: -10px;
-      top: 2px;
-      width: 5px;
-      height: 5px;
-      border-radius: 999px;
-      background: var(--accent-gold);
-      box-shadow: 0 0 6px rgba(244,193,93,0.9);
-    }
-
-    .intro-card {
-      border-radius: 16px;
-      padding: 10px 12px;
-      border: 1px solid var(--border-soft);
-      background: rgba(7, 12, 36, 0.9);
-      margin-bottom: 12px;
-      font-size: 12px;
-      color: var(--text-secondary);
-    }
-
-    .intro-label {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-tertiary);
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin-bottom: 4px;
-    }
-
-    .intro-list {
-      padding-left: 16px;
-      margin: 0;
-    }
-
-    .intro-list li {
-      margin-bottom: 2px;
-    }
-
-    .steps-container {
-      margin-top: 4px;
-      min-height: 230px;
-    }
-
-    .step-view {
-      display: none;
-    }
-
-    .step-view.active {
-      display: block;
-    }
-
-    .step-label {
-      font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-tertiary);
-      margin-bottom: 4px;
-    }
-
-    .step-heading {
-      font-family: 'Space Grotesk', system-ui, sans-serif;
-      font-size: 18px;
-      font-weight: 500;
-      margin: 0 0 6px;
-      color: var(--text-primary);
-    }
-
-    .step-question {
-      font-size: 13px;
-      color: var(--text-secondary);
-      margin: 0 0 10px;
-    }
-
-    .field-group {
-      margin-bottom: 12px;
-    }
-
-    label.field-label {
-      display: block;
-      font-size: 13px;
-      font-weight: 500;
-      margin-bottom: 4px;
-      color: var(--text-primary);
-    }
-
-    .field-hint {
-      font-size: 11px;
-      color: var(--text-tertiary);
-      margin-bottom: 4px;
-    }
-
-    .input,
-    .textarea {
-      width: 100%;
-      border-radius: 10px;
-      border: 1px solid var(--input-border);
-      padding: 8px 10px;
-      font-size: 13px;
-      font-family: inherit;
-      background: var(--input-bg);
-      color: var(--input-text);
-      outline: none;
-      transition: border-color 140ms ease, box-shadow 140ms ease, background 140ms ease;
-      resize: vertical;
-      min-height: 96px;
-    }
-
-    .input {
-      min-height: auto;
-    }
-
-    .input::placeholder,
-    .textarea::placeholder {
-      color: var(--input-placeholder);
-    }
-
-    .input:focus,
-    .textarea:focus {
-      border-color: var(--input-border-focus);
-      box-shadow: var(--focus-ring);
-      background: var(--input-bg);
-    }
-
-    .textarea-gold {
-      border-color: rgba(245,181,68,0.9);
-      box-shadow: 0 0 26px rgba(245,181,68,0.32);
-      background: rgba(245,181,68,0.08);
-    }
-
-    .textarea-gold:focus {
-      border-color: rgba(245,181,68,1);
-      box-shadow: 0 0 30px rgba(245,181,68,0.45);
-    }
-
-    .field-error {
-      margin-top: 4px;
-      font-size: 11px;
-      color: var(--danger);
-      min-height: 14px;
-    }
-
-    .radio-group {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .radio-option {
-      border-radius: 999px;
-      border: 1px solid var(--input-border);
-      padding: 7px 10px;
-      font-size: 13px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(9, 13, 32, 0.95);
-      color: var(--text-secondary);
-      cursor: pointer;
-      transition: border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
-    }
-
-    .radio-input {
-      position: absolute;
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .radio-mark {
-      width: 14px;
-      height: 14px;
-      border-radius: 999px;
-      border: 1px solid var(--border-strong);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .radio-mark-inner {
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: transparent;
-    }
-
-    .radio-label-text {
-      flex: 1;
-    }
-
-    .radio-option.selected {
-      border-color: var(--accent-electric);
-      box-shadow: 0 0 0 1px rgba(59,228,198,0.35);
-      background: rgba(59,228,198,0.07);
-    }
-
-    .radio-option.selected .radio-mark {
-      border-color: var(--accent-electric);
-    }
-
-    .radio-option.selected .radio-mark-inner {
-      background: var(--accent-electric);
-    }
-
-    .radio-option:focus-within {
-      border-color: var(--accent-electric);
-      box-shadow: 0 0 0 1px rgba(59,228,198,0.6);
-    }
-
-    .roi-layout {
-      margin-top: 10px;
-      display: grid;
-      grid-template-columns: 1.3fr 1fr;
-      gap: 10px;
-    }
-
-    @media (max-width: 720px) {
-      .roi-layout {
-        grid-template-columns: 1fr;
+    if (step === 3) {
+      if (!trimmedImpact) {
+        newErrors.expectedImpact90Days = "This field is required.";
+      } else if (trimmedImpact.length < 20) {
+        newErrors.expectedImpact90Days = "Minimum 20 characters required.";
       }
     }
 
-    .roi-card {
-      border-radius: 14px;
-      border: 1px solid var(--border-strong);
-      padding: 10px 11px;
-      background: var(--bg-card-solid);
-      position: relative;
-      overflow: hidden;
-      font-size: 12px;
+    if (step === 4) {
+      if (!trimmedCompany) {
+        newErrors.companyDescription = "This field is required.";
+      } else if (trimmedCompany.length < 30) {
+        newErrors.companyDescription = "Minimum 30 characters required.";
+      }
     }
 
-    .roi-title {
-      font-size: 13px;
-      font-weight: 600;
-      margin-bottom: 4px;
-      color: var(--text-primary);
+    if (step === 5) {
+      if (!formData.userRole) {
+        newErrors.userRole = "Please select an option.";
+      }
     }
 
-    .roi-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-      gap: 6px 8px;
+    if (step === 6) {
+      if (!formData.companySize) {
+        newErrors.companySize = "Please select an option.";
+      }
     }
 
-    .roi-label {
-      color: var(--text-secondary);
+    if (step === 7) {
+      if (!formData.implementationTimeline) {
+        newErrors.implementationTimeline = "Please select an option.";
+      }
     }
 
-    .roi-value {
-      text-align: right;
-      font-weight: 500;
-      color: var(--text-primary);
-    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
-    .roi-value-success {
-      color: var(--success);
+  const estimateAffectedEmployees = (
+    companySize: CompanySizeOption | ""
+  ): number => {
+    switch (companySize) {
+      case "1-5":
+        return 2;
+      case "6-20":
+        return 5;
+      case "21-50":
+        return 12;
+      case "51-200":
+        return 35;
+      case "200+ employees":
+        return 60;
+      default:
+        return 3;
     }
+  };
 
-    .roi-note {
-      margin-top: 4px;
-      font-size: 11px;
-      color: var(--text-tertiary);
+  const estimateBlendedHourlyRate = (
+    companySize: CompanySizeOption | ""
+  ): number => {
+    switch (companySize) {
+      case "1-5":
+        return 25;
+      case "6-20":
+        return 35;
+      case "21-50":
+        return 45;
+      case "51-200":
+        return 60;
+      case "200+ employees":
+        return 80;
+      default:
+        return 35;
     }
+  };
 
-    .roi-cyan-bar {
-      position: absolute;
-      right: 10px;
-      bottom: 7px;
-      width: 70px;
-      height: 3px;
-      border-radius: 999px;
-      background: var(--accent-electric);
-      box-shadow: 0 0 10px rgba(59,228,198,0.8);
-    }
+  const estimateHoursSavedPerEmployeePerWeek = (workflows: string): number => {
+    const trimmed = workflows.trim();
+    const length = trimmed.length;
+    let base = 1.5;
 
-    .wizard-footer {
-      margin-top: 14px;
-      padding-top: 9px;
-      border-top: 1px solid var(--divider-subtle);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      font-size: 11px;
-      color: var(--text-tertiary);
-    }
+    if (length > 200) base += 1;
+    if (length > 400) base += 1;
 
-    .footer-left-note {
-      font-size: 11px;
-      color: var(--text-tertiary);
-    }
+    const keywords = [
+      "email",
+      "inbox",
+      "report",
+      "crm",
+      "follow up",
+      "follow-up",
+      "proposal",
+      "lead",
+      "sales",
+      "outreach",
+      "support",
+      "ticket",
+      "invoice",
+      "onboarding",
+      "content",
+      "social",
+      "ads",
+      "pipeline",
+      "prospect",
+    ];
+    const lower = trimmed.toLowerCase();
+    let keywordScore = 0;
+    keywords.forEach((kw) => {
+      if (lower.includes(kw)) {
+        keywordScore += 0.3;
+      }
+    });
 
-    .button-row {
-      display: flex;
-      gap: 8px;
-      justify-content: flex-end;
-    }
+    const raw = base + keywordScore;
+    const capped = Math.min(10, raw); // cap for realism
+    return parseFloat(capped.toFixed(1));
+  };
 
-    .btn {
-      font-family: inherit;
-      border-radius: 999px;
-      padding: 7px 16px;
-      font-size: 13px;
-      border: 1px solid transparent;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, transform 0.08s ease;
+  const getUrgencyMultiplier = (
+    timeline: TimelineOption | ""
+  ): number => {
+    switch (timeline) {
+      case "Planning to address":
+        return 1.1;
+      case "Critical priority within 60 days":
+        return 1.25;
+      case "Gathering information":
+      default:
+        return 1.0;
     }
+  };
 
-    .btn-primary {
-      background: var(--cta-primary);
-      color: var(--cta-primary-text);
-      box-shadow: 0 18px 40px rgba(0,0,0,0.55);
-    }
+  const calculateRoi = (data: FormData): RoiResult => {
+    const estimatedAffectedEmployees = estimateAffectedEmployees(
+      data.companySize
+    );
+    const hoursSavedPerEmployeePerWeek =
+      estimateHoursSavedPerEmployeePerWeek(data.workflows);
 
-    .btn-primary:hover {
-      background: var(--cta-primary-hover);
-      transform: translateY(-0.5px);
-      box-shadow: 0 24px 60px rgba(0,0,0,0.7);
-    }
+    const weeklyHoursSaved =
+      estimatedAffectedEmployees * hoursSavedPerEmployeePerWeek;
 
-    .btn-primary:active {
-      background: var(--cta-primary-press);
-      transform: translateY(0);
-      box-shadow: 0 14px 30px rgba(0,0,0,0.8);
-    }
+    // Approx weeks per month used for monthly estimate
+    const monthlyHoursSaved = weeklyHoursSaved * 4.33;
 
-    .btn-secondary {
-      background: transparent;
-      color: var(--text-secondary);
-      border-color: var(--border-strong);
-    }
+    const blendedHourlyRate = estimateBlendedHourlyRate(data.companySize);
+    const weeklyCostSavings = weeklyHoursSaved * blendedHourlyRate;
+    const monthlyCostSavings = monthlyHoursSaved * blendedHourlyRate;
+    const savings90Days = weeklyCostSavings * 12; // ~12 weeks in 90 days
 
-    .btn-secondary:hover {
-      border-color: var(--accent-electric);
-      color: var(--text-primary);
-      background: rgba(7,12,36,0.9);
-    }
+    // Assumption: automation recovers ~35% of manual cost baseline
+    const manualCost90Days = savings90Days / 0.35;
+    const optimizedCost90Days = manualCost90Days - savings90Days;
 
-    .global-error {
-      margin-top: 8px;
-      font-size: 11px;
-      color: var(--danger);
-      min-height: 14px;
-      text-align: right;
-    }
+    const savings12Months = weeklyCostSavings * 52;
+    const urgencyMultiplier = getUrgencyMultiplier(
+      data.implementationTimeline
+    );
 
-    .completion-screen {
-      display: none;
-      margin-top: 14px;
-      background: var(--bg-card-glass);
-      border-radius: 22px;
-      border: 1px solid var(--border-soft);
-      box-shadow: var(--shadow-soft);
-      padding: 18px 18px 14px;
-    }
+    const adjustedSavings90Days = savings90Days * urgencyMultiplier;
+    const adjustedSavings12Months = savings12Months * urgencyMultiplier;
 
-    .completion-header {
-      font-family: 'Space Grotesk', system-ui, sans-serif;
-      font-size: 18px;
-      font-weight: 500;
-      color: var(--text-primary);
-      margin-bottom: 6px;
-    }
+    return {
+      estimatedAffectedEmployees,
+      hoursSavedPerEmployeePerWeek,
+      weeklyHoursSaved,
+      monthlyHoursSaved,
+      blendedHourlyRate,
+      weeklyCostSavings,
+      monthlyCostSavings,
+      savings90Days,
+      adjustedSavings90Days,
+      savings12Months,
+      adjustedSavings12Months,
+      urgencyMultiplier,
+      manualCost90Days,
+      optimizedCost90Days,
+    };
+  };
 
-    .completion-subtext {
-      font-size: 13px;
-      color: var(--text-secondary);
-      margin-bottom: 12px;
+  const sendWebhook = async (data: FormData, roi: RoiResult) => {
+    try {
+      await fetch(WEBHOOK_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          workflows: data.workflows,
+          expectedImpact90Days: data.expectedImpact90Days,
+          companyDescription: data.companyDescription,
+          userRole: data.userRole,
+          companySize: data.companySize,
+          implementationTimeline: data.implementationTimeline,
+          roi,
+        }),
+      });
+    } catch (error) {
+      setToast({
+        type: "error",
+        message:
+          "We couldn't sync your data, but your ROI estimate is still shown.",
+      });
     }
+  };
 
-    .agent-tag {
-      font-size: 12px;
-      color: var(--text-tertiary);
-      margin-bottom: 10px;
-    }
+  const goToNextStep = () => {
+    if (currentStep === TOTAL_STEPS) return;
 
-    .agent-name-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      border-radius: 999px;
-      padding: 4px 8px;
-      border: 1px solid var(--border-strong);
-      background: rgba(9,13,32,0.95);
-      color: var(--text-secondary);
-    }
+    if (currentStep === 7) {
+      const roi = calculateRoi(formData);
+      setRoiResult(roi);
+      setCurrentStep((prev) => Math.min(prev + 1, TOTAL_STEPS));
 
-    .agent-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-      background: var(--accent-electric);
-      box-shadow: 0 0 8px rgba(59,228,198,0.9);
+      if (!hasSentWebhook) {
+        setHasSentWebhook(true);
+        void sendWebhook(formData, roi);
+      }
+    } else {
+      setCurrentStep((prev) => Math.min(prev + 1, TOTAL_STEPS));
     }
+  };
 
-    .completion-recap {
-      margin-top: 4px;
-      border-radius: 14px;
-      border: 1px solid var(--border-soft);
-      background: rgba(7,12,36,0.9);
-      padding: 10px 11px;
-      font-size: 12px;
-    }
+  const handleNextClick = () => {
+    if (!validateStep(currentStep)) return;
+    goToNextStep();
+  };
 
-    .completion-recap-title {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-primary);
-      margin-bottom: 6px;
-    }
+  const handleBackClick = () => {
+    setCurrentStep((prev) => Math.max(1, prev - 1));
+  };
 
-    .completion-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 2px;
-    }
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      const target = e.target as HTMLElement;
+      const tag = target.tagName.toLowerCase();
 
-    .completion-label {
-      color: var(--text-secondary);
+      // Apply Enter behavior only for inputs/textareas
+      if (tag === "textarea" || tag === "input") {
+        e.preventDefault();
+        if (!validateStep(currentStep)) return;
+        goToNextStep();
+      }
     }
+  };
 
-    .completion-value {
-      color: var(--text-primary);
-      font-weight: 500;
-    }
+  const renderProgress = () => {
+    return (
+      <div className="flex items-center justify-between mb-6">
+        <div className="text-xs sm:text-sm font-medium text-slate-600">
+          Step {currentStep} of {TOTAL_STEPS}
+        </div>
+        <div className="flex items-center gap-2">
+          {Array.from({ length: TOTAL_STEPS }).map((_, index) => {
+            const stepIndex = index + 1;
+            const isActive = stepIndex === currentStep;
+            const isCompleted = stepIndex < currentStep;
+            return (
+              <div
+                key={stepIndex}
+                className={[
+                  "w-2.5 h-2.5 rounded-full transition-all duration-200",
+                  isActive || isCompleted
+                    ? "bg-[#1F4FDB]"
+                    : "bg-slate-300",
+                  isActive ? "ring-2 ring-[#06B6D4]" : "",
+                ].join(" ")}
+                aria-hidden="true"
+              />
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
 
-    .completion-value-success {
-      color: var(--success);
-    }
+  const renderIntroStep = () => (
+    <div
+      className="step-transition"
+      onKeyDown={handleKeyDown}
+    >
+      <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 mb-3">
+        Estimate Your AI Employee ROI in 3 Minutes
+      </h1>
+      <p className="text-sm sm:text-base text-slate-600 mb-4">
+        Get a clear, numbers-based estimate of how much time and money AI
+        automation can save across your team.
+      </p>
+      <ul className="list-disc list-inside text-sm sm:text-base text-slate-600 mb-6 space-y-1.5">
+        <li>Answer 6 focused questions about your company and workflows.</li>
+        <li>See an instant ROI model in hours and money saved.</li>
+        <li>Optionally book a strategy call to go deeper.</li>
+      </ul>
 
-    .link-cta {
-      text-decoration: none;
-    }
+      {renderProgress()}
 
-    .trust-strip {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      padding-top: 10px;
-      font-size: 11px;
-      color: var(--text-tertiary);
-    }
+      <div className="flex justify-between items-center border-t border-slate-200/70 pt-5 mt-5">
+        <div className="text-xs text-slate-500">
+          No email required. No full page reloads.
+        </div>
+        <button
+          type="button"
+          onClick={() => setCurrentStep(2)}
+          className="inline-flex items-center justify-center rounded-full bg-[#1F4FDB] px-6 py-2.5 text-sm font-medium text-white shadow-md transition hover:shadow-lg hover:bg-[#1F4FDB]/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2"
+        >
+          Start
+        </button>
+      </div>
+    </div>
+  );
 
-    .trust-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      border-radius: 999px;
-      padding: 4px 8px;
-      border: 1px solid var(--border-soft);
-      background: rgba(7,12,36,0.9);
-    }
+  const renderStep2 = () => (
+    <div
+      className="step-transition"
+      onKeyDown={handleKeyDown}
+    >
+      {renderProgress()}
+      <h2 className="text-xl sm:text-2xl font-semibold text-slate-900 mb-2">
+        Prioritized workflows for AI automation
+      </h2>
+      <p className="text-sm text-slate-600 mb-4">
+        Be specific about the recurring processes you want automated.
+        Mention tools, roles, and where work currently bottlenecks.
+      </p>
 
-    .trust-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 999px;
-      background: #22c55e;
-      box-shadow: 0 0 8px rgba(34,197,94,0.9);
-    }
+      <label
+        htmlFor="workflows"
+        className="block text-sm font-medium text-slate-800 mb-1"
+      >
+        Describe your top 2–5 workflows to automate
+      </label>
+      <textarea
+        id="workflows"
+        name="workflows"
+        className={`mt-1 block w-full rounded-2xl border px-3 py-2.5 text-sm sm:text-base text-slate-900 shadow-sm outline-none transition focus:ring-2 focus:ring-[#1F4FDB] focus:border-transparent bg-white/80 border-slate-200 min-h-[120px] ${
+          errors.workflows ? "border-red-500 ring-1 ring-red-400" : ""
+        }`}
+        aria-invalid={!!errors.workflows}
+        aria-describedby={
+          errors.workflows ? "workflows-error" : undefined
+        }
+        value={formData.workflows}
+        onChange={(e) => updateField("workflows", e.target.value)}
+        placeholder="Example: qualifying inbound leads, drafting outbound emails, CRM data entry, weekly reporting..."
+      />
+      <p className="mt-1 text-xs text-slate-500">
+        Minimum 20 characters. Concrete workflows are more useful than
+        generic terms like &quot;automation&quot;.
+      </p>
+      {errors.workflows && (
+        <p
+          id="workflows-error"
+          role="status"
+          className="mt-2 text-sm text-red-600"
+        >
+          {errors.workflows}
+        </p>
+      )}
+    </div>
+  );
 
-    .trust-meta {
-      font-size: 11px;
-      color: var(--text-tertiary);
-    }
+  const renderStep3 = () => (
+    <div
+      className="step-transition"
+      onKeyDown={handleKeyDown}
+    >
+      {renderProgress()}
+      <h2 className="text-xl sm:text-2xl font-semibold text-slate-900 mb-2">
+        Expected impact in the next 90 days
+      </h2>
+      <p className="text-sm text-slate-600 mb-4">
+        Summarize what success looks like if these AI workflows are in
+        place over the next 90 days.
+      </p>
 
-    .footer-strip {
-      margin-top: 8px;
-      padding-top: 8px;
-      font-size: 10px;
-      color: var(--text-muted);
-      text-align: right;
-      border-top: 1px solid var(--divider-subtle);
+      <label
+        htmlFor="expectedImpact90Days"
+        className="block text-sm font-medium text-slate-800 mb-1"
+      >
+        In 1–2 sentences, describe the impact you want
+      </label>
+      <textarea
+        id="expectedImpact90Days"
+        name="expectedImpact90Days"
+        className={`mt-1 block w-full rounded-2xl border px-3 py-2.5 text-sm sm:text-base text-slate-900 shadow-sm outline-none transition focus:ring-2 focus:ring-[#1F4FDB] focus:border-transparent bg-white/80 border-slate-200 min-h-[100px] ${
+          errors.expectedImpact90Days
+            ? "border-red-500 ring-1 ring-red-400"
+            : ""
+        }`}
+        aria-invalid={!!errors.expectedImpact90Days}
+        aria-describedby={
+          errors.expectedImpact90Days
+            ? "expectedImpact90Days-error"
+            : undefined
+        }
+        value={formData.expectedImpact90Days}
+        onChange={(e) =>
+          updateField("expectedImpact90Days", e.target.value)
+        }
+        placeholder="Example: reduce time spent on manual lead qualification by 60% and increase outbound volume by 3x without adding headcount."
+      />
+      <p className="mt-1 text-xs text-slate-500">
+        Minimum 20 characters. Keep it focused on measurable outcomes.
+      </p>
+      {errors.expectedImpact90Days && (
+        <p
+          id="expectedImpact90Days-error"
+          role="status"
+          className="mt-2 text-sm text-red-600"
+        >
+          {errors.expectedImpact90Days}
+        </p>
+      )}
+    </div>
+  );
+
+  const renderStep4 = () => (
+    <div
+      className="step-transition"
+      onKeyDown={handleKeyDown}
+    >
+      {renderProgress()}
+      <h2 className="text-xl sm:text-2xl font-semibold text-slate-900 mb-2">
+        Company and ideal customer
+      </h2>
+      <p className="text-sm text-slate-600 mb-4">
+        Outline what your company does and who your ideal customer is.
+        This helps contextualize the ROI model.
+      </p>
+
+      <label
+        htmlFor="companyDescription"
+        className="block text-sm font-medium text-slate-800 mb-1"
+      >
+        Company description + ideal customer
+      </label>
+      <textarea
+        id="companyDescription"
+        name="companyDescription"
+        className={`mt-1 block w-full rounded-2xl border px-3 py-2.5 text-sm sm:text-base text-slate-900 shadow-sm outline-none transition focus:ring-2 focus:ring-[#1F4FDB] focus:border-transparent bg-white/80 border-slate-200 min-h-[100px] ${
+          errors.companyDescription
+            ? "border-red-500 ring-1 ring-red-400"
+            : ""
+        }`}
+        aria-invalid={!!errors.companyDescription}
+        aria-describedby={
+          errors.companyDescription
+            ? "companyDescription-error"
+            : undefined
+        }
+        value={formData.companyDescription}
+        onChange={(e) =>
+          updateField("companyDescription", e.target.value)
+        }
+        placeholder="Example: We run a B2B outbound agency serving SaaS companies in the US/Europe, targeting VP Sales and founders of 10–200 employee companies."
+      />
+      <p className="mt-1 text-xs text-slate-500">
+        Minimum 30 characters. Include industry, offer, and target
+        buyer where possible.
+      </p>
+      {errors.companyDescription && (
+        <p
+          id="companyDescription-error"
+          role="status"
+          className="mt-2 text-sm text-red-600"
+        >
+          {errors.companyDescription}
+        </p>
+      )}
+    </div>
+  );
+
+  const renderRadioStep = (
+    label: string,
+    field: keyof FormData,
+    options: string[],
+    helper?: string
+  ) => {
+    const error = errors[field];
+
+    return (
+      <div
+        className="step-transition"
+        onKeyDown={handleKeyDown}
+      >
+        {renderProgress()}
+        <h2 className="text-xl sm:text-2xl font-semibold text-slate-900 mb-2">
+          {label}
+        </h2>
+        {helper && (
+          <p className="text-sm text-slate-600 mb-4">
+            {helper}
+          </p>
+        )}
+
+        <fieldset>
+          <legend className="sr-only">{label}</legend>
+          <div className="space-y-2">
+            {options.map((option) => {
+              const isSelected = formData[field] === option;
+              const id = `${field}-${option}`;
+
+              return (
+                <label
+                  key={option}
+                  htmlFor={id}
+                  className={`flex items-center justify-between rounded-2xl border bg-white/80 px-3.5 py-2.5 cursor-pointer transition shadow-sm focus-within:ring-2 focus-within:ring-[#1F4FDB] focus-within:border-transparent ${
+                    isSelected
+                      ? "border-[#1F4FDB] ring-1 ring-[#1F4FDB]/80"
+                      : "border-slate-200 hover:border-[#1F4FDB]/50"
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-slate-300">
+                      <span
+                        className={`h-2.5 w-2.5 rounded-full transition ${
+                          isSelected
+                            ? "bg-[#1F4FDB]"
+                            : "bg-transparent"
+                        }`}
+                      />
+                    </span>
+                    <span className="text-sm font-medium text-slate-900">
+                      {option}
+                    </span>
+                  </span>
+                  <input
+                    id={id}
+                    type="radio"
+                    name={field}
+                    value={option}
+                    checked={isSelected}
+                    onChange={() =>
+                      updateField(
+                        field as keyof FormData,
+                        option as any
+                      )
+                    }
+                    className="sr-only"
+                    aria-invalid={!!error}
+                  />
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        {error && (
+          <p
+            role="status"
+            className="mt-2 text-sm text-red-600"
+          >
+            {error}
+          </p>
+        )}
+      </div>
+    );
+  };
+
+  const renderStep5 = () =>
+    renderRadioStep(
+      "Your role",
+      "userRole",
+      [
+        "Founder/Owner",
+        "C-Level/VP",
+        "Operations/Systems",
+        "Marketing/Sales",
+        "Other",
+      ],
+      "Select the role that best matches your responsibility level for AI and systems decisions."
+    );
+
+  const renderStep6 = () =>
+    renderRadioStep(
+      "Company size",
+      "companySize",
+      ["1-5", "6-20", "21-50", "51-200", "200+ employees"],
+      "This is used as a proxy for headcount and payroll when estimating ROI."
+    );
+
+  const renderStep7 = () =>
+    renderRadioStep(
+      "Implementation timeline",
+      "implementationTimeline",
+      [
+        "Gathering information",
+        "Planning to address",
+        "Critical priority within 60 days",
+      ],
+      "How urgent is it for you to implement AI workflows in your operations?"
+    );
+
+  const renderResults = () => {
+    if (!roiResult) return null;
+
+    const {
+      estimatedAffectedEmployees,
+      hoursSavedPerEmployeePerWeek,
+      monthlyHoursSaved,
+      monthlyCostSavings,
+      adjustedSavings90Days,
+      adjustedSavings12Months,
+      manualCost90Days,
+      optimizedCost90Days,
+    } = roiResult;
+
+    const manualVsOptimizedRatio =
+      manualCost90Days > 0
+        ? optimizedCost90Days / manualCost90Days
+        : 0.65; // fallback if somehow zero
+
+    const optimizedWidth = `${Math.round(
+      manualVsOptimizedRatio * 100
+    )}%`;
+
+    return (
+      <div
+        className="step-transition"
+        onKeyDown={handleKeyDown}
+      >
+        {renderProgress()}
+        <h2 className="text-xl sm:text-2xl font-semibold text-slate-900 mb-2">
+          Your AI Employee ROI estimate
+        </h2>
+        <p className="text-sm text-slate-600 mb-4">
+          Based on your answers, here is a modeled view of time and cost
+          savings AI automation can unlock across your team.
+        </p>
+
+        <div className="grid gap-4 sm:grid-cols-2 mb-6">
+          <div className="rounded-2xl bg-white/80 border border-white/80 shadow-sm px-4 py-4">
+            <p className="text-xs text-slate-500 mb-1">
+              Estimated employees meaningfully impacted
+            </p>
+            <p className="text-2xl font-semibold text-slate-900">
+              <AnimatedCounter value={estimatedAffectedEmployees} />
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Assumes workflows affect core operators, not the entire
+              company.
+            </p>
+          </div>
+
+          <div className="rounded-2xl bg-white/80 border border-white/80 shadow-sm px-4 py-4">
+            <p className="text-xs text-slate-500 mb-1">
+              Hours saved per employee per week
+            </p>
+            <p className="text-2xl font-semibold text-slate-900">
+              <AnimatedCounter
+                value={hoursSavedPerEmployeePerWeek}
+                decimals={1}
+              />{" "}
+              <span className="text-base text-slate-500">
+                hrs / week
+              </span>
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Derived from workflow complexity and automation potential.
+            </p>
+          </div>
+
+          <div className="rounded-2xl bg-white/80 border border-white/80 shadow-sm px-4 py-4">
+            <p className="text-xs text-slate-500 mb-1">
+              Hours saved per month (team-wide)
+            </p>
+            <p className="text-2xl font-semibold text-slate-900">
+              <AnimatedCounter
+                value={Math.round(monthlyHoursSaved)}
+              />{" "}
+              <span className="text-base text-slate-500">
+                hrs / month
+              </span>
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Using ~4.3 weeks per month.
+            </p>
+          </div>
+
+          <div className="rounded-2xl bg-white/80 border border-white/80 shadow-sm px-4 py-4">
+            <p className="text-xs text-slate-500 mb-1">
+              Estimated cost savings per month
+            </p>
+            <p className="text-2xl font-semibold text-slate-900">
+              <AnimatedCounter
+                value={Math.round(monthlyCostSavings)}
+                prefix="$"
+              />
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Approximate blended hourly rate by company size, in
+              USD-equivalent.
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-white/80 border border-white/80 shadow-sm px-4 py-4 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+            <div>
+              <p className="text-xs text-slate-500 mb-1">
+                90-day cost savings (based on your urgency)
+              </p>
+              <p className="text-2xl font-semibold text-slate-900">
+                <AnimatedCounter
+                  value={Math.round(adjustedSavings90Days)}
+                  prefix="$"
+                  durationMs={1100}
+                />
+              </p>
+              <p className="mt-1 text-xs text-slate-500">
+                If you implement the described AI workflows on your{" "}
+                chosen timeline.
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 mb-1">
+                Cost of inaction over 12 months
+              </p>
+              <p className="text-xl sm:text-2xl font-semibold text-rose-600">
+                <AnimatedCounter
+                  value={Math.round(adjustedSavings12Months)}
+                  prefix="$"
+                  durationMs={1200}
+                />
+              </p>
+              <p className="mt-1 text-xs text-slate-500">
+                Represents the opportunity cost if these workflows stay
+                manual.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <p className="text-xs text-slate-500 mb-2">
+              90-day manual vs. AI-assisted cost (modeled)
+            </p>
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs text-slate-500">
+                <span>Manual baseline</span>
+                <span>
+                  <AnimatedCounter
+                    value={Math.round(manualCost90Days)}
+                    prefix="$"
+                    durationMs={800}
+                  />
+                </span>
+              </div>
+              <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
+                <div className="h-2 rounded-full bg-slate-400 w-full" />
+              </div>
+
+              <div className="flex justify-between text-xs text-slate-500 mt-3">
+                <span>After AI automation</span>
+                <span>
+                  <AnimatedCounter
+                    value={Math.round(optimizedCost90Days)}
+                    prefix="$"
+                    durationMs={900}
+                  />
+                </span>
+              </div>
+              <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
+                <div
+                  className="h-2 rounded-full bg-[#1F4FDB] transition-all duration-700"
+                  style={{ width: optimizedWidth }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-t border-slate-200/80 pt-4 mt-2">
+          <div className="text-xs text-slate-500 max-w-md">
+            Assumptions: affected employees and blended hourly rate are
+            estimated from company size. Hours saved are modeled from
+            workflow richness and may be conservative if you fully
+            standardize processes.
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center">
+            <button
+              type="button"
+              onClick={handleBackClick}
+              className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white/70 px-4 py-2 text-xs sm:text-sm font-medium text-slate-700 shadow-sm transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2"
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                window.open("https://cal.com/ibaitti", "_blank")
+              }
+              className="inline-flex items-center justify-center rounded-full bg-[#1F4FDB] px-5 sm:px-6 py-2.5 text-xs sm:text-sm font-medium text-white shadow-md transition hover:shadow-lg hover:bg-[#1F4FDB]/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2"
+            >
+              Book Your Strategy Call
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 1:
+        return renderIntroStep();
+      case 2:
+        return renderStep2();
+      case 3:
+        return renderStep3();
+      case 4:
+        return renderStep4();
+      case 5:
+        return renderStep5();
+      case 6:
+        return renderStep6();
+      case 7:
+        return renderStep7();
+      case 8:
+        return renderResults();
+      default:
+        return null;
     }
-  </style>
-</head>
+  };
+
+  const showNavBar = currentStep >= 2 && currentStep <= 7;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-[#F4F5FB] to-[#E7F0FF] flex items-center justify-center px-3 sm:px-4 py-6">
+      {/* Toast */}
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 max-w-sm">
+          <div
+            className={`rounded-2xl border px-4 py-3 shadow-lg backdrop-blur-xl bg-white/90 ${
+              toast.type === "error"
+                ? "border-rose-200"
+                : "border-emerald-200"
+            }`}
+          >
+            <p
+              className={`text-sm ${
+                toast.type === "error"
+                  ? "text-rose-700"
+                  : "text-emerald-700"
+              }`}
+            >
+              {toast.message}
+            </p>
+          </div>
+        </div>
+      )}
+
+      <main className="w-full max-w-3xl">
+        <section className="relative rounded-3xl bg-white/60 border border-white/60 shadow-xl backdrop-blur-2xl px-4 sm:px-6 md:px-8 py-5 sm:py-7">
+          {renderStepContent()}
+
+          {/* Bottom navigation for steps 2–7 */}
+          {showNavBar && currentStep >= 2 && currentStep <= 7 && (
+            <div className="mt-6 flex items-center justify-between border-t border-slate-200/80 pt-4">
+              <button
+                type="button"
+                onClick={handleBackClick}
+                className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white/70 px-4 py-2 text-xs sm:text-sm font-medium text-slate-700 shadow-sm transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2"
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                onClick={handleNextClick}
+                disabled={!isStepValid(currentStep)}
+                className="inline-flex items-center justify-center rounded-full bg-[#1F4FDB] px-5 sm:px-6 py-2.5 text-xs sm:text-sm font-medium text-white shadow-md transition hover:shadow-lg hover:bg-[#1F4FDB]/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </section>
+      </main>
+    </div>
+  );
+};
+
+export default App;
