@@ -1,1374 +1,652 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0"
-    />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ROBOTS [$] – AI Employee ROI Calculator</title>
-
+    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- React 18 UMD -->
-    <script
-      crossorigin
-      src="https://unpkg.com/react@18/umd/react.development.js"
-    ></script>
-    <script
-      crossorigin
-      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
-    ></script>
-
-    <!-- Framer Motion UMD (optional, app works even if this fails) -->
-    <script src="https://unpkg.com/framer-motion@10.18.0/dist/framer-motion.umd.js"></script>
-
-    <!-- Babel Standalone -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  </head>
-  <body
-    class="min-h-screen antialiased"
-    style="background: linear-gradient(135deg, #F4F5FB 0%, #E7F0FF 100%);"
-  >
-    <div
-      id="root"
-      class="flex min-h-screen items-center justify-center px-4 py-10"
-    ></div>
-
-    <!-- APP -->
-    <script type="text/babel" data-presets="typescript,react">
-      const { useState, useMemo, useEffect, useRef } = React;
-
-      /* -------------------- Framer Motion Safe Access -------------------- */
-
-      const motionLib =
-        window.Motion ||
-        window.framerMotion ||
-        window["framer-motion"] ||
-        {};
-      const motion = motionLib.motion;
-      const AnimatePresence = motionLib.AnimatePresence;
-      const HAS_FM = !!(motion && AnimatePresence);
-
-      /* --------------------------- Constants ------------------------------ */
-
-      const WEBHOOK_URL =
-        "https://zerogpt.app.n8n.cloud/webhook-test/form-one";
-      const BOOKING_URL = "https://cal.com/ibaitti";
-
-      const WEEKS_PER_MONTH = 4.33;
-      const WEEKS_PER_YEAR = 52;
-      const AUTOMATION_FACTOR = 0.7;
-
-      const TOTAL_STEPS = 6; // Steps 1..6 (0 is intro, 7 is results)
-
-      const stageLabels = {
-        0: "Welcome",
-        1: "Workflows",
-        2: "Impact",
-        3: "Offer & ICP",
-        4: "Role",
-        5: "Team size",
-        6: "ROI preview",
-        7: "Results",
-      };
-
-      function getProgressStep(stageIndex) {
-        if (stageIndex <= 0) return 0;
-        if (stageIndex >= 6) return 6;
-        return stageIndex;
-      }
-
-      /* ------------------------ ROI Computation --------------------------- */
-
-      function computeRoi(hourlyCost, hoursPerWeek) {
-        const hc =
-          Number.isFinite(hourlyCost) && hourlyCost > 0 ? hourlyCost : 0;
-        const hw =
-          Number.isFinite(hoursPerWeek) && hoursPerWeek > 0 ? hoursPerWeek : 0;
-
-        const weeklyManual = hc * hw;
-        const monthlyManual = weeklyManual * WEEKS_PER_MONTH;
-        const yearlyManual = weeklyManual * WEEKS_PER_YEAR;
-
-        const monthlySavings = monthlyManual * AUTOMATION_FACTOR;
-        const yearlySavings = yearlyManual * AUTOMATION_FACTOR;
-        const hoursSavedYear = hw * WEEKS_PER_YEAR * AUTOMATION_FACTOR;
-
-        return {
-          hourlyCost: hc,
-          hoursPerWeek: hw,
-          weeklyManual,
-          monthlyManual,
-          yearlyManual,
-          monthlySavings,
-          yearlySavings,
-          hoursSavedYear,
-        };
-      }
-
-      function computeRoiFromAnswers(answers) {
-        const hourly = parseFloat(answers.hourlyCost || "0");
-        const hours = parseFloat(answers.hoursPerWeek || "0");
-        return computeRoi(hourly, hours);
-      }
-
-      function formatCurrency(amount) {
-        if (!Number.isFinite(amount) || amount <= 0) return "$0";
-        try {
-          return amount.toLocaleString("en-US", {
-            style: "currency",
-            currency: "USD",
-            maximumFractionDigits: 0,
-          });
-        } catch (e) {
-          return "$" + Math.round(amount);
-        }
-      }
-
-      function formatNumber(amount) {
-        if (!Number.isFinite(amount) || amount <= 0) return "0";
-        try {
-          return Math.round(amount).toLocaleString("en-US");
-        } catch (e) {
-          return String(Math.round(amount));
-        }
-      }
-
-      /* -------------------------- Webhook -------------------------------- */
-
-      function sendWebhook(stageIndex, answers) {
-        const roi = computeRoiFromAnswers(answers);
-        const payload = {
-          timestamp: new Date().toISOString(),
-          stageIndex,
-          stageLabel: stageLabels[stageIndex] || "",
-          answers,
-          roi,
-          meta: {
-            userAgent: navigator.userAgent,
-            path: window.location.pathname,
-            version: "form-one-v1",
-          },
-        };
-
-        try {
-          fetch(WEBHOOK_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-            keepalive: true,
-          }).catch(() => {});
-        } catch (e) {
-          // silent
-        }
-      }
-
-      /* --------------------------- UI Primitives -------------------------- */
-
-      function Button(props) {
-        const { variant = "primary", className = "", ...rest } = props;
-
-        const base =
-          "inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-medium transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2 focus-visible:ring-offset-slate-100 disabled:cursor-not-allowed disabled:opacity-60";
-
-        const variants = {
-          primary:
-            "bg-[#1F4FDB] text-white shadow-md shadow-slate-900/20 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-900/25",
-          secondary:
-            "bg-slate-900 text-white shadow-sm shadow-slate-900/20 hover:-translate-y-0.5 hover:bg-slate-800",
-          outline:
-            "border border-[#CBD5F5] bg-white/80 text-slate-800 hover:bg-slate-50 hover:-translate-y-0.5",
-          ghost:
-            "text-slate-700 hover:bg-slate-100 hover:-translate-y-0.5",
-          link: "text-[#1F4FDB] px-0 py-0 hover:underline",
-          destructive:
-            "bg-[#FF3B30] text-white shadow-md shadow-red-500/25 hover:bg-red-600 hover:-translate-y-0.5",
-        };
-
-        const classes = base + " " + (variants[variant] || "") + " " + className;
-
-        return <button className={classes} {...rest} />;
-      }
-
-      function InputWithTags(props) {
-        const { value, onChange, placeholder } = props;
-        const [input, setInput] = useState("");
-
-        function handleKeyDown(e) {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            const next = input.trim();
-            if (!next) return;
-            if (!value.includes(next)) {
-              onChange(value.concat(next));
-            }
-            setInput("");
-          } else if (e.key === "Backspace" && !input && value.length > 0) {
-            onChange(value.slice(0, -1));
-          }
-        }
-
-        function removeTag(tag) {
-          onChange(value.filter((item) => item !== tag));
-        }
-
-        const animatedTags =
-          HAS_FM && (
-            <AnimatePresence initial={false}>
-              {value.map((tag) => (
-                <motion.span
-                  key={tag}
-                  layout
-                  initial={{ opacity: 0, scale: 0.8, y: 4 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.8, y: -4 }}
-                  transition={{ duration: 0.16 }}
-                  className="inline-flex items-center gap-1 rounded-full bg-slate-900/5 px-2.5 py-1 text-xs font-medium text-slate-700"
-                >
-                  <span>{tag}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeTag(tag)}
-                    className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] text-slate-500 hover:bg-slate-300/30"
-                  >
-                    ×
-                  </button>
-                </motion.span>
-              ))}
-            </AnimatePresence>
-          );
-
-        const staticTags =
-          !HAS_FM &&
-          value.map((tag) => (
-            <span
-              key={tag}
-              className="inline-flex items-center gap-1 rounded-full bg-slate-900/5 px-2.5 py-1 text-xs font-medium text-slate-700"
-            >
-              <span>{tag}</span>
-              <button
-                type="button"
-                onClick={() => removeTag(tag)}
-                className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] text-slate-500 hover:bg-slate-300/30"
-              >
-                ×
-              </button>
-            </span>
-          ));
-
-        return (
-          <div className="rounded-2xl border border-[#E2E8F0] bg-white/70 px-3 py-2.5 shadow-inner shadow-slate-900/5 backdrop-blur">
-            <div className="flex flex-wrap gap-2">
-              {HAS_FM ? animatedTags : staticTags}
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={
-                  placeholder || "Type a workflow and press Enter"
-                }
-                className="flex-1 min-w-[120px] border-none bg-transparent text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none"
-              />
-            </div>
-            <p className="mt-1 text-[11px] text-slate-400">
-              Press <span className="font-semibold text-slate-500">Enter</span>{" "}
-              to add each workflow.
-            </p>
-          </div>
-        );
-      }
-
-      function Select(props) {
-        const { placeholder, value, onChange, options } = props;
-        const [open, setOpen] = useState(false);
-        const ref = useRef(null);
-
-        useEffect(() => {
-          if (!open) return;
-          function handleClick(event) {
-            if (!ref.current) return;
-            if (!ref.current.contains(event.target)) {
-              setOpen(false);
-            }
-          }
-          document.addEventListener("mousedown", handleClick);
-          return () => document.removeEventListener("mousedown", handleClick);
-        }, [open]);
-
-        const selected = options.find((opt) => opt.value === value);
-
-        function toggleOpen() {
-          setOpen((prev) => !prev);
-        }
-
-        function handleSelect(val) {
-          onChange(val);
-          setOpen(false);
-        }
-
-        const dropdown = open && (
-          <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white/95 shadow-xl shadow-slate-900/10 backdrop-blur">
-            <ul className="max-h-64 overflow-y-auto py-1">
-              {options.map((option) => {
-                const active = option.value === value;
-                return (
-                  <li key={option.value}>
-                    <button
-                      type="button"
-                      onClick={() => handleSelect(option.value)}
-                      className={
-                        "flex w-full flex-col items-start px-3 py-2 text-left text-sm transition hover:bg-slate-50 " +
-                        (active ? "bg-slate-50" : "")
-                      }
-                    >
-                      <div className="flex w-full items-center justify-between gap-2">
-                        <span className="text-slate-800">
-                          {option.label}
-                        </span>
-                        {active && (
-                          <span className="rounded-full bg-[#06B6D4]/10 px-2 py-0.5 text-[11px] font-semibold text-[#06B6D4]">
-                            Selected
-                          </span>
-                        )}
-                      </div>
-                      {option.description && (
-                        <span className="mt-0.5 text-[11px] text-slate-500">
-                          {option.description}
-                        </span>
-                      )}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        );
-
-        const animatedDropdown =
-          HAS_FM && open ? (
-            <AnimatePresence>
-              <motion.div
-                initial={{ opacity: 0, y: 4, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 4, scale: 0.98 }}
-                transition={{ duration: 0.18, ease: "easeOut" }}
-                className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white/95 shadow-xl shadow-slate-900/10 backdrop-blur"
-              >
-                <ul className="max-h-64 overflow-y-auto py-1">
-                  {options.map((option) => {
-                    const active = option.value === value;
-                    return (
-                      <li key={option.value}>
-                        <button
-                          type="button"
-                          onClick={() => handleSelect(option.value)}
-                          className={
-                            "flex w-full flex-col items-start px-3 py-2 text-left text-sm transition hover:bg-slate-50 " +
-                            (active ? "bg-slate-50" : "")
-                          }
-                        >
-                          <div className="flex w-full items-center justify-between gap-2">
-                            <span className="text-slate-800">
-                              {option.label}
-                            </span>
-                            {active && (
-                              <span className="rounded-full bg-[#06B6D4]/10 px-2 py-0.5 text-[11px] font-semibold text-[#06B6D4]">
-                                Selected
-                              </span>
-                            )}
-                          </div>
-                          {option.description && (
-                            <span className="mt-0.5 text-[11px] text-slate-500">
-                              {option.description}
-                            </span>
-                          )}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </motion.div>
-            </AnimatePresence>
-          ) : (
-            dropdown
-          );
-
-        return (
-          <div className="relative" ref={ref}>
-            <button
-              type="button"
-              onClick={toggleOpen}
-              className="flex w-full items-center justify-between rounded-2xl border border-[#E2E8F0] bg-[#F9FAFB] px-3 py-2.5 text-left text-sm text-slate-800 shadow-inner shadow-slate-900/5 transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2 focus-visible:ring-offset-slate-100"
-            >
-              <span className={selected ? "" : "text-slate-400"}>
-                {selected ? selected.label : placeholder || "Select…"}
-              </span>
-              <span className="ml-3 inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-300 text-[10px] text-slate-500">
-                ▼
-              </span>
-            </button>
-            {HAS_FM ? animatedDropdown : dropdown}
-          </div>
-        );
-      }
-
-      function InteractiveHoverButton(props) {
-        const { href, children } = props;
-        return (
-          <a href={href} target="_blank" rel="noreferrer">
-            <button
-              type="button"
-              className="group relative inline-flex items-center overflow-hidden rounded-full bg-[#1F4FDB] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-900/30 transition-transform duration-150 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2 focus-visible:ring-offset-slate-100"
-            >
-              <span className="pointer-events-none absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-              <span className="relative z-10 inline-flex items-center gap-2">
-                {children}
-                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/15 text-xs transition-transform duration-200 group-hover:translate-x-1">
-                  →
-                </span>
-              </span>
-            </button>
-          </a>
-        );
-      }
-
-      function Header(props) {
-        const { currentStage } = props;
-        const progressStep = getProgressStep(currentStage);
-        const progressPercentage =
-          progressStep <= 0
-            ? 0
-            : Math.min(100, (progressStep / TOTAL_STEPS) * 100);
-
-        const progressBar = HAS_FM ? (
-          <motion.div
-            initial={false}
-            animate={{ width: progressPercentage + "%" }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="h-full rounded-full"
-            style={{ backgroundColor: "#06B6D4" }}
-          />
-        ) : (
-          <div
-            className="h-full rounded-full"
-            style={{
-              width: progressPercentage + "%",
-              backgroundColor: "#06B6D4",
-            }}
-          />
-        );
-
-        return (
-          <header className="mb-6 space-y-4 md:mb-8">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-[#CBD5F5] bg-white/80 px-3 py-1 text-[11px] font-semibold tracking-[0.22em] text-slate-700 shadow-sm shadow-slate-900/5">
-                  <span>ROBOTS [$]</span>
-                  <span className="h-1 w-1 rounded-full bg-emerald-500" />
-                  <span className="text-slate-400">QUALIFIER</span>
-                </div>
-                <h1 className="mt-3 text-xl font-semibold text-slate-900 md:text-2xl">
-                  AI employees that work while you sleep
-                </h1>
-                <p className="mt-1 max-w-xl text-sm text-slate-500">
-                  Map where a digital employee plugs into your business and what
-                  it’s worth in saved time and payroll.
-                </p>
-              </div>
-              <div className="hidden text-xs text-right text-slate-500 md:block">
-                <p className="font-medium text-emerald-600">
-                  Encrypted session
-                </p>
-                <p className="text-[11px] text-slate-400">
-                  Answers stay between you and ROBOTS [$].
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-[11px] text-slate-500">
-                <span>
-                  {progressStep === 0
-                    ? "Warm-up · Getting context"
-                    : "Step " + progressStep + " of " + TOTAL_STEPS}
-                </span>
-                <span className="font-medium text-slate-600">
-                  {stageLabels[currentStage] || "Qualification"}
-                </span>
-              </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-slate-200/80">
-                {progressBar}
-              </div>
-            </div>
-          </header>
-        );
-      }
-
-      /* --------------------------- Stage 0 ------------------------------ */
-
-      function StageIntro(props) {
-        const { onStart, onSkipToRoi } = props;
-        return (
-          <div className="space-y-5">
-            <h2 className="text-lg font-semibold text-slate-900 md:text-xl">
-              In 6 questions, we’ll pinpoint where an AI employee fits in your
-              business.
-            </h2>
-            <p className="text-sm text-slate-600">
-              We’ll map the workflows it can own, quantify the time it frees up,
-              and calculate how fast it pays for itself.
-            </p>
-            <ul className="space-y-2 text-sm text-slate-600">
-              <li className="flex items-start gap-2">
-                <span className="mt-1 h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                <span>
-                  Estimate payroll savings based on your real numbers.
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-1 h-1.5 w-1.5 rounded-full bg-sky-500" />
-                <span>
-                  See where a digital employee plugs into your current
-                  workflows.
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-1 h-1.5 w-1.5 rounded-full bg-slate-400" />
-                <span>
-                  No emails, no spam. Just an instant ROI snapshot.
-                </span>
-              </li>
-            </ul>
-            <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center">
-              <Button
-                onClick={onStart}
-                variant="primary"
-                className="w-full sm:w-auto"
-              >
-                Start the 6-question scan
-              </Button>
-              <Button
-                onClick={onSkipToRoi}
-                variant="ghost"
-                className="w-full text-sm text-slate-600 sm:w-auto"
-              >
-                Skip to ROI
-              </Button>
-            </div>
-          </div>
-        );
-      }
-
-      /* --------------------------- Stage 1 ------------------------------ */
-
-      function StageWorkflows(props) {
-        const { answers, onUpdate } = props;
-        return (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-slate-900">
-              If you could deploy a digital employee to automate 3–5 repetitive
-              workflows, where would you start?
-            </h2>
-            <p className="text-sm text-slate-600">
-              Think about tasks that happen every day or every week and follow a
-              clear set of rules. Example: lead qualification, outbound
-              messages, reporting, follow-up, data entry.
-            </p>
-            <InputWithTags
-              value={answers.workflows}
-              onChange={(workflows) => onUpdate({ workflows })}
-              placeholder="e.g. Lead qualification, demo follow-up, weekly reporting"
-            />
-          </div>
-        );
-      }
-
-      /* --------------------------- Stage 2 ------------------------------ */
-
-      function StageImpact(props) {
-        const { answers, onUpdate } = props;
-        return (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-slate-900">
-              Ninety days from today, what is the single most impactful change
-              you want this AI employee to create?
-            </h2>
-            <p className="text-sm text-slate-600">
-              Describe the business outcome, not the feature. Example: shorter
-              response times, higher show-up rates, faster sales cycles, more
-              qualified opportunities.
-            </p>
-            <textarea
-              rows={4}
-              value={answers.impactVision}
-              onChange={(e) =>
-                onUpdate({ impactVision: e.target.value })
-              }
-              className="mt-1 w-full rounded-2xl border border-[#E2E8F0] bg-[#F9FAFB] px-3 py-2.5 text-sm text-slate-800 shadow-inner shadow-slate-900/5 placeholder:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2 focus-visible:ring-offset-slate-100"
-              placeholder="Example: Within 90 days, I want every inbound lead to be contacted in under 2 minutes with a tailored sequence that moves them to a booked call."
-            />
-          </div>
-        );
-      }
-
-      /* --------------------------- Stage 3 ------------------------------ */
-
-      function StageOffer(props) {
-        const { answers, onUpdate } = props;
-        return (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-slate-900">
-              What does your company sell, and who is your ideal customer?
-            </h2>
-            <p className="text-sm text-slate-600">
-              This shapes what your AI employee actually says and does. Include
-              your primary offer, price points, and the type of customer you
-              want more of.
-            </p>
-            <textarea
-              rows={4}
-              value={answers.offer}
-              onChange={(e) => onUpdate({ offer: e.target.value })}
-              className="mt-1 w-full rounded-2xl border border-[#E2E8F0] bg-[#F9FAFB] px-3 py-2.5 text-sm text-slate-800 shadow-inner shadow-slate-900/5 placeholder:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2 focus-visible:ring-offset-slate-100"
-              placeholder="Example: We sell a performance-based outbound service to B2B SaaS founders in the US/UK doing $1–10M ARR."
-            />
-          </div>
-        );
-      }
-
-      /* --------------------------- Stage 4 ------------------------------ */
-
-      function StageRole(props) {
-        const { answers, onUpdate } = props;
-
-        const options = [
-          {
-            value: "founder",
-            label: "Founder / Owner",
-            description:
-              "You own the business and drive strategic decisions.",
-          },
-          {
-            value: "c-level",
-            label: "C-Level / VP",
-            description: "Executive role with P&L or departmental ownership.",
-          },
-          {
-            value: "ops",
-            label: "Operations / Systems",
-            description: "You design processes, systems, and internal tooling.",
-          },
-          {
-            value: "marketing-sales",
-            label: "Marketing / Sales",
-            description: "You own pipeline, campaigns, or revenue targets.",
-          },
-          {
-            value: "other",
-            label: "Other",
-            description:
-              "You influence buying decisions but don’t fit the above.",
-          },
-        ];
-
-        return (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-slate-900">
-              Which best describes your role in the company?
-            </h2>
-            <p className="text-sm text-slate-600">
-              This helps us understand how close you are to the workflows this
-              AI employee will touch.
-            </p>
-            <Select
-              value={answers.role}
-              onChange={(role) => onUpdate({ role })}
-              options={options}
-              placeholder="Select the role that fits you best"
-            />
-          </div>
-        );
-      }
-
-      /* --------------------------- Stage 5 ------------------------------ */
-
-      function StageTeamSize(props) {
-        const { answers, onUpdate } = props;
-
-        const options = [
-          {
-            value: "1",
-            label: "Just me (solo)",
-            description: "You are the business today.",
-          },
-          {
-            value: "2-10",
-            label: "2–10 employees",
-            description: "Small team wearing multiple hats.",
-          },
-          {
-            value: "11-50",
-            label: "11–50 employees",
-            description: "Growing team with emerging structure.",
-          },
-          {
-            value: "51-200",
-            label: "51–200 employees",
-            description: "Established company with defined departments.",
-          },
-          {
-            value: "201-1000",
-            label: "201–1000 employees",
-            description: "Scaling organization with complex workflows.",
-          },
-          {
-            value: "1000+",
-            label: "1000+ employees",
-            description: "Enterprise scale operations.",
-          },
-        ];
-
-        return (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-slate-900">
-              How many people are currently on your team?
-            </h2>
-            <p className="text-sm text-slate-600">
-              Team size helps calibrate what a single AI employee can take off
-              your plate.
-            </p>
-            <Select
-              value={answers.teamSize}
-              onChange={(teamSize) => onUpdate({ teamSize })}
-              options={options}
-              placeholder="Select your company size"
-            />
-          </div>
-        );
-      }
-
-      /* --------------------------- Stage 6 ------------------------------ */
-
-      function StageRoi(props) {
-        const { answers, onUpdate } = props;
-        const roi = computeRoiFromAnswers(answers);
-        const hasValidInputs = roi.hourlyCost > 0 && roi.hoursPerWeek > 0;
-
-        const timelineOptions = [
-          {
-            value: "exploring",
-            label: "Gathering info",
-            description: "Just exploring what’s possible with AI employees.",
-          },
-          {
-            value: "planning",
-            label: "Planning deployment",
-            description: "Expecting to implement in the next 90 days.",
-          },
-          {
-            value: "critical-60",
-            label: "Critical 60-day priority",
-            description: "This is a near-term priority for the next 60 days.",
-          },
-        ];
-
-        return (
-          <div className="space-y-5">
-            <div className="space-y-3">
-              <h2 className="text-lg font-semibold text-slate-900">
-                What’s your timeline and what does this work cost you right
-                now?
-              </h2>
-              <p className="text-sm text-slate-600">
-                We’ll use your real numbers to estimate how much payroll a
-                single AI employee can replace or free up.
-              </p>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                  Timeline
-                </p>
-                <Select
-                  value={answers.timeline}
-                  onChange={(timeline) => onUpdate({ timeline })}
-                  options={timelineOptions}
-                  placeholder="When do you want this live?"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                  Current manual workload
-                </p>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-medium text-slate-500">
-                      Blended hourly cost
-                    </label>
-                    <div className="relative">
-                      <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-xs text-slate-400">
-                        $
-                      </span>
-                      <input
-                        type="number"
-                        min="0"
-                        inputMode="decimal"
-                        value={answers.hourlyCost}
-                        onChange={(e) =>
-                          onUpdate({ hourlyCost: e.target.value })
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            dark: '#020617', // Primary Text
+                            gray: '#6B7280', // Secondary
+                            light: '#9CA3AF', // Tertiary
+                            accent: '#06B6D4', // Cyan
+                            cta: '#2563EB', // Blue-600 for vivid interaction
+                            ctaHover: '#1D4ED8', // Blue-700
                         }
-                        className="w-full rounded-2xl border border-[#E2E8F0] bg-[#F9FAFB] py-2.5 pl-6 pr-3 text-sm text-slate-800 shadow-inner shadow-slate-900/5 placeholder:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2 focus-visible:ring-offset-slate-100"
-                        placeholder="e.g. 40"
-                      />
-                    </div>
-                    <p className="text-[11px] text-slate-400">
-                      Include salary, taxes, tools &amp; overhead.
-                    </p>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-medium text-slate-500">
-                      Hours per week on these tasks
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      inputMode="decimal"
-                      value={answers.hoursPerWeek}
-                      onChange={(e) =>
-                        onUpdate({ hoursPerWeek: e.target.value })
-                      }
-                      className="w-full rounded-2xl border border-[#E2E8F0] bg-[#F9FAFB] px-3 py-2.5 text-sm text-slate-800 shadow-inner shadow-slate-900/5 placeholder:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2 focus-visible:ring-offset-slate-100"
-                      placeholder="e.g. 25"
-                    />
-                    <p className="text-[11px] text-slate-400">
-                      Across you and your team for the workflows above.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-1 rounded-2xl border border-dashed border-[#CBD5F5] bg-white/70 px-3 py-3 shadow-inner shadow-slate-900/5">
-              {hasValidInputs ? (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between gap-2 text-xs text-slate-500">
-                    <span>
-                      Live preview · Based on your inputs so far
-                    </span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-medium text-emerald-700">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                      <span>Automation factor: 70%</span>
-                    </span>
-                  </div>
-                  <div className="grid gap-3 md:grid-cols-3">
-                    <div className="rounded-xl bg-slate-50 px-3 py-2.5 text-xs">
-                      <p className="text-[11px] font-medium text-slate-500">
-                        Monthly savings
-                      </p>
-                      <p className="mt-1 text-base font-semibold text-slate-900">
-                        {formatCurrency(roi.monthlySavings)}
-                      </p>
-                      <p className="mt-0.5 text-[11px] text-slate-500">
-                        vs. manual completion of these tasks.
-                      </p>
-                    </div>
-                    <div className="rounded-xl bg-slate-50 px-3 py-2.5 text-xs">
-                      <p className="text-[11px] font-medium text-slate-500">
-                        Yearly savings
-                      </p>
-                      <p className="mt-1 text-base font-semibold text-slate-900">
-                        {formatCurrency(roi.yearlySavings)}
-                      </p>
-                      <p className="mt-0.5 text-[11px] text-slate-500">
-                        Assuming consistent workload across 12 months.
-                      </p>
-                    </div>
-                    <div className="rounded-xl bg-slate-50 px-3 py-2.5 text-xs">
-                      <p className="text-[11px] font-medium text-slate-500">
-                        Hours reclaimed / year
-                      </p>
-                      <p className="mt-1 text-base font-semibold text-slate-900">
-                        {formatNumber(roi.hoursSavedYear)} hrs
-                      </p>
-                      <p className="mt-0.5 text-[11px] text-slate-500">
-                        Time your team can reallocate to higher leverage
-                        work.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between gap-3 text-xs text-slate-500">
-                  <span>
-                    Enter your hourly cost and weekly hours to see a live
-                    savings preview.
-                  </span>
-                  <span className="hidden rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600 sm:inline">
-                    Real-time ROI, no email required.
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      }
-
-      /* --------------------------- Stage 7 ------------------------------ */
-
-      function StageResults(props) {
-        const { answers } = props;
-        const roi = computeRoiFromAnswers(answers);
-
-        return (
-          <div className="space-y-6">
-            <div className="space-y-3">
-              <h2 className="text-lg font-semibold text-slate-900 md:text-xl">
-                Here’s what a ROBOTS [$] AI employee looks like in your
-                numbers.
-              </h2>
-              <p className="text-sm text-slate-600">
-                Based on your inputs, automating these workflows with a digital
-                employee could unlock the following capacity and savings.
-              </p>
-            </div>
-
-            <div className="grid gap-5 md:grid-cols-[minmax(0,1.4fr),minmax(0,1fr)]">
-              <div className="relative overflow-hidden rounded-2xl border border-[#CBD5F5] bg-gradient-to-br from-white/90 via-white/80 to-slate-50/80 p-5 shadow-lg shadow-slate-900/10">
-                <div className="pointer-events-none absolute -top-10 -right-16 h-40 w-40 rounded-full bg-[#1F4FDB]/10 blur-3xl" />
-                <div className="pointer-events-none absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-[#06B6D4]/10 blur-3xl" />
-
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                  Projected yearly impact
-                </p>
-                <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-2">
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                      Payroll savings
-                    </p>
-                    <p className="text-2xl font-semibold text-slate-900 md:text-3xl">
-                      {formatCurrency(roi.yearlySavings)}
-                    </p>
-                  </div>
-                  <div className="h-9 w-px bg-slate-200/80" />
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                      Hours reclaimed
-                    </p>
-                    <p className="text-xl font-semibold text-slate-900 md:text-2xl">
-                      {formatNumber(roi.hoursSavedYear)} hrs / year
-                    </p>
-                  </div>
-                </div>
-
-                <p className="mt-2 text-xs text-slate-500">
-                  Assumes automating ~70% of the workload you described across{" "}
-                  {WEEKS_PER_YEAR} weeks per year.
-                </p>
-
-                <div className="mt-4 grid gap-3 text-xs md:grid-cols-2">
-                  <div className="rounded-xl border border-slate-200 bg-white/80 p-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                      Manual status quo
-                    </p>
-                    <div className="mt-2 space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">
-                          Monthly cost
-                        </span>
-                        <span className="font-medium text-slate-900">
-                          {formatCurrency(roi.monthlyManual)}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">
-                          Yearly cost
-                        </span>
-                        <span className="font-medium text-slate-900">
-                          {formatCurrency(roi.yearlyManual)}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500">
-                          Weekly spend
-                        </span>
-                        <span className="font-medium text-slate-900">
-                          {formatCurrency(roi.weeklyManual)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
-                      With ROBOTS [$] automation
-                    </p>
-                    <div className="mt-2 space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-600">
-                          Projected monthly savings
-                        </span>
-                        <span className="font-semibold text-emerald-700">
-                          {formatCurrency(roi.monthlySavings)}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-600">
-                          Projected yearly savings
-                        </span>
-                        <span className="font-semibold text-emerald-700">
-                          {formatCurrency(roi.yearlySavings)}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-600">
-                          Time freed for higher leverage work
-                        </span>
-                        <span className="font-semibold text-emerald-700">
-                          {formatNumber(roi.hoursSavedYear)} hrs
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col justify-between gap-4 rounded-2xl border border-[#E2E8F0] bg-white/85 p-4 shadow-md shadow-slate-900/10">
-                <div className="space-y-3">
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                    Next step
-                  </p>
-                  <p className="text-sm text-slate-600">
-                    We plug this into your actual workflows (CRM, ad platforms,
-                    messaging, calendar) and deploy an AI employee that runs
-                    them end-to-end.
-                  </p>
-                  <ul className="space-y-1.5 text-xs text-slate-600">
-                    <li className="flex items-start gap-2">
-                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-[#06B6D4]" />
-                      <span>
-                        Connects to tools like Salesforce, HubSpot, Pipedrive
-                        and Meta.
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-slate-500" />
-                      <span>
-                        Handles outreach, follow-up, routing and scheduling
-                        automatically.
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                      <span>
-                        Operates 24/7 with deterministic logic you can audit and
-                        control.
-                      </span>
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="space-y-3">
-                  <InteractiveHoverButton href={BOOKING_URL}>
-                    Book a call to deploy this
-                  </InteractiveHoverButton>
-                  <p className="text-[11px] text-slate-500">
-                    On the call we’ll validate these numbers against your actual
-                    tools and design a concrete deployment plan.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      }
-
-      /* ---------------------------- Validation --------------------------- */
-
-      function validateStage(stageIndex, answers) {
-        if (stageIndex === 1) {
-          if (!answers.workflows || answers.workflows.length === 0) {
-            return "Add at least one workflow you’d like to automate.";
-          }
-        } else if (stageIndex === 2) {
-          if (!answers.impactVision || !answers.impactVision.trim()) {
-            return "Describe the single most impactful change you want in the next 90 days.";
-          }
-        } else if (stageIndex === 3) {
-          if (!answers.offer || !answers.offer.trim()) {
-            return "Describe what you sell and who you sell it to.";
-          }
-        } else if (stageIndex === 4) {
-          if (!answers.role) {
-            return "Select the role that best describes you.";
-          }
-        } else if (stageIndex === 5) {
-          if (!answers.teamSize) {
-            return "Select your current team size.";
-          }
-        } else if (stageIndex === 6) {
-          if (!answers.timeline) {
-            return "Select your implementation timeline.";
-          }
-          const hourly = parseFloat(answers.hourlyCost || "0");
-          const hours = parseFloat(answers.hoursPerWeek || "0");
-          if (!Number.isFinite(hourly) || hourly <= 0) {
-            return "Enter a valid blended hourly cost.";
-          }
-          if (!Number.isFinite(hours) || hours <= 0) {
-            return "Enter the weekly hours spent on these workflows.";
-          }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        display: ['Montserrat', 'system-ui', 'sans-serif'], // For Logo
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
         }
-        return null;
-      }
+    </script>
 
-      /* ------------------------------ App -------------------------------- */
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Framer Motion -->
+    <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
 
-      function App() {
-        const [answers, setAnswers] = useState({
-          workflows: [],
-          impactVision: "",
-          offer: "",
-          role: "",
-          teamSize: "",
-          timeline: "",
-          hourlyCost: "",
-          hoursPerWeek: "",
-        });
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for Brand Logos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-        const [currentStage, setCurrentStage] = useState(0);
-        const [validationError, setValidationError] = useState(null);
-
-        const roi = useMemo(
-          () => computeRoiFromAnswers(answers),
-          [answers.hourlyCost, answers.hoursPerWeek]
-        );
-
-        function updateAnswers(patch) {
-          setAnswers((prev) => Object.assign({}, prev, patch));
-          if (validationError) setValidationError(null);
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #F0F4FF 0%, #E0EAFF 100%);
+            min-height: 100vh;
+            color: #020617;
+            overflow-x: hidden;
+        }
+        
+        /* Glassmorphism Utilities */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 
+                0 20px 25px -5px rgba(0, 0, 0, 0.05), 
+                0 8px 10px -6px rgba(0, 0, 0, 0.01),
+                inset 0 0 20px rgba(255, 255, 255, 0.5);
         }
 
-        function goToStage(nextStage) {
-          if (nextStage === currentStage) return;
-          sendWebhook(nextStage, answers);
-          setCurrentStage(nextStage);
-          setValidationError(null);
+        .input-glass {
+            background: #FFFFFF;
+            border: 2px solid #E2E8F0;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
 
-        function handleNext() {
-          if (currentStage === 0) {
-            goToStage(1);
-            return;
-          }
-          const error = validateStage(currentStage, answers);
-          if (error) {
-            setValidationError(error);
-            return;
-          }
-          if (currentStage === 6) {
-            goToStage(7);
-          } else if (currentStage < 7) {
-            goToStage(currentStage + 1);
-          }
+        .input-glass:focus {
+            outline: none;
+            border-color: #2563EB;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+            transform: translateY(-1px);
         }
 
-        function handleBack() {
-          if (currentStage === 0) return;
-          if (currentStage === 7) {
-            goToStage(6);
-            return;
-          }
-          goToStage(Math.max(0, currentStage - 1));
+        .card-select {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .card-select:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
         }
 
-        function handleAdjustAssumptions() {
-          goToStage(6);
+        .card-select.selected {
+            border-color: #2563EB;
+            background: #EFF6FF; /* blue-50 */
+            box-shadow: 0 0 0 2px #2563EB;
         }
 
-        const showBackButton = currentStage > 0;
+        .logo-text {
+            font-family: 'Montserrat', sans-serif;
+            letter-spacing: -0.05em;
+        }
 
-        const stageContent = (stage) => {
-          if (stage === 0)
-            return (
-              <StageIntro
-                onStart={() => goToStage(1)}
-                onSkipToRoi={() => goToStage(6)}
-              />
-            );
-          if (stage === 1)
-            return (
-              <StageWorkflows
-                answers={answers}
-                onUpdate={updateAnswers}
-              />
-            );
-          if (stage === 2)
-            return (
-              <StageImpact
-                answers={answers}
-                onUpdate={updateAnswers}
-              />
-            );
-          if (stage === 3)
-            return (
-              <StageOffer
-                answers={answers}
-                onUpdate={updateAnswers}
-              />
-            );
-          if (stage === 4)
-            return (
-              <StageRole
-                answers={answers}
-                onUpdate={updateAnswers}
-              />
-            );
-          if (stage === 5)
-            return (
-              <StageTeamSize
-                answers={answers}
-                onUpdate={updateAnswers}
-              />
-            );
-          if (stage === 6)
-            return (
-              <StageRoi answers={answers} onUpdate={updateAnswers} />
-            );
-          return <StageResults answers={answers} />;
+        .glowing-text {
+            text-shadow: 0 0 30px rgba(37, 99, 235, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel" data-presets="typescript,react">
+        const { useState, useEffect, useRef } = React;
+        const { motion, AnimatePresence, useSpring, useTransform, animate } = window.Motion;
+
+        // --- Constants & Config ---
+        const WEBHOOK_URL = "https://zerogpt.app.n8n.cloud/webhook-test/form-one";
+        const BOOKING_URL = "https://cal.com/ibaitti";
+        
+        // Revised Steps Structure
+        // 0: Intro
+        // 1: Workflow (Input)
+        // 2: Impact (Textarea)
+        // 3: Offer (Textarea)
+        // 4: Role (Card Select)
+        // 5: Team Size (Card Select)
+        // 6: Hourly Cost (Input - Anticipation)
+        // 7: Hours/Week (Input - Pre-Reveal)
+        // 8: Reveal (Results)
+        const TOTAL_STEPS = 8; 
+
+        const ROLES = [
+            { id: "founder", icon: "fa-solid fa-chess-king", label: "Founder" },
+            { id: "exec", icon: "fa-solid fa-user-tie", label: "Executive" },
+            { id: "ops", icon: "fa-solid fa-gears", label: "Operations" },
+            { id: "growth", icon: "fa-solid fa-chart-line", label: "Growth" },
+            { id: "other", icon: "fa-solid fa-user", label: "Other" }
+        ];
+
+        const TEAM_SIZES = [
+            { id: "1", label: "Solo (1)" },
+            { id: "2-10", label: "2 - 10" },
+            { id: "11-50", label: "11 - 50" },
+            { id: "50+", label: "50+" }
+        ];
+
+        // --- Utils ---
+        const formatCurrency = (val) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
+
+        // --- Animated Counter Component ---
+        const AnimatedCounter = ({ from, to }) => {
+            const nodeRef = useRef();
+
+            useEffect(() => {
+                const node = nodeRef.current;
+                const controls = animate(from, to, {
+                    duration: 2.5,
+                    ease: "circOut",
+                    onUpdate(value) {
+                        node.textContent = formatCurrency(Math.round(value));
+                    }
+                });
+                return () => controls.stop();
+            }, [from, to]);
+
+            return <span ref={nodeRef} />;
         };
 
-        const animatedStage =
-          HAS_FM && (
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentStage}
-                initial={{ opacity: 0, y: 12, scale: 0.97 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -12, scale: 0.97 }}
-                transition={{ duration: 0.22, ease: "easeOut" }}
-                className="space-y-4"
-              >
-                {stageContent(currentStage)}
-              </motion.div>
-            </AnimatePresence>
-          );
+        // --- UI Components ---
 
-        const staticStage =
-          !HAS_FM && (
-            <div className="space-y-4">
-              {stageContent(currentStage)}
-            </div>
-          );
+        const Button = ({ children, onClick, variant = 'primary', className = '', disabled = false }) => {
+            const base = "inline-flex items-center justify-center rounded-xl px-8 py-4 text-base font-semibold transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-blue-500/20 disabled:cursor-not-allowed";
+            
+            const variants = {
+                primary: disabled 
+                    ? "bg-gray-200 text-gray-400 cursor-not-allowed transform-none shadow-none" 
+                    : "bg-brand-cta text-white hover:bg-brand-ctaHover shadow-lg shadow-blue-600/25 hover:-translate-y-1 hover:shadow-xl",
+                ghost: "text-brand-gray hover:text-brand-dark hover:bg-gray-100",
+            };
 
-        return (
-          <div className="w-full max-w-2xl rounded-2xl border border-[#E2E8F0] bg-white/80 p-5 shadow-xl shadow-slate-900/10 backdrop-blur-xl md:p-7">
-            <Header currentStage={currentStage} />
+            return (
+                <button 
+                    onClick={onClick}
+                    disabled={disabled}
+                    className={`${base} ${variants[variant]} ${className}`}
+                >
+                    {children}
+                </button>
+            );
+        };
 
-            <div className="min-h-[260px]">
-              {HAS_FM ? animatedStage : staticStage}
-            </div>
-
-            {validationError && (
-              <div className="mt-4 rounded-xl border border-[#FF3B30]/40 bg-[#FF3B30]/5 px-3 py-2.5 text-xs text-[#FF3B30]">
-                {validationError}
-              </div>
-            )}
-
-            <div className="mt-5 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 text-[11px] text-slate-500">
-                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-[10px] font-semibold text-slate-600">
-                  ROI
-                </span>
-                <span>
-                  Projected yearly savings:{" "}
-                  <span className="font-semibold text-slate-800">
-                    {formatCurrency(roi.yearlySavings)}
-                  </span>
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                {currentStage === 7 && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="hidden text-xs sm:inline-flex"
-                    onClick={handleAdjustAssumptions}
-                  >
-                    Adjust assumptions
-                  </Button>
-                )}
-                {showBackButton && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="text-xs text-slate-600"
-                    onClick={handleBack}
-                  >
-                    Back
-                  </Button>
-                )}
-                {currentStage < 7 && (
-                  <Button
-                    type="button"
-                    variant="primary"
-                    className="text-xs sm:text-sm"
-                    onClick={handleNext}
-                  >
-                    {currentStage === 6
-                      ? "Calculate my savings"
-                      : "Next"}
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            <footer className="mt-6 border-t border-slate-200/70 pt-4">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div className="space-y-1 text-[11px] text-slate-500">
-                  <p>
-                    End-to-end encryption. Your data is processed securely and
-                    never sold.
-                  </p>
-                  <p>© 2025 ROBOTS [$]. All rights reserved.</p>
+        const CardSelect = ({ options, value, onChange }) => {
+            return (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {options.map((opt) => (
+                        <button
+                            key={opt.id}
+                            onClick={() => onChange(opt.id)}
+                            className={`card-select flex flex-col items-center justify-center p-4 rounded-xl border-2 text-center h-28 ${
+                                value === opt.id 
+                                ? "selected text-brand-cta" 
+                                : "bg-white border-gray-100 text-brand-gray hover:border-blue-200"
+                            }`}
+                        >
+                            {opt.icon && <i className={`${opt.icon} text-2xl mb-2 ${value === opt.id ? 'text-brand-cta' : 'text-gray-400'}`}></i>}
+                            <span className="font-medium text-sm">{opt.label}</span>
+                        </button>
+                    ))}
                 </div>
-                <div className="flex flex-wrap gap-2 text-[10px] font-medium text-slate-500">
-                  {[
-                    "Salesforce",
-                    "HubSpot",
-                    "Pipedrive",
-                    "Meta",
-                    "WhatsApp",
-                    "Google Workspace",
-                    "Apple Business",
-                  ].map((name) => (
-                    <span
-                      key={name}
-                      className="rounded-full border border-slate-300 bg-white/70 px-2.5 py-1 shadow-sm shadow-slate-900/5"
-                    >
-                      {name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </footer>
-          </div>
-        );
-      }
+            );
+        };
 
-      const rootElement = document.getElementById("root");
-      if (rootElement && window.ReactDOM) {
-        if (ReactDOM.createRoot) {
-          const root = ReactDOM.createRoot(rootElement);
-          root.render(<App />);
-        } else if (ReactDOM.render) {
-          ReactDOM.render(<App />, rootElement);
-        }
-      }
+        // --- Main Application ---
+
+        const App = () => {
+            const [step, setStep] = useState(0);
+            const [direction, setDirection] = useState(1);
+            
+            const [answers, setAnswers] = useState({
+                workflow: "",
+                impactVision: "",
+                offerICP: "",
+                role: "",
+                teamSize: "",
+                hourlyCost: "",
+                hoursPerWeek: ""
+            });
+
+            const [roi, setRoi] = useState({ yearlySavings: 0, hoursSaved: 0 });
+
+            // Calculate ROI
+            useEffect(() => {
+                const cost = Number(answers.hourlyCost) || 0;
+                const hours = Number(answers.hoursPerWeek) || 0;
+                const factor = 0.7; // 70% automation
+                
+                const weeklyManual = cost * hours;
+                const yearlyManual = weeklyManual * 52;
+                
+                setRoi({
+                    yearlySavings: yearlyManual * factor,
+                    hoursSaved: (hours * 52) * factor
+                });
+            }, [answers.hourlyCost, answers.hoursPerWeek]);
+
+            // Enter Key Handler
+            useEffect(() => {
+                const handleKeyDown = (e) => {
+                    if (e.key === 'Enter') {
+                        // Prevent default if textarea (optional, but usually Shift+Enter is newline)
+                        // However user said "When I press Enter, it should advance"
+                        // We'll allow Enter to advance for Inputs, but maybe Shift+Enter for Textarea
+                        
+                        const isTextarea = e.target.tagName.toLowerCase() === 'textarea';
+                        if (isTextarea && !e.shiftKey) {
+                            e.preventDefault(); 
+                            handleNext();
+                        } else if (!isTextarea && step !== 0 && step !== 8) {
+                            e.preventDefault();
+                            handleNext();
+                        }
+                    }
+                };
+                window.addEventListener('keydown', handleKeyDown);
+                return () => window.removeEventListener('keydown', handleKeyDown);
+            }, [step, answers]); // Dependencies needed to access current state
+
+            const validateStep = () => {
+                switch(step) {
+                    case 1: return !!answers.workflow.trim();
+                    case 2: return !!answers.impactVision.trim();
+                    case 3: return !!answers.offerICP.trim();
+                    case 4: return !!answers.role;
+                    case 5: return !!answers.teamSize;
+                    case 6: return !!answers.hourlyCost;
+                    case 7: return !!answers.hoursPerWeek;
+                    default: return true;
+                }
+            };
+
+            const handleNext = () => {
+                if (!validateStep()) return;
+                
+                setDirection(1);
+                
+                if (step === 7) {
+                    // Transition to Reveal
+                    setStep(8);
+                    // Fire webhook here (final)
+                    fireWebhook(8);
+                } else {
+                    setStep(s => s + 1);
+                    fireWebhook(step + 1);
+                }
+            };
+
+            const handleBack = () => {
+                if (step <= 0) return;
+                setDirection(-1);
+                setStep(s => s - 1);
+            };
+
+            const fireWebhook = (currentStep) => {
+                try {
+                    fetch(WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            step: currentStep,
+                            answers,
+                            timestamp: new Date().toISOString()
+                        })
+                    }).catch(() => {});
+                } catch(e) {}
+            };
+
+            // Animation Variants
+            const variants = {
+                enter: (dir) => ({ x: dir > 0 ? 30 : -30, opacity: 0 }),
+                center: { x: 0, opacity: 1 },
+                exit: (dir) => ({ x: dir < 0 ? 30 : -30, opacity: 0 })
+            };
+
+            // Render Content
+            const renderContent = () => {
+                switch (step) {
+                    case 0: // Intro
+                        return (
+                            <div className="text-center py-8">
+                                <motion.div 
+                                    initial={{ scale: 0.9, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    className="space-y-6"
+                                >
+                                    <div className="inline-block p-4 bg-blue-50 rounded-full mb-4 animate-float">
+                                        <i className="fa-solid fa-robot text-4xl text-brand-cta"></i>
+                                    </div>
+                                    <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-brand-dark leading-tight">
+                                        The <span className="text-brand-cta">Result</span> of Your <br/> Next AI Hire.
+                                    </h1>
+                                    <p className="text-lg text-brand-gray max-w-md mx-auto">
+                                        Calculate the exact ROI of deploying autonomous digital workers in your business.
+                                    </p>
+                                    <div className="pt-8">
+                                        <Button onClick={() => { setDirection(1); setStep(1); }} className="w-full md:w-auto px-12">
+                                            Start Calculation
+                                        </Button>
+                                    </div>
+                                </motion.div>
+                            </div>
+                        );
+
+                    case 1: // Workflow
+                        return (
+                            <div className="space-y-6">
+                                <div className="space-y-2">
+                                    <h2 className="text-2xl font-bold text-brand-dark">Priority One.</h2>
+                                    <p className="text-brand-gray">What is the single most repetitive workflow you want to automate immediately?</p>
+                                </div>
+                                <input 
+                                    autoFocus
+                                    className="w-full text-lg px-6 py-4 rounded-xl input-glass"
+                                    placeholder="e.g. Lead Qualification & Booking..."
+                                    value={answers.workflow}
+                                    onChange={e => setAnswers({...answers, workflow: e.target.value})}
+                                />
+                                <p className="text-xs text-brand-light flex items-center gap-1">
+                                    <i className="fa-solid fa-keyboard"></i> Press <span className="font-semibold">Enter</span> to continue
+                                </p>
+                            </div>
+                        );
+
+                    case 2: // Impact
+                        return (
+                            <div className="space-y-6">
+                                <div className="space-y-2">
+                                    <h2 className="text-2xl font-bold text-brand-dark">The Leak.</h2>
+                                    <p className="text-brand-gray">Where are you losing money right now because of this manual work?</p>
+                                </div>
+                                <textarea 
+                                    autoFocus
+                                    rows={4}
+                                    className="w-full text-lg px-6 py-4 rounded-xl input-glass resize-none"
+                                    placeholder="We lose leads on weekends because no one responds..."
+                                    value={answers.impactVision}
+                                    onChange={e => setAnswers({...answers, impactVision: e.target.value})}
+                                />
+                            </div>
+                        );
+
+                    case 3: // Offer
+                        return (
+                            <div className="space-y-6">
+                                <div className="space-y-2">
+                                    <h2 className="text-2xl font-bold text-brand-dark">Context.</h2>
+                                    <p className="text-brand-gray">What do you sell, and who do you sell it to?</p>
+                                </div>
+                                <textarea 
+                                    autoFocus
+                                    rows={4}
+                                    className="w-full text-lg px-6 py-4 rounded-xl input-glass resize-none"
+                                    placeholder="We sell high-ticket consulting to dental practices..."
+                                    value={answers.offerICP}
+                                    onChange={e => setAnswers({...answers, offerICP: e.target.value})}
+                                />
+                            </div>
+                        );
+
+                    case 4: // Role
+                        return (
+                            <div className="space-y-6">
+                                <div className="space-y-2">
+                                    <h2 className="text-2xl font-bold text-brand-dark">Your Position.</h2>
+                                    <p className="text-brand-gray">Help us tailor the report to your perspective.</p>
+                                </div>
+                                <CardSelect 
+                                    options={ROLES}
+                                    value={answers.role}
+                                    onChange={val => setAnswers({...answers, role: val})}
+                                />
+                            </div>
+                        );
+
+                    case 5: // Team Size
+                        return (
+                            <div className="space-y-6">
+                                <div className="space-y-2">
+                                    <h2 className="text-2xl font-bold text-brand-dark">Scale.</h2>
+                                    <p className="text-brand-gray">How large is the team currently handling this?</p>
+                                </div>
+                                <CardSelect 
+                                    options={TEAM_SIZES}
+                                    value={answers.teamSize}
+                                    onChange={val => setAnswers({...answers, teamSize: val})}
+                                />
+                            </div>
+                        );
+
+                    case 6: // Hourly Cost (Anticipation)
+                        return (
+                            <div className="space-y-6">
+                                <div className="space-y-2">
+                                    <h2 className="text-2xl font-bold text-brand-dark">The Cost of Human Time.</h2>
+                                    <p className="text-brand-gray">What is the fully loaded hourly cost of the employee doing this work?</p>
+                                </div>
+                                <div className="relative">
+                                    <span className="absolute left-6 top-1/2 -translate-y-1/2 text-xl font-bold text-gray-400">$</span>
+                                    <input 
+                                        autoFocus
+                                        type="number"
+                                        className="w-full text-3xl font-bold pl-12 pr-6 py-6 rounded-xl input-glass text-brand-cta"
+                                        placeholder="0"
+                                        value={answers.hourlyCost}
+                                        onChange={e => setAnswers({...answers, hourlyCost: e.target.value})}
+                                    />
+                                </div>
+                            </div>
+                        );
+
+                    case 7: // Weekly Hours (Pre-Reveal)
+                        return (
+                            <div className="space-y-6">
+                                <div className="space-y-2">
+                                    <h2 className="text-2xl font-bold text-brand-dark">The Volume.</h2>
+                                    <p className="text-brand-gray">How many hours per week are spent on this task collectively?</p>
+                                </div>
+                                <input 
+                                    autoFocus
+                                    type="number"
+                                    className="w-full text-3xl font-bold px-6 py-6 rounded-xl input-glass text-brand-cta text-center"
+                                    placeholder="0"
+                                    value={answers.hoursPerWeek}
+                                    onChange={e => setAnswers({...answers, hoursPerWeek: e.target.value})}
+                                />
+                                <p className="text-center text-sm text-brand-gray">Ready to see what you could save?</p>
+                            </div>
+                        );
+
+                    case 8: // Reveal
+                        return (
+                            <div className="text-center py-6">
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ type: "spring", bounce: 0.5, duration: 0.8 }}
+                                    className="relative z-10"
+                                >
+                                    <p className="text-brand-gray font-semibold uppercase tracking-widest text-xs mb-4">Projected Annual Impact</p>
+                                    
+                                    <div className="mb-2 relative inline-block">
+                                        <div className="absolute inset-0 bg-blue-400 blur-[60px] opacity-20 rounded-full"></div>
+                                        <h1 className="relative text-6xl md:text-7xl font-black text-brand-dark tracking-tighter glowing-text">
+                                            <AnimatedCounter from={0} to={roi.yearlySavings} />
+                                        </h1>
+                                    </div>
+                                    
+                                    <div className="mb-10 flex justify-center gap-3">
+                                        <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-green-100 text-green-700 text-sm font-bold shadow-sm">
+                                            <i className="fa-solid fa-clock"></i> {Math.round(roi.hoursSaved).toLocaleString()} Hours Reclaimed
+                                        </span>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <button 
+                                            onClick={() => window.location.href = BOOKING_URL}
+                                            className="group relative w-full md:w-auto overflow-hidden rounded-full bg-brand-cta px-10 py-5 text-white shadow-2xl transition-all hover:scale-[1.02] hover:shadow-blue-500/40"
+                                        >
+                                            <div className="relative z-10 flex items-center justify-center gap-3 text-lg font-bold">
+                                                <span>Deploy AI Employee</span>
+                                                <i className="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                                            </div>
+                                            <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-transform duration-500 group-hover:translate-x-0"></div>
+                                        </button>
+                                        
+                                        <div>
+                                            <button 
+                                                onClick={handleBack}
+                                                className="text-sm font-medium text-brand-gray hover:text-brand-dark underline decoration-gray-300 underline-offset-4"
+                                            >
+                                                Adjust Assumptions
+                                            </button>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            </div>
+                        );
+
+                    default: return null;
+                }
+            };
+
+            const isIntro = step === 0;
+            const isReveal = step === 8;
+            const isValid = validateStep();
+
+            return (
+                <div className="min-h-screen flex flex-col relative">
+                    
+                    {/* Header */}
+                    <header className="pt-8 px-6 md:px-12 flex flex-col md:flex-row items-center justify-between z-20">
+                        <div className="flex flex-col items-center md:items-start">
+                            <div className="text-3xl font-black logo-text text-brand-dark tracking-tighter flex items-center gap-2">
+                                <span>ROBOTS</span>
+                                <span className="bg-brand-cta text-white px-2 py-0.5 rounded text-xl">[$]</span>
+                            </div>
+                            <span className="text-xs font-semibold text-brand-gray mt-1 tracking-wide">
+                                AI EMPLOYEE THAT WORKS WHILE YOU SLEEP
+                            </span>
+                        </div>
+                    </header>
+
+                    {/* Main Content */}
+                    <main className="flex-grow flex items-center justify-center p-4 md:p-6 relative">
+                        {/* Background Blobs */}
+                        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-200/30 rounded-full blur-3xl -z-10 animate-pulse-slow"></div>
+                        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-200/30 rounded-full blur-3xl -z-10 animate-pulse-slow" style={{animationDelay: '1.5s'}}></div>
+
+                        <div className={`w-full ${isReveal ? 'max-w-3xl' : 'max-w-xl'} transition-all duration-500`}>
+                            
+                            {/* Progress Bar (Hidden on Intro/Reveal) */}
+                            {!isIntro && !isReveal && (
+                                <div className="mb-8">
+                                    <div className="flex justify-between items-end mb-2">
+                                        <span className="text-sm font-bold text-brand-cta">Step {step} of 7</span>
+                                    </div>
+                                    <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                                        <motion.div 
+                                            className="h-full bg-brand-cta"
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${(step / 7) * 100}%` }}
+                                            transition={{ duration: 0.4 }}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className={`glass-panel rounded-3xl p-8 md:p-12 relative overflow-hidden transition-all duration-500 ${isIntro ? 'min-h-[500px] flex items-center justify-center' : 'min-h-[400px]'}`}>
+                                
+                                <AnimatePresence custom={direction} mode="wait">
+                                    <motion.div
+                                        key={step}
+                                        custom={direction}
+                                        variants={variants}
+                                        initial="enter"
+                                        animate="center"
+                                        exit="exit"
+                                        transition={{ x: { type: "spring", stiffness: 300, damping: 30 }, opacity: { duration: 0.2 } }}
+                                        className="w-full"
+                                    >
+                                        {renderContent()}
+                                    </motion.div>
+                                </AnimatePresence>
+
+                                {/* Navigation (Hidden on Intro/Reveal) */}
+                                {!isIntro && !isReveal && (
+                                    <div className="mt-12 flex items-center justify-between pt-6 border-t border-gray-100/50">
+                                        <Button variant="ghost" onClick={handleBack} className="px-4">
+                                            Back
+                                        </Button>
+                                        <Button 
+                                            onClick={handleNext} 
+                                            disabled={!isValid}
+                                            className={`transition-colors duration-300 ${isValid ? 'bg-brand-cta' : 'bg-gray-300 shadow-none hover:shadow-none hover:translate-y-0'}`}
+                                        >
+                                            {step === 7 ? "Reveal Savings" : "Next"}
+                                            {step !== 7 && <i className="fa-solid fa-chevron-right ml-2 text-xs"></i>}
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </main>
+
+                    {/* Footer */}
+                    <footer className="pb-8 px-6">
+                        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+                            
+                            <div className="flex items-center gap-2 text-brand-light text-sm order-2 md:order-1">
+                                <i className="fa-solid fa-lock text-brand-cta"></i>
+                                <span>End-to-end encryption. Your data is secure.</span>
+                            </div>
+
+                            <div className="flex gap-6 opacity-40 grayscale hover:grayscale-0 transition-all duration-500 order-1 md:order-2">
+                                {/* Font Awesome Brand Icons */}
+                                <i className="fa-brands fa-salesforce text-3xl hover:text-[#00A1E0] transition-colors" title="Salesforce"></i>
+                                <i className="fa-brands fa-hubspot text-3xl hover:text-[#FF7A59] transition-colors" title="HubSpot"></i>
+                                <i className="fa-brands fa-google text-3xl hover:text-[#4285F4] transition-colors" title="Google Workspace"></i>
+                                <i className="fa-brands fa-meta text-3xl hover:text-[#0668E1] transition-colors" title="Meta"></i>
+                                <i className="fa-brands fa-whatsapp text-3xl hover:text-[#25D366] transition-colors" title="WhatsApp"></i>
+                                <i className="fa-brands fa-apple text-3xl hover:text-black transition-colors" title="Apple Business"></i>
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
-  </body>
+</body>
 </html>
