@@ -21,10 +21,10 @@
       src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
     ></script>
 
-    <!-- Framer Motion UMD -->
-    <script src="https://unpkg.com/framer-motion@10.18.0/dist/framer-motion.js"></script>
+    <!-- Framer Motion UMD (optional, app works even if this fails) -->
+    <script src="https://unpkg.com/framer-motion@10.18.0/dist/framer-motion.umd.js"></script>
 
-    <!-- Babel Standalone (TypeScript + JSX) -->
+    <!-- Babel Standalone -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   </head>
   <body
@@ -36,96 +36,69 @@
       class="flex min-h-screen items-center justify-center px-4 py-10"
     ></div>
 
+    <!-- APP -->
     <script type="text/babel" data-presets="typescript,react">
       const { useState, useMemo, useEffect, useRef } = React;
 
-      // Framer Motion UMD globals (covering different versions)
-      const motionLib: any =
-        (window as any).Motion ||
-        (window as any).framerMotion ||
-        (window as any)['framer-motion'] ||
+      /* -------------------- Framer Motion Safe Access -------------------- */
+
+      const motionLib =
+        window.Motion ||
+        window.framerMotion ||
+        window["framer-motion"] ||
         {};
+      const motion = motionLib.motion;
+      const AnimatePresence = motionLib.AnimatePresence;
+      const HAS_FM = !!(motion && AnimatePresence);
 
-      const { motion, AnimatePresence } = motionLib;
+      /* --------------------------- Constants ------------------------------ */
 
-      const WEBHOOK_URL = 'https://zerogpt.app.n8n.cloud/webhook-test/form-one';
-      const BOOKING_URL = 'https://cal.com/ibaitti';
+      const WEBHOOK_URL =
+        "https://zerogpt.app.n8n.cloud/webhook-test/form-one";
+      const BOOKING_URL = "https://cal.com/ibaitti";
 
       const WEEKS_PER_MONTH = 4.33;
       const WEEKS_PER_YEAR = 52;
       const AUTOMATION_FACTOR = 0.7;
 
-      type Answers = {
-        workflows: string[];
-        impactVision: string;
-        offer: string;
-        role: string;
-        teamSize: string;
-        timeline: string;
-        hourlyCost: string;
-        hoursPerWeek: string;
+      const TOTAL_STEPS = 6; // Steps 1..6 (0 is intro, 7 is results)
+
+      const stageLabels = {
+        0: "Welcome",
+        1: "Workflows",
+        2: "Impact",
+        3: "Offer & ICP",
+        4: "Role",
+        5: "Team size",
+        6: "ROI preview",
+        7: "Results",
       };
 
-      type RoiResult = {
-        hourlyCost: number;
-        hoursPerWeek: number;
-        weeklyManual: number;
-        monthlyManual: number;
-        yearlyManual: number;
-        monthlySavings: number;
-        yearlySavings: number;
-        hoursSavedYear: number;
-      };
-
-      const initialAnswers: Answers = {
-        workflows: [],
-        impactVision: '',
-        offer: '',
-        role: '',
-        teamSize: '',
-        timeline: '',
-        hourlyCost: '',
-        hoursPerWeek: '',
-      };
-
-      const stageLabels: Record<number, string> = {
-        0: 'Welcome',
-        1: 'Workflows',
-        2: 'Impact',
-        3: 'Offer & ICP',
-        4: 'Role',
-        5: 'Team size',
-        6: 'ROI preview',
-        7: 'Results',
-      };
-
-      const TOTAL_STEPS = 6;
-
-      function getProgressStep(stageIndex: number): number {
+      function getProgressStep(stageIndex) {
         if (stageIndex <= 0) return 0;
         if (stageIndex >= 6) return 6;
         return stageIndex;
       }
 
-      function computeRoi(hourlyCost: number, hoursPerWeek: number): RoiResult {
-        const safeHourly =
+      /* ------------------------ ROI Computation --------------------------- */
+
+      function computeRoi(hourlyCost, hoursPerWeek) {
+        const hc =
           Number.isFinite(hourlyCost) && hourlyCost > 0 ? hourlyCost : 0;
-        const safeHours =
+        const hw =
           Number.isFinite(hoursPerWeek) && hoursPerWeek > 0 ? hoursPerWeek : 0;
 
-        const weeklyManual = safeHourly * safeHours;
+        const weeklyManual = hc * hw;
         const monthlyManual = weeklyManual * WEEKS_PER_MONTH;
         const yearlyManual = weeklyManual * WEEKS_PER_YEAR;
 
         const monthlySavings = monthlyManual * AUTOMATION_FACTOR;
         const yearlySavings = yearlyManual * AUTOMATION_FACTOR;
-
-        const hoursSavedYear =
-          safeHours * WEEKS_PER_YEAR * AUTOMATION_FACTOR;
+        const hoursSavedYear = hw * WEEKS_PER_YEAR * AUTOMATION_FACTOR;
 
         return {
-          hourlyCost: safeHourly,
-          hoursPerWeek: safeHours,
+          hourlyCost: hc,
+          hoursPerWeek: hw,
           weeklyManual,
           monthlyManual,
           yearlyManual,
@@ -135,248 +108,293 @@
         };
       }
 
-      function computeRoiFromAnswers(answers: Answers): RoiResult {
-        const hourly = parseFloat(answers.hourlyCost || '0');
-        const hours = parseFloat(answers.hoursPerWeek || '0');
+      function computeRoiFromAnswers(answers) {
+        const hourly = parseFloat(answers.hourlyCost || "0");
+        const hours = parseFloat(answers.hoursPerWeek || "0");
         return computeRoi(hourly, hours);
       }
 
-      function formatCurrency(amount: number): string {
-        if (!Number.isFinite(amount) || amount <= 0) return '$0';
+      function formatCurrency(amount) {
+        if (!Number.isFinite(amount) || amount <= 0) return "$0";
         try {
-          return amount.toLocaleString('en-US', {
-            style: 'currency',
-            currency: 'USD',
+          return amount.toLocaleString("en-US", {
+            style: "currency",
+            currency: "USD",
             maximumFractionDigits: 0,
           });
-        } catch {
-          return `$${Math.round(amount)}`;
+        } catch (e) {
+          return "$" + Math.round(amount);
         }
       }
 
-      function formatNumber(amount: number): string {
-        if (!Number.isFinite(amount) || amount <= 0) return '0';
+      function formatNumber(amount) {
+        if (!Number.isFinite(amount) || amount <= 0) return "0";
         try {
-          return Math.round(amount).toLocaleString('en-US');
-        } catch {
+          return Math.round(amount).toLocaleString("en-US");
+        } catch (e) {
           return String(Math.round(amount));
         }
       }
 
-      function sendWebhook(stageIndex: number, answers: Answers) {
+      /* -------------------------- Webhook -------------------------------- */
+
+      function sendWebhook(stageIndex, answers) {
         const roi = computeRoiFromAnswers(answers);
         const payload = {
           timestamp: new Date().toISOString(),
           stageIndex,
-          stageLabel: stageLabels[stageIndex] || '',
+          stageLabel: stageLabels[stageIndex] || "",
           answers,
           roi,
           meta: {
             userAgent: navigator.userAgent,
             path: window.location.pathname,
-            version: 'form-one-v1',
+            version: "form-one-v1",
           },
         };
 
         try {
           fetch(WEBHOOK_URL, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
             keepalive: true,
-          }).catch(() => {
-            // fail silently
-          });
-        } catch {
-          // fail silently
+          }).catch(() => {});
+        } catch (e) {
+          // silent
         }
       }
 
-      type ButtonVariant =
-        | 'primary'
-        | 'secondary'
-        | 'outline'
-        | 'ghost'
-        | 'link'
-        | 'destructive';
+      /* --------------------------- UI Primitives -------------------------- */
 
-      type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
-        variant?: ButtonVariant;
-      };
+      function Button(props) {
+        const { variant = "primary", className = "", ...rest } = props;
 
-      const Button: React.FC<ButtonProps> = ({
-        variant = 'primary',
-        className = '',
-        ...props
-      }) => {
         const base =
-          'inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-medium transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2 focus-visible:ring-offset-slate-100 disabled:cursor-not-allowed disabled:opacity-60';
-        const variants: Record<ButtonVariant, string> = {
+          "inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-medium transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2 focus-visible:ring-offset-slate-100 disabled:cursor-not-allowed disabled:opacity-60";
+
+        const variants = {
           primary:
-            'bg-[#1F4FDB] text-white shadow-md shadow-slate-900/20 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-900/25',
+            "bg-[#1F4FDB] text-white shadow-md shadow-slate-900/20 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-900/25",
           secondary:
-            'bg-slate-900 text-white shadow-sm shadow-slate-900/20 hover:-translate-y-0.5 hover:bg-slate-800',
+            "bg-slate-900 text-white shadow-sm shadow-slate-900/20 hover:-translate-y-0.5 hover:bg-slate-800",
           outline:
-            'border border-[#CBD5F5] bg-white/80 text-slate-800 hover:bg-slate-50 hover:-translate-y-0.5',
+            "border border-[#CBD5F5] bg-white/80 text-slate-800 hover:bg-slate-50 hover:-translate-y-0.5",
           ghost:
-            'text-slate-700 hover:bg-slate-100 hover:-translate-y-0.5',
-          link: 'text-[#1F4FDB] px-0 py-0 hover:underline',
+            "text-slate-700 hover:bg-slate-100 hover:-translate-y-0.5",
+          link: "text-[#1F4FDB] px-0 py-0 hover:underline",
           destructive:
-            'bg-[#FF3B30] text-white shadow-md shadow-red-500/25 hover:bg-red-600 hover:-translate-y-0.5',
+            "bg-[#FF3B30] text-white shadow-md shadow-red-500/25 hover:bg-red-600 hover:-translate-y-0.5",
         };
 
-        const classes = `${base} ${variants[variant]} ${className}`;
+        const classes = base + " " + (variants[variant] || "") + " " + className;
 
-        return <button className={classes} {...props} />;
-      };
+        return <button className={classes} {...rest} />;
+      }
 
-      type InputWithTagsProps = {
-        value: string[];
-        onChange: (value: string[]) => void;
-        placeholder?: string;
-      };
+      function InputWithTags(props) {
+        const { value, onChange, placeholder } = props;
+        const [input, setInput] = useState("");
 
-      const InputWithTags: React.FC<InputWithTagsProps> = ({
-        value,
-        onChange,
-        placeholder,
-      }) => {
-        const [input, setInput] = useState('');
-
-        const handleKeyDown = (
-          event: React.KeyboardEvent<HTMLInputElement>
-        ) => {
-          if (event.key === 'Enter') {
-            event.preventDefault();
+        function handleKeyDown(e) {
+          if (e.key === "Enter") {
+            e.preventDefault();
             const next = input.trim();
             if (!next) return;
             if (!value.includes(next)) {
-              onChange([...value, next]);
+              onChange(value.concat(next));
             }
-            setInput('');
-          } else if (
-            event.key === 'Backspace' &&
-            !input &&
-            value.length > 0
-          ) {
+            setInput("");
+          } else if (e.key === "Backspace" && !input && value.length > 0) {
             onChange(value.slice(0, -1));
           }
-        };
+        }
 
-        const removeTag = (tag: string) => {
+        function removeTag(tag) {
           onChange(value.filter((item) => item !== tag));
-        };
+        }
+
+        const animatedTags =
+          HAS_FM && (
+            <AnimatePresence initial={false}>
+              {value.map((tag) => (
+                <motion.span
+                  key={tag}
+                  layout
+                  initial={{ opacity: 0, scale: 0.8, y: 4 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.8, y: -4 }}
+                  transition={{ duration: 0.16 }}
+                  className="inline-flex items-center gap-1 rounded-full bg-slate-900/5 px-2.5 py-1 text-xs font-medium text-slate-700"
+                >
+                  <span>{tag}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeTag(tag)}
+                    className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] text-slate-500 hover:bg-slate-300/30"
+                  >
+                    ×
+                  </button>
+                </motion.span>
+              ))}
+            </AnimatePresence>
+          );
+
+        const staticTags =
+          !HAS_FM &&
+          value.map((tag) => (
+            <span
+              key={tag}
+              className="inline-flex items-center gap-1 rounded-full bg-slate-900/5 px-2.5 py-1 text-xs font-medium text-slate-700"
+            >
+              <span>{tag}</span>
+              <button
+                type="button"
+                onClick={() => removeTag(tag)}
+                className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] text-slate-500 hover:bg-slate-300/30"
+              >
+                ×
+              </button>
+            </span>
+          ));
 
         return (
           <div className="rounded-2xl border border-[#E2E8F0] bg-white/70 px-3 py-2.5 shadow-inner shadow-slate-900/5 backdrop-blur">
             <div className="flex flex-wrap gap-2">
-              {AnimatePresence ? (
-                <AnimatePresence initial={false}>
-                  {value.map((tag) => (
-                    <motion.span
-                      key={tag}
-                      layout
-                      initial={{ opacity: 0, scale: 0.8, y: 4 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.8, y: -4 }}
-                      transition={{ duration: 0.16 }}
-                      className="inline-flex items-center gap-1 rounded-full bg-slate-900/5 px-2.5 py-1 text-xs font-medium text-slate-700"
-                    >
-                      <span>{tag}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeTag(tag)}
-                        className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] text-slate-500 hover:bg-slate-300/30"
-                      >
-                        ×
-                      </button>
-                    </motion.span>
-                  ))}
-                </AnimatePresence>
-              ) : (
-                value.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-1 rounded-full bg-slate-900/5 px-2.5 py-1 text-xs font-medium text-slate-700"
-                  >
-                    <span>{tag}</span>
-                    <button
-                      type="button"
-                      onClick={() => removeTag(tag)}
-                      className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] text-slate-500 hover:bg-slate-300/30"
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))
-              )}
+              {HAS_FM ? animatedTags : staticTags}
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder={
-                  placeholder || 'Type a workflow and press Enter'
+                  placeholder || "Type a workflow and press Enter"
                 }
                 className="flex-1 min-w-[120px] border-none bg-transparent text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none"
               />
             </div>
             <p className="mt-1 text-[11px] text-slate-400">
-              Press <span className="font-semibold text-slate-500">Enter</span>{' '}
+              Press <span className="font-semibold text-slate-500">Enter</span>{" "}
               to add each workflow.
             </p>
           </div>
         );
-      };
+      }
 
-      type SelectOption = {
-        value: string;
-        label: string;
-        description?: string;
-      };
-
-      type SelectProps = {
-        placeholder?: string;
-        value: string;
-        onChange: (value: string) => void;
-        options: SelectOption[];
-      };
-
-      const Select: React.FC<SelectProps> = ({
-        placeholder = 'Select…',
-        value,
-        onChange,
-        options,
-      }) => {
+      function Select(props) {
+        const { placeholder, value, onChange, options } = props;
         const [open, setOpen] = useState(false);
-        const ref = useRef<HTMLDivElement | null>(null);
+        const ref = useRef(null);
 
         useEffect(() => {
           if (!open) return;
-          const handleClick = (event: MouseEvent) => {
+          function handleClick(event) {
             if (!ref.current) return;
-            if (!ref.current.contains(event.target as Node)) {
+            if (!ref.current.contains(event.target)) {
               setOpen(false);
             }
-          };
-          document.addEventListener('mousedown', handleClick);
-          return () => {
-            document.removeEventListener('mousedown', handleClick);
-          };
+          }
+          document.addEventListener("mousedown", handleClick);
+          return () => document.removeEventListener("mousedown", handleClick);
         }, [open]);
 
-        const selected = options.find(
-          (option) => option.value === value
-        );
+        const selected = options.find((opt) => opt.value === value);
 
-        const toggleOpen = () => setOpen((prev) => !prev);
+        function toggleOpen() {
+          setOpen((prev) => !prev);
+        }
 
-        const handleSelect = (val: string) => {
+        function handleSelect(val) {
           onChange(val);
           setOpen(false);
-        };
+        }
+
+        const dropdown = open && (
+          <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white/95 shadow-xl shadow-slate-900/10 backdrop-blur">
+            <ul className="max-h-64 overflow-y-auto py-1">
+              {options.map((option) => {
+                const active = option.value === value;
+                return (
+                  <li key={option.value}>
+                    <button
+                      type="button"
+                      onClick={() => handleSelect(option.value)}
+                      className={
+                        "flex w-full flex-col items-start px-3 py-2 text-left text-sm transition hover:bg-slate-50 " +
+                        (active ? "bg-slate-50" : "")
+                      }
+                    >
+                      <div className="flex w-full items-center justify-between gap-2">
+                        <span className="text-slate-800">
+                          {option.label}
+                        </span>
+                        {active && (
+                          <span className="rounded-full bg-[#06B6D4]/10 px-2 py-0.5 text-[11px] font-semibold text-[#06B6D4]">
+                            Selected
+                          </span>
+                        )}
+                      </div>
+                      {option.description && (
+                        <span className="mt-0.5 text-[11px] text-slate-500">
+                          {option.description}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        );
+
+        const animatedDropdown =
+          HAS_FM && open ? (
+            <AnimatePresence>
+              <motion.div
+                initial={{ opacity: 0, y: 4, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 4, scale: 0.98 }}
+                transition={{ duration: 0.18, ease: "easeOut" }}
+                className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white/95 shadow-xl shadow-slate-900/10 backdrop-blur"
+              >
+                <ul className="max-h-64 overflow-y-auto py-1">
+                  {options.map((option) => {
+                    const active = option.value === value;
+                    return (
+                      <li key={option.value}>
+                        <button
+                          type="button"
+                          onClick={() => handleSelect(option.value)}
+                          className={
+                            "flex w-full flex-col items-start px-3 py-2 text-left text-sm transition hover:bg-slate-50 " +
+                            (active ? "bg-slate-50" : "")
+                          }
+                        >
+                          <div className="flex w-full items-center justify-between gap-2">
+                            <span className="text-slate-800">
+                              {option.label}
+                            </span>
+                            {active && (
+                              <span className="rounded-full bg-[#06B6D4]/10 px-2 py-0.5 text-[11px] font-semibold text-[#06B6D4]">
+                                Selected
+                              </span>
+                            )}
+                          </div>
+                          {option.description && (
+                            <span className="mt-0.5 text-[11px] text-slate-500">
+                              {option.description}
+                            </span>
+                          )}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </motion.div>
+            </AnimatePresence>
+          ) : (
+            dropdown
+          );
 
         return (
           <div className="relative" ref={ref}>
@@ -385,108 +403,20 @@
               onClick={toggleOpen}
               className="flex w-full items-center justify-between rounded-2xl border border-[#E2E8F0] bg-[#F9FAFB] px-3 py-2.5 text-left text-sm text-slate-800 shadow-inner shadow-slate-900/5 transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2 focus-visible:ring-offset-slate-100"
             >
-              <span className={selected ? '' : 'text-slate-400'}>
-                {selected ? selected.label : placeholder}
+              <span className={selected ? "" : "text-slate-400"}>
+                {selected ? selected.label : placeholder || "Select…"}
               </span>
               <span className="ml-3 inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-300 text-[10px] text-slate-500">
                 ▼
               </span>
             </button>
-            {AnimatePresence ? (
-              <AnimatePresence>
-                {open && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 4, scale: 0.98 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 4, scale: 0.98 }}
-                    transition={{ duration: 0.18, ease: 'easeOut' }}
-                    className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white/95 shadow-xl shadow-slate-900/10 backdrop-blur"
-                  >
-                    <ul className="max-h-64 overflow-y-auto py-1">
-                      {options.map((option) => {
-                        const active = option.value === value;
-                        return (
-                          <li key={option.value}>
-                            <button
-                              type="button"
-                              onClick={() => handleSelect(option.value)}
-                              className={`flex w-full flex-col items-start px-3 py-2 text-left text-sm transition hover:bg-slate-50 ${
-                                active ? 'bg-slate-50' : ''
-                              }`}
-                            >
-                              <div className="flex w-full items-center justify-between gap-2">
-                                <span className="text-slate-800">
-                                  {option.label}
-                                </span>
-                                {active && (
-                                  <span className="rounded-full bg-[#06B6D4]/10 px-2 py-0.5 text-[11px] font-semibold text-[#06B6D4]">
-                                    Selected
-                                  </span>
-                                )}
-                              </div>
-                              {option.description && (
-                                <span className="mt-0.5 text-[11px] text-slate-500">
-                                  {option.description}
-                                </span>
-                              )}
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            ) : (
-              open && (
-                <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white/95 shadow-xl shadow-slate-900/10 backdrop-blur">
-                  <ul className="max-h-64 overflow-y-auto py-1">
-                    {options.map((option) => {
-                      const active = option.value === value;
-                      return (
-                        <li key={option.value}>
-                          <button
-                            type="button"
-                            onClick={() => handleSelect(option.value)}
-                            className={`flex w-full flex-col items-start px-3 py-2 text-left text-sm transition hover:bg-slate-50 ${
-                              active ? 'bg-slate-50' : ''
-                            }`}
-                          >
-                            <div className="flex w-full items-center justify-between gap-2">
-                              <span className="text-slate-800">
-                                {option.label}
-                              </span>
-                              {active && (
-                                <span className="rounded-full bg-[#06B6D4]/10 px-2 py-0.5 text-[11px] font-semibold text-[#06B6D4]">
-                                  Selected
-                                </span>
-                              )}
-                            </div>
-                            {option.description && (
-                              <span className="mt-0.5 text-[11px] text-slate-500">
-                                {option.description}
-                              </span>
-                            )}
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              )
-            )}
+            {HAS_FM ? animatedDropdown : dropdown}
           </div>
         );
-      };
+      }
 
-      type InteractiveHoverButtonProps = {
-        href: string;
-        children: React.ReactNode;
-      };
-
-      const InteractiveHoverButton: React.FC<
-        InteractiveHoverButtonProps
-      > = ({ href, children }) => {
+      function InteractiveHoverButton(props) {
+        const { href, children } = props;
         return (
           <a href={href} target="_blank" rel="noreferrer">
             <button
@@ -503,18 +433,33 @@
             </button>
           </a>
         );
-      };
+      }
 
-      type HeaderProps = {
-        currentStage: number;
-      };
-
-      const Header: React.FC<HeaderProps> = ({ currentStage }) => {
+      function Header(props) {
+        const { currentStage } = props;
         const progressStep = getProgressStep(currentStage);
         const progressPercentage =
           progressStep <= 0
             ? 0
             : Math.min(100, (progressStep / TOTAL_STEPS) * 100);
+
+        const progressBar = HAS_FM ? (
+          <motion.div
+            initial={false}
+            animate={{ width: progressPercentage + "%" }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="h-full rounded-full"
+            style={{ backgroundColor: "#06B6D4" }}
+          />
+        ) : (
+          <div
+            className="h-full rounded-full"
+            style={{
+              width: progressPercentage + "%",
+              backgroundColor: "#06B6D4",
+            }}
+          />
+        );
 
         return (
           <header className="mb-6 space-y-4 md:mb-8">
@@ -529,8 +474,8 @@
                   AI employees that work while you sleep
                 </h1>
                 <p className="mt-1 max-w-xl text-sm text-slate-500">
-                  Map where a digital employee plugs into your business and
-                  what it’s worth in saved time and payroll.
+                  Map where a digital employee plugs into your business and what
+                  it’s worth in saved time and payroll.
                 </p>
               </div>
               <div className="hidden text-xs text-right text-slate-500 md:block">
@@ -547,46 +492,25 @@
               <div className="flex items-center justify-between text-[11px] text-slate-500">
                 <span>
                   {progressStep === 0
-                    ? 'Warm-up · Getting context'
-                    : `Step ${progressStep} of ${TOTAL_STEPS}`}
+                    ? "Warm-up · Getting context"
+                    : "Step " + progressStep + " of " + TOTAL_STEPS}
                 </span>
                 <span className="font-medium text-slate-600">
-                  {stageLabels[currentStage] || 'Qualification'}
+                  {stageLabels[currentStage] || "Qualification"}
                 </span>
               </div>
               <div className="h-1.5 overflow-hidden rounded-full bg-slate-200/80">
-                {motion ? (
-                  <motion.div
-                    initial={false}
-                    animate={{ width: `${progressPercentage}%` }}
-                    transition={{ duration: 0.25, ease: 'easeOut' }}
-                    className="h-full rounded-full"
-                    style={{ backgroundColor: '#06B6D4' }}
-                  />
-                ) : (
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${progressPercentage}%`,
-                      backgroundColor: '#06B6D4',
-                    }}
-                  />
-                )}
+                {progressBar}
               </div>
             </div>
           </header>
         );
-      };
+      }
 
-      type StageProps = {
-        answers: Answers;
-        onUpdate: (patch: Partial<Answers>) => void;
-      };
+      /* --------------------------- Stage 0 ------------------------------ */
 
-      const StageIntro: React.FC<{
-        onStart: () => void;
-        onSkipToRoi: () => void;
-      }> = ({ onStart, onSkipToRoi }) => {
+      function StageIntro(props) {
+        const { onStart, onSkipToRoi } = props;
         return (
           <div className="space-y-5">
             <h2 className="text-lg font-semibold text-slate-900 md:text-xl">
@@ -594,8 +518,8 @@
               business.
             </h2>
             <p className="text-sm text-slate-600">
-              We’ll map the workflows it can own, quantify the time it frees
-              up, and calculate how fast it pays for itself.
+              We’ll map the workflows it can own, quantify the time it frees up,
+              and calculate how fast it pays for itself.
             </p>
             <ul className="space-y-2 text-sm text-slate-600">
               <li className="flex items-start gap-2">
@@ -631,17 +555,17 @@
                 variant="ghost"
                 className="w-full text-sm text-slate-600 sm:w-auto"
               >
-                Skip to ROI only
+                Skip to ROI
               </Button>
             </div>
           </div>
         );
-      };
+      }
 
-      const StageWorkflows: React.FC<StageProps> = ({
-        answers,
-        onUpdate,
-      }) => {
+      /* --------------------------- Stage 1 ------------------------------ */
+
+      function StageWorkflows(props) {
+        const { answers, onUpdate } = props;
         return (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-slate-900">
@@ -649,8 +573,8 @@
               workflows, where would you start?
             </h2>
             <p className="text-sm text-slate-600">
-              Think about tasks that happen every day or every week and follow
-              a clear set of rules. For example: lead qualification, outbound
+              Think about tasks that happen every day or every week and follow a
+              clear set of rules. Example: lead qualification, outbound
               messages, reporting, follow-up, data entry.
             </p>
             <InputWithTags
@@ -660,12 +584,12 @@
             />
           </div>
         );
-      };
+      }
 
-      const StageImpact: React.FC<StageProps> = ({
-        answers,
-        onUpdate,
-      }) => {
+      /* --------------------------- Stage 2 ------------------------------ */
+
+      function StageImpact(props) {
+        const { answers, onUpdate } = props;
         return (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-slate-900">
@@ -673,9 +597,9 @@
               you want this AI employee to create?
             </h2>
             <p className="text-sm text-slate-600">
-              Describe the business outcome, not the feature. For example:
-              shorter response times, higher show-up rates, faster sales
-              cycles, more qualified opportunities.
+              Describe the business outcome, not the feature. Example: shorter
+              response times, higher show-up rates, faster sales cycles, more
+              qualified opportunities.
             </p>
             <textarea
               rows={4}
@@ -688,21 +612,21 @@
             />
           </div>
         );
-      };
+      }
 
-      const StageOffer: React.FC<StageProps> = ({
-        answers,
-        onUpdate,
-      }) => {
+      /* --------------------------- Stage 3 ------------------------------ */
+
+      function StageOffer(props) {
+        const { answers, onUpdate } = props;
         return (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-slate-900">
               What does your company sell, and who is your ideal customer?
             </h2>
             <p className="text-sm text-slate-600">
-              This helps us shape what your AI employee actually says and
-              does. Include your primary offer, price points, and the type of
-              customer you most want more of.
+              This shapes what your AI employee actually says and does. Include
+              your primary offer, price points, and the type of customer you
+              want more of.
             </p>
             <textarea
               rows={4}
@@ -713,42 +637,40 @@
             />
           </div>
         );
-      };
+      }
 
-      const StageRole: React.FC<StageProps> = ({
-        answers,
-        onUpdate,
-      }) => {
-        const options: SelectOption[] = [
+      /* --------------------------- Stage 4 ------------------------------ */
+
+      function StageRole(props) {
+        const { answers, onUpdate } = props;
+
+        const options = [
           {
-            value: 'founder',
-            label: 'Founder / Owner',
+            value: "founder",
+            label: "Founder / Owner",
             description:
-              'You own the business and drive strategic decisions.',
+              "You own the business and drive strategic decisions.",
           },
           {
-            value: 'c-level',
-            label: 'C-Level / VP',
-            description:
-              'Executive role with P&L or departmental ownership.',
+            value: "c-level",
+            label: "C-Level / VP",
+            description: "Executive role with P&L or departmental ownership.",
           },
           {
-            value: 'ops',
-            label: 'Operations / Systems',
-            description:
-              'You design processes, systems, and internal tooling.',
+            value: "ops",
+            label: "Operations / Systems",
+            description: "You design processes, systems, and internal tooling.",
           },
           {
-            value: 'marketing-sales',
-            label: 'Marketing / Sales',
-            description:
-              'You own pipeline, campaigns, or revenue targets.',
+            value: "marketing-sales",
+            label: "Marketing / Sales",
+            description: "You own pipeline, campaigns, or revenue targets.",
           },
           {
-            value: 'other',
-            label: 'Other',
+            value: "other",
+            label: "Other",
             description:
-              'You influence buying decisions but don’t fit the above.',
+              "You influence buying decisions but don’t fit the above.",
           },
         ];
 
@@ -758,8 +680,8 @@
               Which best describes your role in the company?
             </h2>
             <p className="text-sm text-slate-600">
-              This helps us understand how close you are to the workflows
-              this AI employee will touch.
+              This helps us understand how close you are to the workflows this
+              AI employee will touch.
             </p>
             <Select
               value={answers.role}
@@ -769,42 +691,43 @@
             />
           </div>
         );
-      };
+      }
 
-      const StageTeamSize: React.FC<StageProps> = ({
-        answers,
-        onUpdate,
-      }) => {
-        const options: SelectOption[] = [
+      /* --------------------------- Stage 5 ------------------------------ */
+
+      function StageTeamSize(props) {
+        const { answers, onUpdate } = props;
+
+        const options = [
           {
-            value: '1',
-            label: 'Just me (solo)',
-            description: 'You are the business today.',
+            value: "1",
+            label: "Just me (solo)",
+            description: "You are the business today.",
           },
           {
-            value: '2-10',
-            label: '2–10 employees',
-            description: 'Small team wearing multiple hats.',
+            value: "2-10",
+            label: "2–10 employees",
+            description: "Small team wearing multiple hats.",
           },
           {
-            value: '11-50',
-            label: '11–50 employees',
-            description: 'Growing team with emerging structure.',
+            value: "11-50",
+            label: "11–50 employees",
+            description: "Growing team with emerging structure.",
           },
           {
-            value: '51-200',
-            label: '51–200 employees',
-            description: 'Established company with defined departments.',
+            value: "51-200",
+            label: "51–200 employees",
+            description: "Established company with defined departments.",
           },
           {
-            value: '201-1000',
-            label: '201–1000 employees',
-            description: 'Scaling organization with complex workflows.',
+            value: "201-1000",
+            label: "201–1000 employees",
+            description: "Scaling organization with complex workflows.",
           },
           {
-            value: '1000+',
-            label: '1000+ employees',
-            description: 'Enterprise scale operations.',
+            value: "1000+",
+            label: "1000+ employees",
+            description: "Enterprise scale operations.",
           },
         ];
 
@@ -814,8 +737,8 @@
               How many people are currently on your team?
             </h2>
             <p className="text-sm text-slate-600">
-              Team size helps us calibrate what a single AI employee can
-              take off your plate.
+              Team size helps calibrate what a single AI employee can take off
+              your plate.
             </p>
             <Select
               value={answers.teamSize}
@@ -825,34 +748,30 @@
             />
           </div>
         );
-      };
+      }
 
-      const StageRoi: React.FC<StageProps> = ({
-        answers,
-        onUpdate,
-      }) => {
+      /* --------------------------- Stage 6 ------------------------------ */
+
+      function StageRoi(props) {
+        const { answers, onUpdate } = props;
         const roi = computeRoiFromAnswers(answers);
-        const hasValidInputs =
-          roi.hourlyCost > 0 && roi.hoursPerWeek > 0;
+        const hasValidInputs = roi.hourlyCost > 0 && roi.hoursPerWeek > 0;
 
-        const timelineOptions: SelectOption[] = [
+        const timelineOptions = [
           {
-            value: 'exploring',
-            label: 'Gathering info',
-            description:
-              'Just exploring what’s possible with AI employees.',
+            value: "exploring",
+            label: "Gathering info",
+            description: "Just exploring what’s possible with AI employees.",
           },
           {
-            value: 'planning',
-            label: 'Planning deployment',
-            description:
-              'Expecting to implement in the next 90 days.',
+            value: "planning",
+            label: "Planning deployment",
+            description: "Expecting to implement in the next 90 days.",
           },
           {
-            value: 'critical-60',
-            label: 'Critical 60-day priority',
-            description:
-              'This is a near-term priority for the next 60 days.',
+            value: "critical-60",
+            label: "Critical 60-day priority",
+            description: "This is a near-term priority for the next 60 days.",
           },
         ];
 
@@ -998,11 +917,12 @@
             </div>
           </div>
         );
-      };
+      }
 
-      const StageResults: React.FC<{ answers: Answers }> = ({
-        answers,
-      }) => {
+      /* --------------------------- Stage 7 ------------------------------ */
+
+      function StageResults(props) {
+        const { answers } = props;
         const roi = computeRoiFromAnswers(answers);
 
         return (
@@ -1047,7 +967,7 @@
                 </div>
 
                 <p className="mt-2 text-xs text-slate-500">
-                  Assumes automating ~70% of the workload you described across{' '}
+                  Assumes automating ~70% of the workload you described across{" "}
                   {WEEKS_PER_YEAR} weeks per year.
                 </p>
 
@@ -1123,9 +1043,9 @@
                     Next step
                   </p>
                   <p className="text-sm text-slate-600">
-                    We plug this into your actual workflows (CRM, ad
-                    platforms, messaging, calendar) and deploy an AI employee
-                    that runs them end-to-end.
+                    We plug this into your actual workflows (CRM, ad platforms,
+                    messaging, calendar) and deploy an AI employee that runs
+                    them end-to-end.
                   </p>
                   <ul className="space-y-1.5 text-xs text-slate-600">
                     <li className="flex items-start gap-2">
@@ -1145,8 +1065,8 @@
                     <li className="flex items-start gap-2">
                       <span className="mt-1 h-1.5 w-1.5 rounded-full bg-emerald-500" />
                       <span>
-                        Operates 24/7 with deterministic logic you can audit
-                        and control.
+                        Operates 24/7 with deterministic logic you can audit and
+                        control.
                       </span>
                     </li>
                   </ul>
@@ -1157,239 +1077,200 @@
                     Book a call to deploy this
                   </InteractiveHoverButton>
                   <p className="text-[11px] text-slate-500">
-                    On the call we’ll validate these numbers against your
-                    actual tools and design a concrete deployment plan.
+                    On the call we’ll validate these numbers against your actual
+                    tools and design a concrete deployment plan.
                   </p>
                 </div>
               </div>
             </div>
           </div>
         );
-      };
+      }
 
-      function validateStage(
-        stageIndex: number,
-        answers: Answers
-      ): string | null {
+      /* ---------------------------- Validation --------------------------- */
+
+      function validateStage(stageIndex, answers) {
         if (stageIndex === 1) {
           if (!answers.workflows || answers.workflows.length === 0) {
-            return 'Add at least one workflow you’d like to automate.';
+            return "Add at least one workflow you’d like to automate.";
           }
         } else if (stageIndex === 2) {
-          if (!answers.impactVision.trim()) {
-            return 'Describe the single most impactful change you want in the next 90 days.';
+          if (!answers.impactVision || !answers.impactVision.trim()) {
+            return "Describe the single most impactful change you want in the next 90 days.";
           }
         } else if (stageIndex === 3) {
-          if (!answers.offer.trim()) {
-            return 'Describe what you sell and who you sell it to.';
+          if (!answers.offer || !answers.offer.trim()) {
+            return "Describe what you sell and who you sell it to.";
           }
         } else if (stageIndex === 4) {
           if (!answers.role) {
-            return 'Select the role that best describes you.';
+            return "Select the role that best describes you.";
           }
         } else if (stageIndex === 5) {
           if (!answers.teamSize) {
-            return 'Select your current team size.';
+            return "Select your current team size.";
           }
         } else if (stageIndex === 6) {
           if (!answers.timeline) {
-            return 'Select your implementation timeline.';
+            return "Select your implementation timeline.";
           }
-          const hourly = parseFloat(answers.hourlyCost || '0');
-          const hours = parseFloat(answers.hoursPerWeek || '0');
+          const hourly = parseFloat(answers.hourlyCost || "0");
+          const hours = parseFloat(answers.hoursPerWeek || "0");
           if (!Number.isFinite(hourly) || hourly <= 0) {
-            return 'Enter a valid blended hourly cost.';
+            return "Enter a valid blended hourly cost.";
           }
           if (!Number.isFinite(hours) || hours <= 0) {
-            return 'Enter the weekly hours spent on these workflows.';
+            return "Enter the weekly hours spent on these workflows.";
           }
         }
-
         return null;
       }
 
-      const App: React.FC = () => {
-        const [answers, setAnswers] =
-          useState<Answers>(initialAnswers);
-        const [currentStage, setCurrentStage] = useState<number>(0);
-        const [validationError, setValidationError] = useState<
-          string | null
-        >(null);
+      /* ------------------------------ App -------------------------------- */
+
+      function App() {
+        const [answers, setAnswers] = useState({
+          workflows: [],
+          impactVision: "",
+          offer: "",
+          role: "",
+          teamSize: "",
+          timeline: "",
+          hourlyCost: "",
+          hoursPerWeek: "",
+        });
+
+        const [currentStage, setCurrentStage] = useState(0);
+        const [validationError, setValidationError] = useState(null);
 
         const roi = useMemo(
           () => computeRoiFromAnswers(answers),
           [answers.hourlyCost, answers.hoursPerWeek]
         );
 
-        const updateAnswers = (patch: Partial<Answers>) => {
-          setAnswers((prev) => ({ ...prev, ...patch }));
+        function updateAnswers(patch) {
+          setAnswers((prev) => Object.assign({}, prev, patch));
           if (validationError) setValidationError(null);
-        };
+        }
 
-        const goToStage = (nextStage: number) => {
+        function goToStage(nextStage) {
           if (nextStage === currentStage) return;
           sendWebhook(nextStage, answers);
           setCurrentStage(nextStage);
           setValidationError(null);
-        };
+        }
 
-        const handleNext = () => {
+        function handleNext() {
           if (currentStage === 0) {
             goToStage(1);
             return;
           }
-
           const error = validateStage(currentStage, answers);
           if (error) {
             setValidationError(error);
             return;
           }
-
           if (currentStage === 6) {
             goToStage(7);
           } else if (currentStage < 7) {
             goToStage(currentStage + 1);
           }
-        };
+        }
 
-        const handleBack = () => {
+        function handleBack() {
           if (currentStage === 0) return;
           if (currentStage === 7) {
             goToStage(6);
             return;
           }
           goToStage(Math.max(0, currentStage - 1));
-        };
+        }
 
-        const handleAdjustAssumptions = () => {
+        function handleAdjustAssumptions() {
           goToStage(6);
-        };
+        }
 
         const showBackButton = currentStage > 0;
+
+        const stageContent = (stage) => {
+          if (stage === 0)
+            return (
+              <StageIntro
+                onStart={() => goToStage(1)}
+                onSkipToRoi={() => goToStage(6)}
+              />
+            );
+          if (stage === 1)
+            return (
+              <StageWorkflows
+                answers={answers}
+                onUpdate={updateAnswers}
+              />
+            );
+          if (stage === 2)
+            return (
+              <StageImpact
+                answers={answers}
+                onUpdate={updateAnswers}
+              />
+            );
+          if (stage === 3)
+            return (
+              <StageOffer
+                answers={answers}
+                onUpdate={updateAnswers}
+              />
+            );
+          if (stage === 4)
+            return (
+              <StageRole
+                answers={answers}
+                onUpdate={updateAnswers}
+              />
+            );
+          if (stage === 5)
+            return (
+              <StageTeamSize
+                answers={answers}
+                onUpdate={updateAnswers}
+              />
+            );
+          if (stage === 6)
+            return (
+              <StageRoi answers={answers} onUpdate={updateAnswers} />
+            );
+          return <StageResults answers={answers} />;
+        };
+
+        const animatedStage =
+          HAS_FM && (
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentStage}
+                initial={{ opacity: 0, y: 12, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -12, scale: 0.97 }}
+                transition={{ duration: 0.22, ease: "easeOut" }}
+                className="space-y-4"
+              >
+                {stageContent(currentStage)}
+              </motion.div>
+            </AnimatePresence>
+          );
+
+        const staticStage =
+          !HAS_FM && (
+            <div className="space-y-4">
+              {stageContent(currentStage)}
+            </div>
+          );
 
         return (
           <div className="w-full max-w-2xl rounded-2xl border border-[#E2E8F0] bg-white/80 p-5 shadow-xl shadow-slate-900/10 backdrop-blur-xl md:p-7">
             <Header currentStage={currentStage} />
 
             <div className="min-h-[260px]">
-              {motion && AnimatePresence ? (
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={currentStage}
-                    initial={{
-                      opacity: 0,
-                      y: 12,
-                      scale: 0.97,
-                    }}
-                    animate={{
-                      opacity: 1,
-                      y: 0,
-                      scale: 1,
-                    }}
-                    exit={{
-                      opacity: 0,
-                      y: -12,
-                      scale: 0.97,
-                    }}
-                    transition={{ duration: 0.22, ease: 'easeOut' }}
-                    className="space-y-4"
-                  >
-                    {currentStage === 0 && (
-                      <StageIntro
-                        onStart={() => goToStage(1)}
-                        onSkipToRoi={() => goToStage(6)}
-                      />
-                    )}
-                    {currentStage === 1 && (
-                      <StageWorkflows
-                        answers={answers}
-                        onUpdate={updateAnswers}
-                      />
-                    )}
-                    {currentStage === 2 && (
-                      <StageImpact
-                        answers={answers}
-                        onUpdate={updateAnswers}
-                      />
-                    )}
-                    {currentStage === 3 && (
-                      <StageOffer
-                        answers={answers}
-                        onUpdate={updateAnswers}
-                      />
-                    )}
-                    {currentStage === 4 && (
-                      <StageRole
-                        answers={answers}
-                        onUpdate={updateAnswers}
-                      />
-                    )}
-                    {currentStage === 5 && (
-                      <StageTeamSize
-                        answers={answers}
-                        onUpdate={updateAnswers}
-                      />
-                    )}
-                    {currentStage === 6 && (
-                      <StageRoi
-                        answers={answers}
-                        onUpdate={updateAnswers}
-                      />
-                    )}
-                    {currentStage === 7 && (
-                      <StageResults answers={answers} />
-                    )}
-                  </motion.div>
-                </AnimatePresence>
-              ) : (
-                <div className="space-y-4">
-                  {currentStage === 0 && (
-                    <StageIntro
-                      onStart={() => goToStage(1)}
-                      onSkipToRoi={() => goToStage(6)}
-                    />
-                  )}
-                  {currentStage === 1 && (
-                    <StageWorkflows
-                      answers={answers}
-                      onUpdate={updateAnswers}
-                    />
-                  )}
-                  {currentStage === 2 && (
-                    <StageImpact
-                      answers={answers}
-                      onUpdate={updateAnswers}
-                    />
-                  )}
-                  {currentStage === 3 && (
-                    <StageOffer
-                      answers={answers}
-                      onUpdate={updateAnswers}
-                    />
-                  )}
-                  {currentStage === 4 && (
-                    <StageRole
-                      answers={answers}
-                      onUpdate={updateAnswers}
-                    />
-                  )}
-                  {currentStage === 5 && (
-                    <StageTeamSize
-                      answers={answers}
-                      onUpdate={updateAnswers}
-                    />
-                  )}
-                  {currentStage === 6 && (
-                    <StageRoi
-                      answers={answers}
-                      onUpdate={updateAnswers}
-                    />
-                  )}
-                  {currentStage === 7 && (
-                    <StageResults answers={answers} />
-                  )}
-                </div>
-              )}
+              {HAS_FM ? animatedStage : staticStage}
             </div>
 
             {validationError && (
@@ -1404,7 +1285,7 @@
                   ROI
                 </span>
                 <span>
-                  Projected yearly savings:{' '}
+                  Projected yearly savings:{" "}
                   <span className="font-semibold text-slate-800">
                     {formatCurrency(roi.yearlySavings)}
                   </span>
@@ -1439,8 +1320,8 @@
                     onClick={handleNext}
                   >
                     {currentStage === 6
-                      ? 'Calculate my savings'
-                      : 'Next'}
+                      ? "Calculate my savings"
+                      : "Next"}
                   </Button>
                 )}
               </div>
@@ -1450,20 +1331,20 @@
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div className="space-y-1 text-[11px] text-slate-500">
                   <p>
-                    End-to-end encryption. Your data is processed securely
-                    and never sold.
+                    End-to-end encryption. Your data is processed securely and
+                    never sold.
                   </p>
                   <p>© 2025 ROBOTS [$]. All rights reserved.</p>
                 </div>
                 <div className="flex flex-wrap gap-2 text-[10px] font-medium text-slate-500">
                   {[
-                    'Salesforce',
-                    'HubSpot',
-                    'Pipedrive',
-                    'Meta',
-                    'WhatsApp',
-                    'Google Workspace',
-                    'Apple Business',
+                    "Salesforce",
+                    "HubSpot",
+                    "Pipedrive",
+                    "Meta",
+                    "WhatsApp",
+                    "Google Workspace",
+                    "Apple Business",
                   ].map((name) => (
                     <span
                       key={name}
@@ -1477,12 +1358,16 @@
             </footer>
           </div>
         );
-      };
+      }
 
-      const rootElement = document.getElementById('root');
-      if (rootElement) {
-        const root = ReactDOM.createRoot(rootElement);
-        root.render(<App />);
+      const rootElement = document.getElementById("root");
+      if (rootElement && window.ReactDOM) {
+        if (ReactDOM.createRoot) {
+          const root = ReactDOM.createRoot(rootElement);
+          root.render(<App />);
+        } else if (ReactDOM.render) {
+          ReactDOM.render(<App />, rootElement);
+        }
       }
     </script>
   </body>
