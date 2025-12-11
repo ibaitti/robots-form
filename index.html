@@ -1,651 +1,1377 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>ROBOTS — AI employees that work while you sleep</title>
-  <style>
-    :root {
-      --bg: #020617;
-      --card-bg: rgba(15, 23, 42, 0.92);
-      --border-subtle: rgba(148, 163, 184, 0.18);
-      --text-main: #e5e7eb;
-      --text-soft: #94a3b8;
-      --accent: #06b6d4;
-      --accent-soft: rgba(6, 182, 212, 0.15);
-      --header-height: 72px;
-      --progress-height: 40px;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <title>ROBOTS [$] – AI Employees ROI Form</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    <!-- Tailwind via CDN (JIT) -->
+    <script>
+      tailwind = {
+        config: {
+          theme: {
+            extend: {
+              fontFamily: {
+                sans: [
+                  "system-ui",
+                  "-apple-system",
+                  "BlinkMacSystemFont",
+                  "SF Pro Text",
+                  "Segoe UI",
+                  "sans-serif",
+                ],
+              },
+              borderRadius: {
+                ele: "0.9rem",
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
 
-    body {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-      background:
-        radial-gradient(circle at top, rgba(15, 23, 42, 0.8), transparent 65%),
-        radial-gradient(circle at bottom, rgba(15, 23, 42, 0.8), transparent 65%),
-        #020617;
-      color: var(--text-main);
-      -webkit-font-smoothing: antialiased;
-    }
+    <!-- React + ReactDOM + Babel Standalone -->
+    <script
+      src="https://unpkg.com/react@18/umd/react.development.js"
+      crossorigin
+    ></script>
+    <script
+      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+      crossorigin
+    ></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    /* Top header / logo */
-
-    .app-header {
-      height: var(--header-height);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 40px;
-      border-bottom: 1px solid rgba(15, 23, 42, 0.9);
-      background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.96));
-      backdrop-filter: blur(24px);
-      position: sticky;
-      top: 0;
-      z-index: 20;
-    }
-
-    .brand {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .brand-main {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      font-weight: 600;
-      font-size: 0.95rem;
-      color: #f9fafb;
-    }
-
-    .brand-main span.currency {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 18px;
-      height: 18px;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.6);
-      font-size: 0.75rem;
-      opacity: 0.9;
-    }
-
-    .brand-tagline {
-      font-size: 0.8rem;
-      color: var(--text-soft);
-    }
-
-    .app-header-right {
-      font-size: 0.75rem;
-      color: rgba(148, 163, 184, 0.75);
-    }
-
-    /* Progress system */
-
-    .progress-shell {
-      height: var(--progress-height);
-      display: flex;
-      align-items: center;
-      padding: 0 40px;
-      border-bottom: 1px solid rgba(15, 23, 42, 0.9);
-      background: linear-gradient(to right, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.96));
-      backdrop-filter: blur(18px);
-      position: sticky;
-      top: var(--header-height);
-      z-index: 19;
-    }
-
-    .progress-bar {
-      display: flex;
-      gap: 10px;
-      max-width: 720px;
-      width: 100%;
-    }
-
-    .progress-step {
-      position: relative;
-      flex: 1;
-      height: 26px;
-      border-radius: 999px;
-      border: 1px solid rgba(51, 65, 85, 0.9);
-      background: radial-gradient(circle at top, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.98));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.7rem;
-      color: rgba(148, 163, 184, 0.9);
-      cursor: pointer;
-      padding: 0 6px;
-      gap: 6px;
-      transition: border-color 160ms ease, color 160ms ease, background 160ms ease, box-shadow 160ms ease;
-    }
-
-    .progress-step .dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 999px;
-      background: rgba(51, 65, 85, 0.9);
-      transition: background 160ms ease, transform 160ms ease;
-    }
-
-    .progress-step.is-active {
-      border-color: rgba(148, 163, 184, 0.9);
-      color: #e5e7eb;
-      box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.9), 0 0 0 1px rgba(6, 182, 212, 0.12);
-    }
-
-    .progress-step.is-active .dot {
-      background: var(--accent);
-      transform: scale(1.15);
-    }
-
-    .progress-step.is-completed:not(.is-active) .dot {
-      background: rgba(96, 165, 250, 0.9);
-    }
-
-    /* Main card */
-
-    .app-main {
-      flex: 1;
-      display: flex;
-      justify-content: center;
-      padding: 40px 40px 32px;
-    }
-
-    .stage-card {
-      position: relative;
-      isolation: isolate;
-      max-width: 880px;
-      width: 100%;
-      border-radius: 24px;
-      padding: 26px 28px 24px;
-      border: 1px solid var(--border-subtle);
-      background:
-        radial-gradient(circle at top left, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.98)),
-        linear-gradient(to bottom right, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.97));
-      box-shadow:
-        0 18px 60px rgba(15, 23, 42, 0.9),
-        0 0 0 1px rgba(15, 23, 42, 0.9);
-      overflow: hidden;
-    }
-
-    /* Our touch: Option A — holographic glow following the active step card */
-
-    .stage-card::before {
-      content: "";
-      position: absolute;
-      inset: -40%;
-      background:
-        radial-gradient(circle at 25% 0, var(--accent-soft), transparent 60%),
-        radial-gradient(circle at 80% 80%, rgba(6, 182, 212, 0.12), transparent 60%);
-      opacity: 0.95;
-      z-index: -1;
-      pointer-events: none;
-      mix-blend-mode: screen;
-    }
-
-    .stage-header {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-bottom: 18px;
-    }
-
-    .stage-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      align-self: flex-start;
-      padding: 3px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.55);
-      font-size: 0.7rem;
-      color: rgba(226, 232, 240, 0.9);
-      background: radial-gradient(circle at top, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 1));
-    }
-
-    .stage-pill-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: var(--accent);
-      box-shadow: 0 0 10px rgba(6, 182, 212, 0.7);
-    }
-
-    .stage-title {
-      font-size: 1.25rem;
-      font-weight: 500;
-      letter-spacing: 0.01em;
-      color: #f9fafb;
-    }
-
-    .stage-subtitle {
-      font-size: 0.9rem;
-      color: var(--text-soft);
-      max-width: 520px;
-    }
-
-    .stage-body {
-      display: grid;
-      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-      gap: 22px;
-      margin-top: 8px;
-    }
-
-    .stage-section-title {
-      font-size: 0.78rem;
-      text-transform: uppercase;
-      letter-spacing: 0.18em;
-      color: rgba(148, 163, 184, 0.85);
-      margin-bottom: 8px;
-    }
-
-    .stage-list {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      font-size: 0.86rem;
-      color: rgba(209, 213, 219, 0.95);
-    }
-
-    .stage-list li {
-      display: flex;
-      gap: 8px;
-    }
-
-    .stage-list li::before {
-      content: "";
-      margin-top: 6px;
-      width: 6px;
-      height: 6px;
-      border-radius: 999px;
-      background: rgba(148, 163, 184, 0.85);
-      flex-shrink: 0;
-    }
-
-    .stage-meta {
-      border-radius: 18px;
-      border: 1px solid rgba(30, 64, 175, 0.6);
-      background: radial-gradient(circle at top, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 1));
-      padding: 12px 14px;
-      font-size: 0.78rem;
-      color: rgba(148, 163, 184, 0.95);
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .stage-meta-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    .stage-meta-label {
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      font-size: 0.7rem;
-      color: rgba(148, 163, 184, 0.8);
-    }
-
-    .stage-meta-value {
-      font-size: 0.78rem;
-      color: rgba(226, 232, 240, 0.96);
-    }
-
-    .stage-meta-hint {
-      font-size: 0.75rem;
-      color: rgba(148, 163, 184, 0.85);
-    }
-
-    /* Footer */
-
-    .app-footer {
-      border-top: 1px solid rgba(15, 23, 42, 0.95);
-      padding: 12px 40px;
-      background: linear-gradient(to right, rgba(2, 6, 23, 0.98), rgba(15, 23, 42, 0.98));
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      font-size: 0.75rem;
-      color: rgba(148, 163, 184, 0.9);
-    }
-
-    .footer-left {
-      white-space: nowrap;
-    }
-
-    .footer-center {
-      text-align: center;
-      flex: 1;
-      white-space: nowrap;
-    }
-
-    .footer-right {
-      display: flex;
-      justify-content: flex-end;
-      flex: 0 0 auto;
-    }
-
-    .platform-badges {
-      display: flex;
-      gap: 6px;
-      flex-wrap: nowrap;
-    }
-
-    .platform-badge {
-      width: 26px;
-      height: 26px;
-      border-radius: 999px;
-      border: 1px solid rgba(30, 64, 175, 0.65);
-      background: radial-gradient(circle at 30% 0, rgba(51, 65, 85, 0.8), rgba(15, 23, 42, 0.98));
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      filter: grayscale(1);
-      opacity: 0.88;
-    }
-
-    .platform-badge::before {
-      /* Placeholder minimal shape. Replace with actual monochrome logo SVGs. */
-      content: "";
-      width: 14px;
-      height: 14px;
-      border-radius: 4px;
-      border: 1px solid rgba(148, 163, 184, 0.8);
-      opacity: 0.9;
-    }
-
-    /* Simple differentiation hooks for replacing with brand-specific icons */
-    .platform-badge.salesforce::before { border-radius: 999px; }
-    .platform-badge.hubspot::before { border-radius: 50% 50% 40% 40%; }
-    .platform-badge.pipedrive::before { border-radius: 3px; }
-    .platform-badge.meta::before { border-radius: 999px; transform: scaleX(1.2); }
-    .platform-badge.whatsapp::before { border-radius: 999px; }
-    .platform-badge.google::before { border-radius: 3px; }
-    .platform-badge.apple::before { border-radius: 999px; }
-
-    /* Responsive */
-
-    @media (max-width: 900px) {
-      .app-header,
-      .progress-shell,
-      .app-main,
-      .app-footer {
-        padding-left: 16px;
-        padding-right: 16px;
+    <style>
+      :root {
+        --bg-page-start: #f4f5fb;
+        --bg-page-end: #e7f0ff;
+        --bg-card-glass: rgba(255, 255, 255, 0.82);
+        --text-primary: #020617;
+        --text-secondary: #6b7280;
+        --text-tertiary: #9ca3af;
+        --border-soft: #e2e8f0;
+        --border-strong: #cbd5f5;
+        --cta-primary: #1f4fdb;
+        --cta-primary-press: #1d4ed8;
+        --accent-cyan: #06b6d4;
+        --accent-cyan-soft: rgba(6, 182, 212, 0.1);
+        --success: #16a34a;
       }
 
-      .stage-card {
-        padding: 20px 18px 18px;
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        background: linear-gradient(
+          135deg,
+          var(--bg-page-start) 0%,
+          var(--bg-page-end) 100%
+        );
+        color: var(--text-primary);
       }
 
-      .stage-body {
-        grid-template-columns: minmax(0, 1fr);
-      }
-    }
-
-    @media (max-width: 720px) {
-      .progress-shell {
-        height: auto;
-        padding-top: 8px;
-        padding-bottom: 8px;
+      .shadow-card {
+        box-shadow: 0 22px 45px rgba(15, 23, 42, 0.12);
       }
 
-      .progress-bar {
-        flex-wrap: wrap;
+      .shadow-card-hover:hover {
+        box-shadow: 0 28px 70px rgba(15, 23, 42, 0.16);
       }
 
-      .app-footer {
-        flex-direction: column;
-        align-items: flex-start;
+      @keyframes cardInUp {
+        from {
+          opacity: 0;
+          transform: translateY(16px) scale(0.97);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
       }
 
-      .footer-center {
-        text-align: left;
+      .animate-step {
+        animation: cardInUp 0.45s ease;
       }
 
-      .footer-left,
-      .footer-center {
-        white-space: normal;
+      .savings-halo {
+        position: relative;
       }
-    }
-  </style>
-</head>
-<body>
-  <!-- Top bar / header -->
-  <header class="app-header">
-    <div class="brand">
-      <div class="brand-main">
-        ROBOTS
-        <span class="currency">$</span>
-      </div>
-      <div class="brand-tagline">AI employees that work while you sleep</div>
+
+      .savings-halo::before {
+        content: "";
+        position: absolute;
+        inset: -18px;
+        background: radial-gradient(
+          circle at top,
+          rgba(37, 99, 235, 0.16),
+          transparent 60%
+        );
+        opacity: 0.9;
+        z-index: -2;
+      }
+
+      .savings-halo::after {
+        content: "";
+        position: absolute;
+        inset: -2px;
+        border-radius: 1.5rem;
+        border: 1px solid rgba(6, 182, 212, 0.35);
+        box-shadow: 0 0 45px rgba(6, 182, 212, 0.55);
+        z-index: -1;
+      }
+
+      /* Custom thin scrollbars for dropdown */
+      .custom-scroll::-webkit-scrollbar {
+        width: 6px;
+      }
+      .custom-scroll::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scroll::-webkit-scrollbar-thumb {
+        background: rgba(148, 163, 184, 0.8);
+        border-radius: 999px;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen">
+    <div class="min-h-screen flex flex-col">
+      <div id="root" class="flex-1 flex flex-col"></div>
     </div>
-    <div class="app-header-right">
-      Session: Setup AI employee
-    </div>
-  </header>
 
-  <!-- Progress system -->
-  <div class="progress-shell">
-    <div class="progress-bar">
-      <!-- Stage labels chosen: Scope / Systems / Workflows / Launch -->
-      <button
-        class="progress-step is-active"
-        data-step="1"
-        data-title="Scope your AI employee"
-        data-subtitle="Define outcomes, guardrails, and success metrics before granting access."
-      >
-        <span class="dot"></span>
-        <span>Scope</span>
-      </button>
-      <button
-        class="progress-step"
-        data-step="2"
-        data-title="Connect your systems"
-        data-subtitle="Select the CRMs, inboxes, and channels this AI employee is allowed to touch."
-      >
-        <span class="dot"></span>
-        <span>Systems</span>
-      </button>
-      <button
-        class="progress-step"
-        data-step="3"
-        data-title="Design workflows"
-        data-subtitle="Describe how this AI employee handles leads, tasks, and escalations in your pipeline."
-      >
-        <span class="dot"></span>
-        <span>Workflows</span>
-      </button>
-      <button
-        class="progress-step"
-        data-step="4"
-        data-title="Launch & review"
-        data-subtitle="Lock in approvals, simulate a few runs, then activate this AI employee in production."
-      >
-        <span class="dot"></span>
-        <span>Launch</span>
-      </button>
-    </div>
-  </div>
+    <script
+      type="text/babel"
+      data-type="module"
+      data-presets="typescript,react"
+    >
+      const { useState, useMemo, useEffect, useRef, createContext, useContext } =
+        React;
 
-  <!-- Main card -->
-  <main class="app-main">
-    <section class="stage-card" data-active-step="1">
-      <header class="stage-header">
-        <div class="stage-pill" id="stage-pill">
-          <span class="stage-pill-dot"></span>
-          <span>Stage 1 · Scope</span>
-        </div>
-        <h1 class="stage-title" id="stage-title">Scope your AI employee</h1>
-        <p class="stage-subtitle" id="stage-subtitle">
-          Define outcomes, guardrails, and success metrics before granting access.
-        </p>
-      </header>
+      // ---------- Utility ----------
 
-      <div class="stage-body">
-        <div>
-          <div class="stage-section-title">What this stage does</div>
-          <ul class="stage-list" id="stage-list">
-            <li>Capture the exact revenue or efficiency outcome you expect from this AI employee.</li>
-            <li>Specify which human roles it supports or replaces (e.g. SDR, AM, onboarding specialist).</li>
-            <li>Define non-negotiable guardrails: what it must never send, change, or delete.</li>
-            <li>Outline the approval model: when it can act autonomously vs. when it must request review.</li>
-          </ul>
-        </div>
-
-        <aside class="stage-meta">
-          <div class="stage-meta-row">
-            <div>
-              <div class="stage-meta-label">Estimated time</div>
-              <div class="stage-meta-value" id="stage-time">3–5 minutes</div>
-            </div>
-            <div>
-              <div class="stage-meta-label">Confidence</div>
-              <div class="stage-meta-value" id="stage-confidence">Improves output quality by 80%+</div>
-            </div>
-          </div>
-          <div class="stage-meta-hint" id="stage-hint">
-            Stay high-signal: describe the outcome and constraints. The AI employee will infer the implementation details in later stages.
-          </div>
-        </aside>
-      </div>
-    </section>
-  </main>
-
-  <!-- Bottom zone / footer -->
-  <footer class="app-footer">
-    <div class="footer-left">
-      End-to-end encrypted. Your data never leaves your control.
-    </div>
-    <div class="footer-center">
-      © 2025 ROBOTS. All rights reserved.
-    </div>
-    <div class="footer-right">
-      <div class="platform-badges" aria-label="Supported platforms">
-        <div class="platform-badge salesforce" aria-label="Salesforce"></div>
-        <div class="platform-badge hubspot" aria-label="HubSpot"></div>
-        <div class="platform-badge pipedrive" aria-label="Pipedrive"></div>
-        <div class="platform-badge meta" aria-label="Meta"></div>
-        <div class="platform-badge whatsapp" aria-label="WhatsApp"></div>
-        <div class="platform-badge google" aria-label="Google Workspace"></div>
-        <div class="platform-badge apple" aria-label="Apple Business"></div>
-      </div>
-    </div>
-  </footer>
-
-  <script>
-    // Minimal stage-switching logic.
-    const steps = document.querySelectorAll(".progress-step");
-    const stageCard = document.querySelector(".stage-card");
-    const pill = document.getElementById("stage-pill");
-    const title = document.getElementById("stage-title");
-    const subtitle = document.getElementById("stage-subtitle");
-    const list = document.getElementById("stage-list");
-    const time = document.getElementById("stage-time");
-    const confidence = document.getElementById("stage-confidence");
-    const hint = document.getElementById("stage-hint");
-
-    const stagePresets = {
-      1: {
-        bullets: [
-          "Capture the exact revenue or efficiency outcome you expect from this AI employee.",
-          "Specify which human roles it supports or replaces (e.g. SDR, AM, onboarding specialist).",
-          "Define non-negotiable guardrails: what it must never send, change, or delete.",
-          "Outline the approval model: when it can act autonomously vs. when it must request review."
-        ],
-        time: "3–5 minutes",
-        confidence: "Improves output quality by 80%+",
-        hint:
-          "Stay high-signal: describe the outcome and constraints. The AI employee will infer the implementation details in later stages."
-      },
-      2: {
-        bullets: [
-          "Select CRMs and channels (Salesforce, HubSpot, Pipedrive, WhatsApp, etc.) this AI employee can read from.",
-          "Choose which fields, objects, and inboxes it can modify versus read-only access.",
-          "Decide how often it syncs (real time vs. scheduled).",
-          "Lock in access boundaries so every action is fully auditable."
-        ],
-        time: "4–6 minutes",
-        confidence: "Reduces integration mistakes by 90%",
-        hint:
-          "Grant the minimum access required for the outcome you defined. You can always expand permissions later."
-      },
-      3: {
-        bullets: [
-          "Describe how new leads, tickets, or tasks appear in your system today.",
-          "Map the AI employee’s actions: create, update, route, and notify.",
-          "Define escalation paths when confidence is low or data is incomplete.",
-          "Set limits on batch actions to protect your pipeline from bad runs."
-        ],
-        time: "5–8 minutes",
-        confidence: "Cuts manual handling time per item by 60–80%",
-        hint:
-          "Think in if-this-then-that blocks. The richer the workflow description, the fewer edge cases later."
-      },
-      4: {
-        bullets: [
-          "Run sandbox simulations on historical data before turning anything live.",
-          "Review all auto-generated messages and updates before approving.",
-          "Pick a controlled rollout: limited segment, region, or pipeline stage.",
-          "Activate live mode with full audit logs and easy rollback."
-        ],
-        time: "3–5 minutes",
-        confidence: "Keeps launch risk low while proving ROI fast",
-        hint:
-          "Start narrow. Prove value on a small slice, then widen scope once the metrics are stable."
+      function classNames(...values: Array<string | undefined | false>) {
+        return values.filter(Boolean).join(" ");
       }
-    };
 
-    steps.forEach((stepBtn) => {
-      stepBtn.addEventListener("click", () => {
-        const step = stepBtn.dataset.step;
+      function formatCurrency(value: number): string {
+        if (!Number.isFinite(value) || value <= 0) return "—";
+        return new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: "USD",
+          maximumFractionDigits: 0,
+        }).format(value);
+      }
 
-        steps.forEach((b) => {
-          b.classList.remove("is-active");
-          const stepIndex = Number(b.dataset.step);
-          if (stepIndex < Number(step)) {
-            b.classList.add("is-completed");
+      function formatNumber(value: number): string {
+        if (!Number.isFinite(value) || value <= 0) return "—";
+        return new Intl.NumberFormat("en-US", {
+          maximumFractionDigits: 0,
+        }).format(value);
+      }
+
+      // ---------- Primitive: Button (approximation of your Button) ----------
+
+      type ButtonVariant =
+        | "default"
+        | "secondary"
+        | "outline"
+        | "ghost"
+        | "link";
+
+      type ButtonSize = "sm" | "default" | "lg" | "icon";
+
+      type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+        variant?: ButtonVariant;
+        size?: ButtonSize;
+      };
+
+      const Button: React.FC<ButtonProps> = ({
+        variant = "default",
+        size = "default",
+        className,
+        children,
+        ...props
+      }) => {
+        const base =
+          "inline-flex items-center justify-center whitespace-nowrap rounded-full font-medium text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--cta-primary)] disabled:opacity-50 disabled:pointer-events-none";
+        const variants: Record<ButtonVariant, string> = {
+          default:
+            "bg-[var(--cta-primary)] text-white shadow-sm hover:bg-[var(--cta-primary)] hover:bg-gradient-to-tr hover:from-[var(--cta-primary)] hover:to-[#4F46E5] hover:shadow-[0_0_0_1px_rgba(37,99,235,0.18),0_20px_40px_rgba(37,99,235,0.25)] active:bg-[var(--cta-primary-press)]",
+          secondary:
+            "bg-transparent border border-[var(--border-soft)] text-slate-900 hover:border-[var(--accent-cyan)] hover:bg-[rgba(6,182,212,0.04)]",
+          outline:
+            "bg-white border border-[var(--border-soft)] text-slate-900 hover:border-[var(--border-strong)] hover:bg-slate-50/80",
+          ghost:
+            "bg-transparent text-slate-700 hover:bg-slate-100/70 hover:text-slate-900",
+          link: "bg-transparent text-[var(--cta-primary)] underline-offset-4 hover:underline px-0 h-auto",
+        };
+        const sizes: Record<ButtonSize, string> = {
+          sm: "h-8 px-3 text-xs",
+          default: "h-10 px-4",
+          lg: "h-11 px-6 text-[0.95rem]",
+          icon: "h-10 w-10",
+        };
+        return (
+          <button
+            className={classNames(base, variants[variant], sizes[size], className)}
+            {...props}
+          >
+            {children}
+          </button>
+        );
+      };
+
+      // ---------- Primitive: InteractiveHoverButton ----------
+
+      type InteractiveHoverButtonProps =
+        React.ButtonHTMLAttributes<HTMLButtonElement> & {
+          text?: string;
+        };
+
+      const InteractiveHoverButton: React.FC<InteractiveHoverButtonProps> = ({
+        text = "Book a call",
+        className,
+        ...props
+      }) => {
+        return (
+          <button
+            {...props}
+            className={classNames(
+              "group relative inline-flex h-11 w-40 items-center justify-center overflow-hidden rounded-full border border-slate-300 bg-white/80 px-5 text-sm font-medium text-slate-900 cursor-pointer transition-all hover:shadow-[0_18px_40px_rgba(15,23,42,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--cta-primary)]",
+              className
+            )}
+          >
+            {/* Base label */}
+            <span className="relative z-10 flex items-center gap-1 text-[0.8rem] tracking-wide transition-all duration-300 group-hover:-translate-x-3 group-hover:opacity-0">
+              {text}
+            </span>
+
+            {/* Hover label */}
+            <span className="pointer-events-none absolute inset-0 z-10 flex translate-x-3 items-center justify-center gap-1 text-[0.8rem] font-semibold text-white opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100">
+              <span>{text}</span>
+              <span className="text-xs">→</span>
+            </span>
+
+            {/* Expanding blob */}
+            <span
+              className="pointer-events-none absolute left-[22%] top-[40%] h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-md bg-[var(--cta-primary)] transition-all duration-300 group-hover:left-0 group-hover:top-0 group-hover:h-full group-hover:w-full group-hover:rounded-[999px]"
+              aria-hidden="true"
+            ></span>
+          </button>
+        );
+      };
+
+      // ---------- Primitive: InputWithTags (approximation) ----------
+
+      type InputWithTagsProps = {
+        value: string[];
+        onChange: (tags: string[]) => void;
+        placeholder?: string;
+        limit?: number;
+      };
+
+      const InputWithTags: React.FC<InputWithTagsProps> = ({
+        value,
+        onChange,
+        placeholder = "Type a workflow and press Enter…",
+        limit = 10,
+      }) => {
+        const [input, setInput] = useState("");
+
+        const canAddMore = value.length < limit;
+
+        function addTag() {
+          const trimmed = input.trim();
+          if (!trimmed || !canAddMore) return;
+          if (value.includes(trimmed)) {
+            setInput("");
+            return;
           }
+          onChange([...value, trimmed]);
+          setInput("");
+        }
+
+        function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            addTag();
+          }
+        }
+
+        function handleRemove(tag: string) {
+          onChange(value.filter((t) => t !== tag));
+        }
+
+        return (
+          <div className="space-y-3">
+            <div
+              className={classNames(
+                "flex items-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-[#F9FAFB] px-3 py-2 text-sm shadow-sm transition-all",
+                canAddMore
+                  ? "hover:border-[var(--accent-cyan)] hover:shadow-[0_0_0_1px_rgba(6,182,212,0.15),0_18px_40px_rgba(15,23,42,0.10)]"
+                  : "bg-[#EEF2FF] text-[var(--text-tertiary)]"
+              )}
+            >
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={!canAddMore}
+                placeholder={
+                  canAddMore
+                    ? placeholder
+                    : "Tag limit reached – remove one to add another."
+                }
+                className={classNames(
+                  "flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400",
+                  !canAddMore && "cursor-not-allowed text-[var(--text-tertiary)]"
+                )}
+              />
+              {canAddMore && (
+                <span className="text-[0.7rem] text-[var(--text-tertiary)]">
+                  {value.length}/{limit}
+                </span>
+              )}
+            </div>
+            {value.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {value.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs text-slate-800 shadow-sm border border-slate-200/80 backdrop-blur-sm transition-all hover:shadow-md"
+                  >
+                    <span className="truncate max-w-[150px]">{tag}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemove(tag)}
+                      className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900/80 text-[0.6rem] text-white transition-all hover:scale-110 hover:bg-slate-900"
+                    >
+                      ✕
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      };
+
+      // ---------- Primitive: Simple Select family (Radix-inspired) ----------
+
+      type SelectContextValue = {
+        value: string;
+        onValueChange: (v: string) => void;
+        open: boolean;
+        setOpen: (open: boolean) => void;
+        containerRef: React.RefObject<HTMLDivElement>;
+      };
+
+      const SelectContext = createContext<SelectContextValue | null>(null);
+
+      type SelectRootProps = {
+        value: string;
+        onValueChange: (v: string) => void;
+        children: React.ReactNode;
+      };
+
+      const Select: React.FC<SelectRootProps> = ({
+        value,
+        onValueChange,
+        children,
+      }) => {
+        const [open, setOpen] = useState(false);
+        const containerRef = useRef<HTMLDivElement | null>(null);
+
+        useEffect(() => {
+          function handleClickOutside(e: MouseEvent) {
+            if (!containerRef.current) return;
+            if (!containerRef.current.contains(e.target as Node)) {
+              setOpen(false);
+            }
+          }
+          document.addEventListener("mousedown", handleClickOutside);
+          return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+          };
+        }, []);
+
+        const ctx: SelectContextValue = {
+          value,
+          onValueChange: (v) => {
+            onValueChange(v);
+            setOpen(false);
+          },
+          open,
+          setOpen,
+          containerRef,
+        };
+
+        return (
+          <SelectContext.Provider value={ctx}>
+            <div ref={containerRef} className="relative w-full">
+              {children}
+            </div>
+          </SelectContext.Provider>
+        );
+      };
+
+      const useSelectContext = (): SelectContextValue => {
+        const ctx = useContext(SelectContext);
+        if (!ctx) {
+          throw new Error("Select components must be used inside <Select />");
+        }
+        return ctx;
+      };
+
+      type SelectTriggerProps = {
+        children: React.ReactNode;
+      } & React.ButtonHTMLAttributes<HTMLButtonElement>;
+
+      const SelectTrigger: React.FC<SelectTriggerProps> = ({
+        children,
+        className,
+        ...props
+      }) => {
+        const { open, setOpen } = useSelectContext();
+        return (
+          <button
+            type="button"
+            {...props}
+            onClick={() => setOpen(!open)}
+            className={classNames(
+              "flex h-10 w-full items-center justify-between rounded-2xl border border-[var(--border-soft)] bg-[#F9FAFB] px-3 text-sm text-slate-900 shadow-sm transition-all hover:border-[var(--accent-cyan)] hover:shadow-[0_0_0_1px_rgba(6,182,212,0.18),0_18px_40px_rgba(15,23,42,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--accent-cyan)]",
+              className
+            )}
+          >
+            <span className="flex flex-1 items-center gap-2 text-left">
+              {children}
+            </span>
+            <span
+              className={classNames(
+                "ml-2 text-xs text-slate-400 transition-transform duration-200",
+                open && "rotate-180"
+              )}
+            >
+              ▼
+            </span>
+          </button>
+        );
+      };
+
+      type SelectValueProps = {
+        placeholder?: string;
+      };
+
+      const SelectValue: React.FC<SelectValueProps> = ({ placeholder }) => {
+        const { value } = useSelectContext();
+        return (
+          <span
+            className={classNames(
+              "truncate text-xs",
+              value ? "text-slate-900" : "text-slate-400"
+            )}
+          >
+            {value || placeholder}
+          </span>
+        );
+      };
+
+      type SelectContentProps = {
+        children: React.ReactNode;
+      };
+
+      const SelectContent: React.FC<SelectContentProps> = ({ children }) => {
+        const { open } = useSelectContext();
+        if (!open) return null;
+
+        return (
+          <div className="absolute left-0 right-0 z-30 mt-2 rounded-2xl border border-[var(--border-soft)] bg-white/95 shadow-[0_18px_50px_rgba(15,23,42,0.22)] backdrop-blur-md">
+            <div className="max-h-64 overflow-y-auto p-1 custom-scroll">
+              {children}
+            </div>
+          </div>
+        );
+      };
+
+      type SelectItemProps = {
+        value: string;
+        children: React.ReactNode;
+      } & React.HTMLAttributes<HTMLDivElement>;
+
+      const SelectItem: React.FC<SelectItemProps> = ({
+        value,
+        children,
+        className,
+        ...props
+      }) => {
+        const ctx = useSelectContext();
+        const selected = ctx.value === value;
+        return (
+          <div
+            {...props}
+            onClick={() => ctx.onValueChange(value)}
+            className={classNames(
+              "flex cursor-pointer items-center justify-between rounded-xl px-3 py-2 text-xs text-slate-700 transition-all hover:bg-[var(--accent-cyan-soft)] hover:text-slate-900",
+              selected &&
+                "bg-[var(--accent-cyan-soft)] text-slate-900 font-medium",
+              className
+            )}
+          >
+            <span>{children}</span>
+            {selected && (
+              <span className="ml-2 text-[0.65rem] text-[var(--accent-cyan)]">
+                ●
+              </span>
+            )}
+          </div>
+        );
+      };
+
+      // ---------- Form / App ----------
+
+      type Stage = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+
+      type FormState = {
+        companyDescription: string;
+        workflows: string[];
+        impact90Days: string;
+        role: string;
+        companySize: string;
+        timeline: string;
+        hourlyCost: string;
+        hoursPerWeek: string;
+      };
+
+      const STEP_LABELS = [
+        "Context",
+        "Money Leaks",
+        "Workload Map",
+        "Automation Fit",
+        "ROI Preview",
+        "Call Setup",
+      ];
+
+      function getActiveStep(stage: Stage): number {
+        if (stage <= 0) return 1;
+        if (stage >= 7) return 6;
+        return stage;
+      }
+
+      function getProgress(stage: Stage): number {
+        if (stage <= 0) return 0;
+        if (stage >= 7) return 1;
+        return stage / 6;
+      }
+
+      function getStepLabel(stage: Stage): string {
+        const step = getActiveStep(stage);
+        return STEP_LABELS[step - 1];
+      }
+
+      const App: React.FC = () => {
+        const [stage, setStage] = useState<Stage>(0);
+        const [form, setForm] = useState<FormState>({
+          companyDescription: "",
+          workflows: [],
+          impact90Days: "",
+          role: "",
+          companySize: "",
+          timeline: "",
+          hourlyCost: "",
+          hoursPerWeek: "",
         });
 
-        stepBtn.classList.add("is-active");
+        const automationFactor = 0.7;
 
-        stageCard.setAttribute("data-active-step", step);
-
-        pill.querySelector("span:last-child").textContent =
-          "Stage " + step + " · " + stepBtn.textContent.trim();
-
-        title.textContent = stepBtn.dataset.title;
-        subtitle.textContent = stepBtn.dataset.subtitle;
-
-        const preset = stagePresets[step];
-        if (preset) {
-          list.innerHTML = "";
-          preset.bullets.forEach((item) => {
-            const li = document.createElement("li");
-            li.textContent = item;
-            list.appendChild(li);
-          });
-          time.textContent = preset.time;
-          confidence.textContent = preset.confidence;
-          hint.textContent = preset.hint;
+        function updateForm<K extends keyof FormState>(
+          key: K,
+          value: FormState[K]
+        ) {
+          setForm((prev) => ({ ...prev, [key]: value }));
         }
-      });
-    });
-  </script>
-</body>
+
+        const roi = useMemo(() => {
+          const hourly = parseFloat(form.hourlyCost.replace(/[^0-9.]/g, ""));
+          const hours = parseFloat(form.hoursPerWeek.replace(/[^0-9.]/g, ""));
+          if (!Number.isFinite(hourly) || !Number.isFinite(hours)) {
+            return {
+              hasRoi: false,
+              hourly: 0,
+              hoursPerWeek: 0,
+              monthlyHours: 0,
+              yearlyHours: 0,
+              monthlyCost: 0,
+              yearlyCost: 0,
+              monthlySavings: 0,
+              yearlySavings: 0,
+              yearlyHoursReclaimed: 0,
+            };
+          }
+          const weeksPerYear = 52;
+          const weeksPerMonth = weeksPerYear / 12;
+          const monthlyHours = hours * weeksPerMonth;
+          const yearlyHours = hours * weeksPerYear;
+          const monthlyCost = hourly * monthlyHours;
+          const yearlyCost = hourly * yearlyHours;
+          const monthlySavings = monthlyCost * automationFactor;
+          const yearlySavings = yearlyCost * automationFactor;
+          const yearlyHoursReclaimed = yearlyHours * automationFactor;
+
+          return {
+            hasRoi: hourly > 0 && hours > 0,
+            hourly,
+            hoursPerWeek: hours,
+            monthlyHours,
+            yearlyHours,
+            monthlyCost,
+            yearlyCost,
+            monthlySavings,
+            yearlySavings,
+            yearlyHoursReclaimed,
+          };
+        }, [form.hourlyCost, form.hoursPerWeek]);
+
+        const activeStep = getActiveStep(stage);
+        const progress = getProgress(stage);
+        const stepLabel = getStepLabel(stage);
+
+        function goNext() {
+          setStage((prev) => Math.min((prev + 1) as Stage, 7));
+        }
+
+        function goBack() {
+          setStage((prev) => Math.max((prev - 1) as Stage, 0));
+        }
+
+        function goToResults() {
+          setStage(7);
+        }
+
+        // ---------- Stage Renderers ----------
+
+        const introStage = (
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <p className="text-xs font-medium uppercase tracking-[0.16em] text-[var(--text-tertiary)]">
+                Pre-call qualification · 6 questions
+              </p>
+              <h2 className="text-2xl font-semibold text-[var(--text-primary)] leading-snug">
+                In 6 questions, we'll pinpoint exactly where an AI employee will
+                plug into your business.
+              </h2>
+              <p className="text-sm text-[var(--text-secondary)] max-w-xl">
+                We’ll map your current workflows, quantify time and money burn,
+                and surface a concrete automation fit—not a generic demo.
+              </p>
+            </div>
+            <div className="grid gap-4 text-sm text-[var(--text-secondary)] sm:grid-cols-3">
+              <div className="rounded-2xl border border-[var(--border-soft)] bg-white/60 p-4 shadow-sm">
+                <p className="text-xs font-medium text-[var(--text-tertiary)] mb-1">
+                  01 · Workflows
+                </p>
+                <p className="text-sm">
+                  Identify 3–5 repetitive processes that quietly eat your team’s
+                  time.
+                </p>
+              </div>
+              <div className="rounded-2xl border border-[var(--border-soft)] bg-white/60 p-4 shadow-sm">
+                <p className="text-xs font-medium text-[var(--text-tertiary)] mb-1">
+                  02 · Money leaks
+                </p>
+                <p className="text-sm">
+                  Quantify the monthly and yearly cost of keeping these manual.
+                </p>
+              </div>
+              <div className="rounded-2xl border border-[var(--border-soft)] bg-white/60 p-4 shadow-sm">
+                <p className="text-xs font-medium text-[var(--text-tertiary)] mb-1">
+                  03 · Automation fit
+                </p>
+                <p className="text-sm">
+                  See where an AI employee can reclaim hours and headcount.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-xs text-[var(--text-secondary)]">
+                Takes about{" "}
+                <span className="font-medium text-slate-900">2–3 minutes</span>.
+                No slides. No generic pitches.
+              </div>
+              <div className="flex items-center gap-3">
+                <Button size="lg" onClick={() => setStage(1 as Stage)}>
+                  Begin qualification
+                </Button>
+                <button
+                  type="button"
+                  className="text-xs text-[var(--text-secondary)] underline-offset-4 hover:underline"
+                >
+                  Skip to savings →{" "}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+
+        const stage1 = (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-semibold text-[var(--text-primary)]">
+                What does your company sell, and who is your ideal customer?
+              </h2>
+              <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                1–2 sentences. For example,{" "}
+                <span className="italic text-slate-700">
+                  “we help X achieve Y through Z.”
+                </span>
+              </p>
+            </div>
+            <div>
+              <textarea
+                rows={4}
+                value={form.companyDescription}
+                onChange={(e) =>
+                  updateForm("companyDescription", e.target.value)
+                }
+                placeholder="We help __ achieve __ through __."
+                className="mt-2 w-full rounded-2xl border border-[var(--border-soft)] bg-[#F9FAFB] px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition-all focus:border-[var(--accent-cyan)] focus:bg-white focus:shadow-[0_0_0_1px_rgba(6,182,212,0.25),0_18px_40px_rgba(15,23,42,0.12)] focus:outline-none"
+              />
+              <p className="mt-2 text-xs text-[var(--text-tertiary)]">
+                This gives us context so we map the AI employee to your actual
+                revenue motion, not generic tasks.
+              </p>
+            </div>
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <Button variant="ghost" onClick={goBack}>
+                ← Back
+              </Button>
+              <Button onClick={goNext}>Next: Money leaks →</Button>
+            </div>
+          </div>
+        );
+
+        const stage2 = (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-semibold text-[var(--text-primary)]">
+                If you could deploy an AI employee in the next 30 days, which
+                workflows would you prioritize?
+              </h2>
+              <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                Add 3–5 repetitive workflows that consume time, limit
+                productivity, or pull you away from strategic work.
+              </p>
+            </div>
+            <InputWithTags
+              value={form.workflows}
+              onChange={(tags) => updateForm("workflows", tags)}
+              placeholder="Examples: qualifying inbound leads, routing support tickets, updating CRM fields…"
+              limit={8}
+            />
+            <p className="text-xs text-[var(--text-tertiary)]">
+              Press <span className="font-semibold">Enter</span> after each
+              workflow. We’ll use this list to design your first AI employee.
+            </p>
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <Button variant="ghost" onClick={goBack}>
+                ← Back
+              </Button>
+              <Button onClick={goNext}>Next: Workload map →</Button>
+            </div>
+          </div>
+        );
+
+        const stage3 = (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-xl font-semibold text-[var(--text-primary)]">
+                How many employees are in your company?
+              </h2>
+              <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                This helps us understand the scale of the workflows you listed
+                and where an AI employee can remove headcount pressure.
+              </p>
+            </div>
+            <div className="max-w-xs">
+              <Select
+                value={form.companySize}
+                onValueChange={(v) => updateForm("companySize", v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select company size" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1–5">1–5</SelectItem>
+                  <SelectItem value="6–20">6–20</SelectItem>
+                  <SelectItem value="21–50">21–50</SelectItem>
+                  <SelectItem value="51–200">51–200</SelectItem>
+                  <SelectItem value="200+">200+</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="mt-2 text-xs text-[var(--text-tertiary)]">
+                Rough ranges are enough—we’re not doing HR compliance, just
+                mapping workload density.
+              </p>
+            </div>
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <Button variant="ghost" onClick={goBack}>
+                ← Back
+              </Button>
+              <Button onClick={goNext}>Next: Automation fit →</Button>
+            </div>
+          </div>
+        );
+
+        const stage4 = (
+          <div className="space-y-8">
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-semibold text-[var(--text-primary)]">
+                  90 days from now, what will this AI employee have changed most
+                  in your business?
+                </h2>
+                <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                  1–2 sentences. Think in concrete outcomes:{" "}
+                  <span className="italic text-slate-700">
+                    faster response times, more qualified leads, more booked
+                    calls, less manual admin, higher MRR, etc.
+                  </span>
+                </p>
+              </div>
+              <textarea
+                rows={4}
+                value={form.impact90Days}
+                onChange={(e) => updateForm("impact90Days", e.target.value)}
+                placeholder="In 90 days, we’ll see…"
+                className="mt-2 w-full rounded-2xl border border-[var(--border-soft)] bg-[#F9FAFB] px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm transition-all focus:border-[var(--accent-cyan)] focus:bg-white focus:shadow-[0_0_0_1px_rgba(6,182,212,0.25),0_18px_40px_rgba(15,23,42,0.12)] focus:outline-none"
+              />
+            </div>
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-[var(--text-primary)]">
+                Which best describes your role?
+              </p>
+              <div className="max-w-sm">
+                <Select
+                  value={form.role}
+                  onValueChange={(v) => updateForm("role", v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Founder / Owner">
+                      Founder / Owner — You own the company and make key
+                      decisions.
+                    </SelectItem>
+                    <SelectItem value="C-Level / VP">
+                      C-Level / VP — Executive leadership with P&amp;L or
+                      functional ownership.
+                    </SelectItem>
+                    <SelectItem value="Operations / Systems">
+                      Operations / Systems — You own processes, tooling, and
+                      systems.
+                    </SelectItem>
+                    <SelectItem value="Marketing / Sales">
+                      Marketing / Sales — You own pipeline, demand, and revenue
+                      motion.
+                    </SelectItem>
+                    <SelectItem value="Other">
+                      Other — Consultant, advisor, or individual contributor.
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <Button variant="ghost" onClick={goBack}>
+                ← Back
+              </Button>
+              <Button onClick={goNext}>Next: ROI preview →</Button>
+            </div>
+          </div>
+        );
+
+        const stage5 = (
+          <div className="space-y-8">
+            <div>
+              <h2 className="text-xl font-semibold text-[var(--text-primary)]">
+                Let’s quantify the time &amp; money burn.
+              </h2>
+              <p className="mt-2 text-sm text-[var(--text-secondary)] max-w-xl">
+                We’ll use this to estimate savings if an AI employee takes over
+                ~70% of the workflows you listed. You’ll get a live preview
+                below and a full dashboard on the next screen.
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-[var(--text-primary)]">
+                  Average hourly cost per employee
+                </label>
+                <div className="flex items-center rounded-2xl border border-[var(--border-soft)] bg-[#F9FAFB] px-3 py-2 shadow-sm transition-all focus-within:border-[var(--accent-cyan)] focus-within:bg-white focus-within:shadow-[0_0_0_1px_rgba(6,182,212,0.25),0_18px_40px_rgba(15,23,42,0.12)]">
+                  <span className="mr-2 text-xs text-[var(--text-secondary)]">
+                    $
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={form.hourlyCost}
+                    onChange={(e) => updateForm("hourlyCost", e.target.value)}
+                    placeholder="e.g. 45"
+                    className="w-full bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400"
+                  />
+                  <span className="ml-2 text-[0.7rem] text-[var(--text-tertiary)]">
+                    / hr
+                  </span>
+                </div>
+                <p className="text-xs text-[var(--text-tertiary)]">
+                  Include salary, taxes, tools, and overhead per productive
+                  hour.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-[var(--text-primary)]">
+                  Hours per week a single employee spends on these workflows
+                </label>
+                <div className="flex items-center rounded-2xl border border-[var(--border-soft)] bg-[#F9FAFB] px-3 py-2 shadow-sm transition-all focus-within:border-[var(--accent-cyan)] focus-within:bg-white focus-within:shadow-[0_0_0_1px_rgba(6,182,212,0.25),0_18px_40px_rgba(15,23,42,0.12)]">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    value={form.hoursPerWeek}
+                    onChange={(e) => updateForm("hoursPerWeek", e.target.value)}
+                    placeholder="e.g. 12"
+                    className="w-full bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400"
+                  />
+                  <span className="ml-2 text-[0.7rem] text-[var(--text-tertiary)]">
+                    hrs / week
+                  </span>
+                </div>
+                <p className="text-xs text-[var(--text-tertiary)]">
+                  Rough estimate is fine. We’ll assume these hours are
+                  repeatable every week.
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-[var(--border-soft)] bg-white/80 px-4 py-4 shadow-sm sm:px-6 savings-halo">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+                    Live ROI preview
+                  </p>
+                  <p className="mt-1 text-sm text-[var(--text-secondary)] max-w-md">
+                    Assuming{" "}
+                    <span className="font-semibold text-slate-900">
+                      70% of these workflows are automated
+                    </span>
+                    , here’s what your current manual workload costs you.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-4 text-xs sm:text-sm sm:min-w-[260px]">
+                  <div>
+                    <p className="text-[var(--text-tertiary)]">Manual work</p>
+                    <p className="mt-1 font-semibold text-[var(--text-primary)]">
+                      {formatCurrency(roi.monthlyCost)}
+                      <span className="ml-1 text-[0.7rem] text-[var(--text-tertiary)]">
+                        / month
+                      </span>
+                    </p>
+                    <p className="text-[0.7rem] text-[var(--text-tertiary)]">
+                      {formatCurrency(roi.yearlyCost)} / year
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[var(--text-tertiary)]">
+                      Potential savings (70% automated)
+                    </p>
+                    <p className="mt-1 font-semibold text-[var(--success)]">
+                      {formatCurrency(roi.yearlySavings)}
+                      <span className="ml-1 text-[0.7rem] text-[var(--text-tertiary)]">
+                        / year
+                      </span>
+                    </p>
+                    <p className="text-[0.7rem] text-[var(--text-tertiary)]">
+                      {formatNumber(roi.yearlyHoursReclaimed)} hours reclaimed /
+                      year
+                    </p>
+                  </div>
+                </div>
+              </div>
+              {!roi.hasRoi && (
+                <p className="mt-3 text-[0.7rem] text-[var(--text-tertiary)]">
+                  Add both numbers above to unlock a precise preview. You can
+                  still continue without them, but your savings math will be
+                  conservative.
+                </p>
+              )}
+            </div>
+
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <Button variant="ghost" onClick={goBack}>
+                ← Back
+              </Button>
+              <Button onClick={goNext}>Next: Call setup →</Button>
+            </div>
+          </div>
+        );
+
+        const stage6 = (
+          <div className="space-y-8">
+            <div>
+              <h2 className="text-xl font-semibold text-[var(--text-primary)]">
+                What is your timeline for addressing this challenge?
+              </h2>
+              <p className="mt-2 text-sm text-[var(--text-secondary)] max-w-xl">
+                This lets us match the implementation depth and rollout plan to
+                your urgency.
+              </p>
+            </div>
+            <div className="max-w-md space-y-3">
+              <Select
+                value={form.timeline}
+                onValueChange={(v) => updateForm("timeline", v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your timeline" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Currently gathering information">
+                    Currently gathering information
+                  </SelectItem>
+                  <SelectItem value="Planning to address this at some point">
+                    Planning to address this at some point
+                  </SelectItem>
+                  <SelectItem value="Critical priority within 60 days">
+                    This is a critical priority that needs to be resolved within
+                    60 days
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-[var(--text-tertiary)]">
+                We’ll use this on the call to prioritise which workflows get
+                automated first.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-white/60 px-4 py-4 text-xs text-[var(--text-secondary)] sm:px-5">
+              <p>
+                Thanks — got it. Based on your answers, the next step is a{" "}
+                <span className="font-semibold text-[var(--text-primary)]">
+                  focused 30-minute call
+                </span>{" "}
+                where we map a specific AI employee to the workflows you
+                selected. This is not a demo call — we’re building your custom
+                automation roadmap together.
+              </p>
+            </div>
+
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <Button variant="ghost" onClick={goBack}>
+                ← Back
+              </Button>
+              <Button onClick={goToResults}>Continue to results →</Button>
+            </div>
+          </div>
+        );
+
+        const resultsStage = (
+          <div className="space-y-8">
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+                Time &amp; money burn · savings dashboard
+              </p>
+              <h2 className="text-2xl font-semibold text-[var(--text-primary)]">
+                Here’s what an AI employee could reclaim for you.
+              </h2>
+              <p className="text-sm text-[var(--text-secondary)] max-w-2xl">
+                We’ve modelled your manual workload using the numbers you shared
+                and a{" "}
+                <span className="font-semibold text-slate-900">
+                  70% automation assumption
+                </span>{" "}
+                — conservative for well-defined, repetitive workflows.
+              </p>
+            </div>
+
+            {/* Hero savings card */}
+            <div className="rounded-3xl border border-[var(--border-soft)] bg-white/90 px-5 py-6 shadow-card savings-halo shadow-card-hover transition-all sm:px-7">
+              <div className="grid gap-6 md:grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)] md:items-center">
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--text-tertiary)]">
+                      Estimated yearly savings
+                    </p>
+                    <p className="mt-2 text-3xl font-semibold text-slate-900 sm:text-4xl">
+                      {formatCurrency(roi.yearlySavings)}
+                    </p>
+                    <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                      ≈ {formatCurrency(roi.monthlySavings)} per month in manual
+                      workload you no longer pay humans to do.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-4 text-xs sm:grid-cols-3 sm:text-sm">
+                    <div className="rounded-2xl bg-slate-50/80 px-3 py-3 border border-slate-200/80">
+                      <p className="text-[var(--text-tertiary)]">
+                        Manual work today
+                      </p>
+                      <p className="mt-1 font-semibold text-[var(--text-primary)]">
+                        {formatCurrency(roi.monthlyCost)}
+                        <span className="ml-1 text-[0.7rem] text-[var(--text-tertiary)]">
+                          / month
+                        </span>
+                      </p>
+                      <p className="mt-1 text-[0.7rem] text-[var(--text-tertiary)]">
+                        {formatCurrency(roi.yearlyCost)} / year currently
+                        burned on repetitive workflows.
+                      </p>
+                    </div>
+                    <div className="rounded-2xl bg-[var(--accent-cyan-soft)] px-3 py-3 border border-[rgba(6,182,212,0.30)]">
+                      <p className="text-[var(--text-tertiary)]">
+                        Time you win back
+                      </p>
+                      <p className="mt-1 font-semibold text-[var(--text-primary)]">
+                        {formatNumber(roi.yearlyHoursReclaimed)} hrs / year
+                      </p>
+                      <p className="mt-1 text-[0.7rem] text-[var(--text-tertiary)]">
+                        That’s roughly{" "}
+                        <span className="font-semibold">
+                          {formatNumber(
+                            roi.yearlyHoursReclaimed / (40 || 1)
+                          )}{" "}
+                          weeks
+                        </span>{" "}
+                        of full-time work.
+                      </p>
+                    </div>
+                    <div className="rounded-2xl bg-slate-50/80 px-3 py-3 border border-slate-200/80">
+                      <p className="text-[var(--text-tertiary)]">
+                        Automation factor
+                      </p>
+                      <p className="mt-1 font-semibold text-[var(--success)]">
+                        70% automated
+                      </p>
+                      <p className="mt-1 text-[0.7rem] text-[var(--text-tertiary)]">
+                        We assume your AI employee handles ~70% of the target
+                        workflows; reality is often higher once we tune it.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4 rounded-2xl border border-[var(--border-soft)] bg-slate-900 text-slate-50 px-4 py-4 shadow-[0_20px_60px_rgba(15,23,42,0.50)]">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                    Next step · 30-minute build session
+                  </p>
+                  <p className="text-sm text-slate-200">
+                    On the call, we’ll map 1–2 AI employees directly onto the
+                    workflows you listed, align on KPIs (hours reclaimed,
+                    pipeline created, support latency), and outline a 30–60 day
+                    rollout.
+                  </p>
+                  <ul className="mt-2 space-y-1 text-xs text-slate-300">
+                    <li>• Zero slides — we work from your answers.</li>
+                    <li>• Concrete automations, not vague “AI strategy.”</li>
+                    <li>• Implementation timelines tied to your urgency.</li>
+                  </ul>
+                  <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <InteractiveHoverButton
+                      text="Book a 30-min call"
+                      onClick={() => {
+                        // Placeholder; in a real app, wire to calendar link.
+                        alert(
+                          "This would open your calendar link in the production app."
+                        );
+                      }}
+                      className="w-full sm:w-auto"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setStage(1 as Stage)}
+                      className="text-xs text-slate-300 underline-offset-4 hover:underline"
+                    >
+                      Adjust answers &amp; recalculate →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Secondary breakdown */}
+            <div className="grid gap-4 text-xs text-[var(--text-secondary)] sm:grid-cols-3">
+              <div className="rounded-2xl border border-[var(--border-soft)] bg-white/70 px-4 py-3">
+                <p className="text-[var(--text-tertiary)] mb-1">
+                  Context snapshot
+                </p>
+                <p className="line-clamp-3">
+                  {form.companyDescription
+                    ? form.companyDescription
+                    : "You can refine your positioning in step 1 so the AI employee is tuned to your exact offer and ICP."}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-[var(--border-soft)] bg-white/70 px-4 py-3">
+                <p className="text-[var(--text-tertiary)] mb-1">
+                  Target workflows
+                </p>
+                <p className="line-clamp-3">
+                  {form.workflows.length > 0
+                    ? form.workflows.join(" · ")
+                    : "List 3–5 workflows and we’ll tie each one to a concrete automation pattern on the call."}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-[var(--border-soft)] bg-white/70 px-4 py-3">
+                <p className="text-[var(--text-tertiary)] mb-1">
+                  Timeline &amp; owner
+                </p>
+                <p className="line-clamp-3">
+                  {form.role || "Role not specified"} ·{" "}
+                  {form.timeline || "Timeline not specified"}
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+
+        let cardContent: React.ReactNode;
+        switch (stage) {
+          case 0:
+            cardContent = introStage;
+            break;
+          case 1:
+            cardContent = stage1;
+            break;
+          case 2:
+            cardContent = stage2;
+            break;
+          case 3:
+            cardContent = stage3;
+            break;
+          case 4:
+            cardContent = stage4;
+            break;
+          case 5:
+            cardContent = stage5;
+            break;
+          case 6:
+            cardContent = stage6;
+            break;
+          case 7:
+          default:
+            cardContent = resultsStage;
+            break;
+        }
+
+        return (
+          <div className="min-h-screen flex flex-col">
+            {/* Header */}
+            <header className="border-b border-white/40 bg-white/40 backdrop-blur-xl">
+              <div className="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center rounded-2xl bg-slate-900 text-white px-3 py-1 text-xs font-semibold tracking-[0.18em]">
+                      ROBOTS [$]
+                    </div>
+                    <p className="text-xs text-[var(--text-secondary)] sm:text-sm">
+                      AI employees that work while you sleep.
+                    </p>
+                  </div>
+                  <div className="hidden text-[0.7rem] text-[var(--text-tertiary)] sm:block">
+                    Built for founders, operators &amp; revenue teams.
+                  </div>
+                </div>
+
+                {/* Progress Strip */}
+                <div className="flex items-center gap-4 rounded-2xl border border-white/60 bg-white/50 px-4 py-3 shadow-sm">
+                  <div className="flex flex-col text-xs text-[var(--text-secondary)]">
+                    <span>
+                      Step{" "}
+                      <span className="font-semibold text-[var(--text-primary)]">
+                        {activeStep}
+                      </span>{" "}
+                      of{" "}
+                      <span className="font-semibold text-[var(--text-primary)]">
+                        6
+                      </span>
+                    </span>
+                    <span className="text-[0.7rem] text-[var(--text-tertiary)]">
+                      Intro and results don’t count towards the 6 stages.
+                    </span>
+                  </div>
+                  <div className="flex flex-1 items-center gap-3">
+                    <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-[#E2E8F0]">
+                      <div
+                        className="absolute inset-y-0 left-0 rounded-full bg-[var(--accent-cyan)] shadow-[0_0_16px_rgba(6,182,212,0.55)] transition-all duration-500"
+                        style={{ width: `${progress * 100}%` }}
+                      ></div>
+                    </div>
+                    <div className="hidden items-center gap-2 text-[0.7rem] text-[var(--text-secondary)] sm:flex">
+                      <span className="border-b-2 border-[var(--accent-cyan)] pb-[2px] font-medium text-[var(--text-primary)]">
+                        {stepLabel}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </header>
+
+            {/* Main */}
+            <main className="flex flex-1 items-center justify-center px-4 py-6 sm:px-6 sm:py-10">
+              <div className="relative mx-auto flex w-full max-w-4xl items-stretch">
+                {/* Main card */}
+                <div className="relative w-full rounded-3xl border border-[rgba(148,163,184,0.35)] bg-[var(--bg-card-glass)] px-5 py-6 shadow-card shadow-card-hover backdrop-blur-2xl transition-all sm:px-8 sm:py-8 animate-step">
+                  {/* Subtle top accent */}
+                  <div className="pointer-events-none absolute inset-x-8 top-0 h-2 rounded-b-full bg-gradient-to-r from-[rgba(31,79,219,0.24)] via-transparent to-[rgba(6,182,212,0.18)] blur-lg" />
+                  {cardContent}
+                </div>
+              </div>
+            </main>
+
+            {/* Footer */}
+            <footer className="border-t border-slate-200/60 bg-[rgba(15,23,42,0.02)] backdrop-blur-md">
+              <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-4 text-[0.7rem] text-[var(--text-secondary)] sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                <div className="flex items-center gap-2">
+                  <span className="text-[0.5rem] text-emerald-500">●</span>
+                  <span>
+                    End-to-end encryption ensures your data remains secure and
+                    is never stored on our servers.
+                  </span>
+                </div>
+                <div className="text-center text-[var(--text-tertiary)] sm:text-left">
+                  © 2025 ROBOTS. All rights reserved.
+                </div>
+                <div className="flex flex-wrap justify-end gap-1.5 text-[0.6rem] text-slate-500">
+                  {[
+                    "Salesforce",
+                    "HubSpot",
+                    "Pipedrive",
+                    "Meta",
+                    "WhatsApp",
+                    "Google Workspace",
+                    "Apple Business",
+                  ].map((label) => (
+                    <span
+                      key={label}
+                      className="rounded-full border border-slate-200 bg-white/70 px-2 py-[3px]"
+                    >
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </footer>
+          </div>
+        );
+      };
+
+      const rootEl = document.getElementById("root");
+      if (rootEl) {
+        const root = ReactDOM.createRoot(rootEl);
+        root.render(<App />);
+      }
+    </script>
+  </body>
 </html>
