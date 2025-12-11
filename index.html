@@ -79,15 +79,16 @@
 
         .input-glass {
             background: #FFFFFF;
-            border: 2px solid #E2E8F0;
+            border-radius: 0.75rem;
+            border: 1.5px solid #E5E7EB;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
         }
 
         .input-glass:focus {
             outline: none;
             border-color: #2563EB;
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
             transform: translateY(-1px);
         }
 
@@ -114,6 +115,64 @@
         .glowing-text {
             text-shadow: 0 0 30px rgba(37, 99, 235, 0.3);
         }
+
+        /* Futuristic background shapes */
+        .bg-shape {
+            position: absolute;
+            border-radius: 9999px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            background: linear-gradient(135deg, rgba(248, 250, 252, 0.9), rgba(219, 234, 254, 0.8));
+            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+            opacity: 0.9;
+        }
+
+        .bg-shape--1 {
+            width: 260px;
+            height: 260px;
+            top: 8%;
+            left: -4%;
+            transform: rotate(-8deg);
+            animation: float 16s ease-in-out infinite;
+        }
+
+        .bg-shape--2 {
+            width: 220px;
+            height: 220px;
+            bottom: 6%;
+            right: 10%;
+            transform: rotate(12deg);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .bg-shape--3 {
+            width: 140px;
+            height: 140px;
+            top: 55%;
+            right: 65%;
+            border-style: dashed;
+            border-width: 2px;
+            border-color: rgba(148, 163, 184, 0.5);
+            background: radial-gradient(circle at 30% 30%, rgba(59, 130, 246, 0.12), transparent 60%);
+            animation: float 18s ease-in-out infinite;
+        }
+
+        @media (max-width: 768px) {
+            .bg-shape--1 {
+                width: 200px;
+                height: 200px;
+                top: 4%;
+                left: -20%;
+            }
+            .bg-shape--2 {
+                width: 180px;
+                height: 180px;
+                bottom: 0;
+                right: -10%;
+            }
+            .bg-shape--3 {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -136,7 +195,7 @@
         // 5: Team Size (Card Select)
         // 6: Hourly Cost (Input - Anticipation)
         // 7: Hours/Week (Input - Pre-Reveal)
-        // 8: Reveal (Results)
+        // 8: Reveal (Results + What Happens Next + Optional Details)
         const TOTAL_STEPS = 8; 
 
         const ROLES = [
@@ -151,7 +210,8 @@
             { id: "1", label: "Solo (1)" },
             { id: "2-10", label: "2 - 10" },
             { id: "11-50", label: "11 - 50" },
-            { id: "50+", label: "50+" }
+            { id: "51-200", label: "51 - 200" },
+            { id: "200+", label: "200+" }
         ];
 
         // --- Utils ---
@@ -184,7 +244,7 @@
             const variants = {
                 primary: disabled 
                     ? "bg-gray-200 text-gray-400 cursor-not-allowed transform-none shadow-none" 
-                    : "bg-brand-cta text-white hover:bg-brand-ctaHover shadow-lg shadow-blue-600/25 hover:-translate-y-1 hover:shadow-xl",
+                    : "bg-brand-cta text-white hover:bg-brand-ctaHover shadow-lg shadow-blue-600/25 hover:-translate-y-0.5 hover:shadow-xl",
                 ghost: "text-brand-gray hover:text-brand-dark hover:bg-gray-100",
             };
 
@@ -233,7 +293,10 @@
                 role: "",
                 teamSize: "",
                 hourlyCost: "",
-                hoursPerWeek: ""
+                hoursPerWeek: "",
+                name: "",
+                workEmail: "",
+                companyName: ""
             });
 
             const [roi, setRoi] = useState({ yearlySavings: 0, hoursSaved: 0 });
@@ -242,7 +305,7 @@
             useEffect(() => {
                 const cost = Number(answers.hourlyCost) || 0;
                 const hours = Number(answers.hoursPerWeek) || 0;
-                const factor = 0.7; // 70% automation
+                const factor = 0.7; // 70% automation assumption, aggregated across the team
                 
                 const weeklyManual = cost * hours;
                 const yearlyManual = weeklyManual * 52;
@@ -257,10 +320,6 @@
             useEffect(() => {
                 const handleKeyDown = (e) => {
                     if (e.key === 'Enter') {
-                        // Prevent default if textarea (optional, but usually Shift+Enter is newline)
-                        // However user said "When I press Enter, it should advance"
-                        // We'll allow Enter to advance for Inputs, but maybe Shift+Enter for Textarea
-                        
                         const isTextarea = e.target.tagName.toLowerCase() === 'textarea';
                         if (isTextarea && !e.shiftKey) {
                             e.preventDefault(); 
@@ -273,7 +332,7 @@
                 };
                 window.addEventListener('keydown', handleKeyDown);
                 return () => window.removeEventListener('keydown', handleKeyDown);
-            }, [step, answers]); // Dependencies needed to access current state
+            }, [step, answers]);
 
             const validateStep = () => {
                 switch(step) {
@@ -331,6 +390,13 @@
                 exit: (dir) => ({ x: dir < 0 ? 30 : -30, opacity: 0 })
             };
 
+            const EnterHint = () => (
+                <p className="text-xs text-brand-light flex items-center gap-1 mt-2">
+                    <i className="fa-solid fa-keyboard"></i> 
+                    <span>Press <span className="font-semibold">Enter</span> to continue</span>
+                </p>
+            );
+
             // Render Content
             const renderContent = () => {
                 switch (step) {
@@ -346,15 +412,18 @@
                                         <i className="fa-solid fa-robot text-4xl text-brand-cta"></i>
                                     </div>
                                     <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-brand-dark leading-tight">
-                                        The <span className="text-brand-cta">Result</span> of Your <br/> Next AI Hire.
+                                        The <span className="text-brand-cta">Autonomous</span> Work Era <br /> Has Arrived.
                                     </h1>
                                     <p className="text-lg text-brand-gray max-w-md mx-auto">
-                                        Calculate the exact ROI of deploying autonomous digital workers in your business.
+                                        Six questions. One vision. Your first AI employee - brought to life.
                                     </p>
-                                    <div className="pt-8">
+                                    <div className="pt-8 space-y-3">
                                         <Button onClick={() => { setDirection(1); setStep(1); }} className="w-full md:w-auto px-12">
-                                            Start Calculation
+                                            Begin
                                         </Button>
+                                        <p className="text-xs text-brand-light">
+                                            Your next decision shapes your future.
+                                        </p>
                                     </div>
                                 </motion.div>
                             </div>
@@ -374,9 +443,7 @@
                                     value={answers.workflow}
                                     onChange={e => setAnswers({...answers, workflow: e.target.value})}
                                 />
-                                <p className="text-xs text-brand-light flex items-center gap-1">
-                                    <i className="fa-solid fa-keyboard"></i> Press <span className="font-semibold">Enter</span> to continue
-                                </p>
+                                <EnterHint />
                             </div>
                         );
 
@@ -395,6 +462,7 @@
                                     value={answers.impactVision}
                                     onChange={e => setAnswers({...answers, impactVision: e.target.value})}
                                 />
+                                <EnterHint />
                             </div>
                         );
 
@@ -413,6 +481,7 @@
                                     value={answers.offerICP}
                                     onChange={e => setAnswers({...answers, offerICP: e.target.value})}
                                 />
+                                <EnterHint />
                             </div>
                         );
 
@@ -428,6 +497,7 @@
                                     value={answers.role}
                                     onChange={val => setAnswers({...answers, role: val})}
                                 />
+                                <EnterHint />
                             </div>
                         );
 
@@ -443,6 +513,7 @@
                                     value={answers.teamSize}
                                     onChange={val => setAnswers({...answers, teamSize: val})}
                                 />
+                                <EnterHint />
                             </div>
                         );
 
@@ -464,6 +535,7 @@
                                         onChange={e => setAnswers({...answers, hourlyCost: e.target.value})}
                                     />
                                 </div>
+                                <EnterHint />
                             </div>
                         );
 
@@ -483,19 +555,20 @@
                                     onChange={e => setAnswers({...answers, hoursPerWeek: e.target.value})}
                                 />
                                 <p className="text-center text-sm text-brand-gray">Ready to see what you could save?</p>
+                                <EnterHint />
                             </div>
                         );
 
-                    case 8: // Reveal
+                    case 8: // Reveal + What Happens Next + Optional Details
                         return (
                             <div className="text-center py-6">
                                 <motion.div
                                     initial={{ opacity: 0, scale: 0.8 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ type: "spring", bounce: 0.5, duration: 0.8 }}
-                                    className="relative z-10"
+                                    className="relative z-10 space-y-6"
                                 >
-                                    <p className="text-brand-gray font-semibold uppercase tracking-widest text-xs mb-4">Projected Annual Impact</p>
+                                    <p className="text-brand-gray font-semibold uppercase tracking-widest text-xs mb-2">Projected Annual Impact</p>
                                     
                                     <div className="mb-2 relative inline-block">
                                         <div className="absolute inset-0 bg-blue-400 blur-[60px] opacity-20 rounded-full"></div>
@@ -504,7 +577,7 @@
                                         </h1>
                                     </div>
                                     
-                                    <div className="mb-10 flex justify-center gap-3">
+                                    <div className="mb-6 flex justify-center gap-3">
                                         <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-green-100 text-green-700 text-sm font-bold shadow-sm">
                                             <i className="fa-solid fa-clock"></i> {Math.round(roi.hoursSaved).toLocaleString()} Hours Reclaimed
                                         </span>
@@ -513,21 +586,96 @@
                                     <div className="space-y-4">
                                         <button 
                                             onClick={() => window.location.href = BOOKING_URL}
-                                            className="group relative w-full md:w-auto overflow-hidden rounded-full bg-brand-cta px-10 py-5 text-white shadow-2xl transition-all hover:scale-[1.02] hover:shadow-blue-500/40"
+                                            className="w-full md:w-auto rounded-xl bg-brand-cta px-10 py-4 text-white font-semibold shadow-lg transition-all duration-300 hover:bg-brand-ctaHover hover:-translate-y-0.5 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/30"
                                         >
-                                            <div className="relative z-10 flex items-center justify-center gap-3 text-lg font-bold">
-                                                <span>Deploy AI Employee</span>
-                                                <i className="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
-                                            </div>
-                                            <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-transform duration-500 group-hover:translate-x-0"></div>
+                                            <span className="flex items-center justify-center gap-3 text-lg font-bold">
+                                                <span>Book a Call</span>
+                                                <i className="fa-solid fa-arrow-right text-sm"></i>
+                                            </span>
                                         </button>
                                         
+                                        <p className="text-sm text-brand-gray">
+                                            Your digital employee is ready to deliver.
+                                        </p>
+                                        <p className="text-xs text-brand-light">
+                                            No requirements, no commitments.
+                                        </p>
+
                                         <div>
                                             <button 
                                                 onClick={handleBack}
                                                 className="text-sm font-medium text-brand-gray hover:text-brand-dark underline decoration-gray-300 underline-offset-4"
                                             >
                                                 Adjust Assumptions
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-8 grid gap-6 md:grid-cols-2 text-left">
+                                        {/* What Happens Next */}
+                                        <div className="rounded-2xl bg-white/90 border border-gray-100 p-6 shadow-sm">
+                                            <h3 className="text-xs font-semibold text-brand-gray uppercase tracking-wide">
+                                                What Happens Next
+                                            </h3>
+                                            <ul className="mt-4 space-y-3 text-sm text-brand-gray">
+                                                <li className="flex items-start gap-2">
+                                                    <span className="mt-0.5 h-5 w-5 flex items-center justify-center rounded-full bg-blue-50 text-[11px] font-semibold text-brand-cta">1</span>
+                                                    <span>We review your answers and translate them into a concrete digital employee outline.</span>
+                                                </li>
+                                                <li className="flex items-start gap-2">
+                                                    <span className="mt-0.5 h-5 w-5 flex items-center justify-center rounded-full bg-blue-50 text-[11px] font-semibold text-brand-cta">2</span>
+                                                    <span>On the call, we walk through the workflow, edge cases, and success metrics together.</span>
+                                                </li>
+                                                <li className="flex items-start gap-2">
+                                                    <span className="mt-0.5 h-5 w-5 flex items-center justify-center rounded-full bg-blue-50 text-[11px] font-semibold text-brand-cta">3</span>
+                                                    <span>You receive a no-commitment rollout plan and refined ROI snapshot.</span>
+                                                </li>
+                                            </ul>
+                                            <p className="mt-4 text-xs text-brand-light">
+                                                No purchase or long-term commitment is required at this stage.
+                                            </p>
+                                        </div>
+
+                                        {/* Optional Details */}
+                                        <div className="rounded-2xl bg-white/90 border border-gray-100 p-6 shadow-sm">
+                                            <h3 className="text-xs font-semibold text-brand-gray uppercase tracking-wide">
+                                                A Few Details (Optional)
+                                            </h3>
+                                            <p className="mt-3 text-xs text-brand-gray">
+                                                A few details so we can send back a concrete digital employee outline instead of a generic PDF. This step is skippable.
+                                            </p>
+                                            <div className="mt-4 space-y-3">
+                                                <input
+                                                    type="text"
+                                                    className="w-full px-4 py-3 input-glass text-sm"
+                                                    placeholder="Name (optional)"
+                                                    value={answers.name}
+                                                    onChange={e => setAnswers({ ...answers, name: e.target.value })}
+                                                />
+                                                <input
+                                                    type="email"
+                                                    className="w-full px-4 py-3 input-glass text-sm"
+                                                    placeholder="Work Email (optional)"
+                                                    value={answers.workEmail}
+                                                    onChange={e => setAnswers({ ...answers, workEmail: e.target.value })}
+                                                />
+                                                <input
+                                                    type="text"
+                                                    className="w-full px-4 py-3 input-glass text-sm"
+                                                    placeholder="Company Name (optional)"
+                                                    value={answers.companyName}
+                                                    onChange={e => setAnswers({ ...answers, companyName: e.target.value })}
+                                                />
+                                            </div>
+                                            <p className="mt-3 text-xs text-brand-light">
+                                                You can skip this step and still access your numbers and call booking.
+                                            </p>
+                                            <button
+                                                type="button"
+                                                onClick={() => setAnswers({ ...answers, name: "", workEmail: "", companyName: "" })}
+                                                className="mt-2 text-xs font-medium text-brand-gray hover:text-brand-dark underline decoration-gray-300 underline-offset-4"
+                                            >
+                                                Skip this step
                                             </button>
                                         </div>
                                     </div>
@@ -564,6 +712,13 @@
                         {/* Background Blobs */}
                         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-200/30 rounded-full blur-3xl -z-10 animate-pulse-slow"></div>
                         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-200/30 rounded-full blur-3xl -z-10 animate-pulse-slow" style={{animationDelay: '1.5s'}}></div>
+
+                        {/* Futuristic robotic shapes */}
+                        <div className="pointer-events-none absolute inset-0 -z-10">
+                            <div className="bg-shape bg-shape--1"></div>
+                            <div className="bg-shape bg-shape--2"></div>
+                            <div className="bg-shape bg-shape--3"></div>
+                        </div>
 
                         <div className={`w-full ${isReveal ? 'max-w-3xl' : 'max-w-xl'} transition-all duration-500`}>
                             
@@ -623,21 +778,75 @@
 
                     {/* Footer */}
                     <footer className="pb-8 px-6">
-                        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+                        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
                             
-                            <div className="flex items-center gap-2 text-brand-light text-sm order-2 md:order-1">
-                                <i className="fa-solid fa-lock text-brand-cta"></i>
-                                <span>End-to-end encryption. Your data is secure.</span>
+                            <div className="flex flex-col items-center md:items-start gap-2 order-2 md:order-1">
+                                <div className="flex items-center gap-2 text-brand-light text-sm">
+                                    <i className="fa-solid fa-lock text-brand-cta"></i>
+                                    <span>End-to-end encryption. Your data is secure.</span>
+                                </div>
+                                <span className="text-[11px] text-brand-light">
+                                    © 2025 ROBOTS. All rights reserved.
+                                </span>
                             </div>
 
-                            <div className="flex gap-6 opacity-40 grayscale hover:grayscale-0 transition-all duration-500 order-1 md:order-2">
-                                {/* Font Awesome Brand Icons */}
-                                <i className="fa-brands fa-salesforce text-3xl hover:text-[#00A1E0] transition-colors" title="Salesforce"></i>
-                                <i className="fa-brands fa-hubspot text-3xl hover:text-[#FF7A59] transition-colors" title="HubSpot"></i>
-                                <i className="fa-brands fa-google text-3xl hover:text-[#4285F4] transition-colors" title="Google Workspace"></i>
-                                <i className="fa-brands fa-meta text-3xl hover:text-[#0668E1] transition-colors" title="Meta"></i>
-                                <i className="fa-brands fa-whatsapp text-3xl hover:text-[#25D366] transition-colors" title="WhatsApp"></i>
-                                <i className="fa-brands fa-apple text-3xl hover:text-black transition-colors" title="Apple Business"></i>
+                            <div className="flex flex-wrap justify-center md:justify-end gap-4 order-1 md:order-2">
+                                <div className="flex flex-col items-center gap-1 bg-white/70 border border-gray-100 rounded-2xl px-4 py-3 shadow-sm">
+                                    <div className="flex items-center gap-2">
+                                        <i className="fa-brands fa-salesforce text-2xl text-[#00A1E0]"></i>
+                                        <span className="text-sm font-medium text-brand-dark">Salesforce</span>
+                                    </div>
+                                    <span className="text-[10px] uppercase tracking-wide text-brand-light">Partner</span>
+                                </div>
+                                <div className="flex flex-col items-center gap-1 bg-white/70 border border-gray-100 rounded-2xl px-4 py-3 shadow-sm">
+                                    <div className="flex items-center gap-2">
+                                        <i className="fa-brands fa-hubspot text-2xl text-[#FF7A59]"></i>
+                                        <span className="text-sm font-medium text-brand-dark">HubSpot</span>
+                                    </div>
+                                    <span className="text-[10px] uppercase tracking-wide text-brand-light">Partner</span>
+                                </div>
+                                <div className="flex flex-col items-center gap-1 bg-white/70 border border-gray-100 rounded-2xl px-4 py-3 shadow-sm">
+                                    <div className="flex items-center gap-2">
+                                        <i className="fa-brands fa-google text-2xl text-[#4285F4]"></i>
+                                        <span className="text-sm font-medium text-brand-dark">Google Workspace</span>
+                                    </div>
+                                    <span className="text-[10px] uppercase tracking-wide text-brand-light">Partner</span>
+                                </div>
+                                <div className="flex flex-col items-center gap-1 bg-white/70 border border-gray-100 rounded-2xl px-4 py-3 shadow-sm">
+                                    <div className="flex items-center gap-2">
+                                        <i className="fa-brands fa-meta text-2xl text-[#0668E1]"></i>
+                                        <span className="text-sm font-medium text-brand-dark">Meta</span>
+                                    </div>
+                                    <span className="text-[10px] uppercase tracking-wide text-brand-light">Partner</span>
+                                </div>
+                                <div className="flex flex-col items-center gap-1 bg-white/70 border border-gray-100 rounded-2xl px-4 py-3 shadow-sm">
+                                    <div className="flex items-center gap-2">
+                                        <i className="fa-brands fa-whatsapp text-2xl text-[#25D366]"></i>
+                                        <span className="text-sm font-medium text-brand-dark">WhatsApp</span>
+                                    </div>
+                                    <span className="text-[10px] uppercase tracking-wide text-brand-light">Partner</span>
+                                </div>
+                                <div className="flex flex-col items-center gap-1 bg-white/70 border border-gray-100 rounded-2xl px-4 py-3 shadow-sm">
+                                    <div className="flex items-center gap-2">
+                                        <i className="fa-brands fa-apple text-2xl text-black"></i>
+                                        <span className="text-sm font-medium text-brand-dark">Apple Business</span>
+                                    </div>
+                                    <span className="text-[10px] uppercase tracking-wide text-brand-light">Partner</span>
+                                </div>
+                                <div className="flex flex-col items-center gap-1 bg-white/70 border border-gray-100 rounded-2xl px-4 py-3 shadow-sm">
+                                    <div className="flex items-center gap-2">
+                                        <i className="fa-brands fa-stripe text-2xl text-[#635BFF]"></i>
+                                        <span className="text-sm font-medium text-brand-dark">Stripe</span>
+                                    </div>
+                                    <span className="text-[10px] uppercase tracking-wide text-brand-light">Partner</span>
+                                </div>
+                                <div className="flex flex-col items-center gap-1 bg-white/70 border border-gray-100 rounded-2xl px-4 py-3 shadow-sm">
+                                    <div className="flex items-center gap-2">
+                                        <i className="fa-brands fa-slack text-2xl text-[#4A154B]"></i>
+                                        <span className="text-sm font-medium text-brand-dark">Slack</span>
+                                    </div>
+                                    <span className="text-[10px] uppercase tracking-wide text-brand-light">Partner</span>
+                                </div>
                             </div>
                         </div>
                     </footer>
