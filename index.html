@@ -123,7 +123,7 @@
         }
 
         .glowing-text {
-            text-shadow: 0 0 40px rgba(37, 99, 235, 0.4);
+            text-shadow: 0 0 40px rgba(22, 163, 74, 0.4);
         }
 
         /* Partner Logo Container */
@@ -195,8 +195,7 @@
             { name: "Microsoft", icon: "fa-brands fa-microsoft", color: "#00A4EF" },
             { name: "Meta", icon: "fa-brands fa-meta", color: "#0668E1" },
             { name: "OpenAI", icon: "fa-solid fa-bolt", color: "#10A37F" },
-            { name: "Slack", icon: "fa-brands fa-slack", color: "#4A154B" },
-            { name: "Zapier", icon: "fa-brands fa-zapier", color: "#FF4A00" }
+            { name: "Slack", icon: "fa-brands fa-slack", color: "#4A154B" }
         ];
 
         // --- Utils ---
@@ -379,14 +378,14 @@
                                     animate={{ scale: 1, opacity: 1 }}
                                     className="space-y-8"
                                 >
-                                    <div className="inline-block p-5 bg-gradient-to-br from-blue-50 to-white border border-blue-100 shadow-xl rounded-full mb-2">
+                                    <div className="inline-block p-5 bg-gradient-to-br from-blue-50 to-white border border-blue-100 shadow-xl rounded-full mb-2 animate-float">
                                         <i className="fa-solid fa-robot text-5xl text-brand-cta"></i>
                                     </div>
                                     <div className="space-y-4">
                                         <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-brand-dark leading-[1.05]">
-                                            The moment we built machines for
+                                            machines are
                                             <br/>
-                                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-cta to-brand-accent">just switched on.</span>
+                                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-cta to-brand-accent">here</span>
                                         </h1>
                                         <p className="text-base md:text-lg text-brand-gray max-w-md mx-auto font-medium">
                                             Six questions. One vision. Your first AI employee - brought to life.
@@ -645,8 +644,8 @@
                                     </p>
                                     
                                     <div className="mb-6 relative inline-block">
-                                        <div className="absolute inset-0 bg-blue-500 blur-[80px] opacity-20 rounded-full animate-pulse-slow"></div>
-                                        <h1 className="relative text-6xl md:text-8xl font-black text-emerald-600 tracking-tighter glowing-text">
+                                        <div className="absolute inset-0 bg-[#16A34A] blur-[60px] opacity-20 rounded-full animate-pulse-slow"></div>
+                                        <h1 className="relative text-5xl md:text-6xl font-black text-[#16A34A] tracking-tighter glowing-text">
                                             <AnimatedCounter from={0} to={roi.yearlySavings} />
                                         </h1>
                                     </div>
@@ -659,29 +658,12 @@
                                         </div>
                                     </div>
 
-                                    <p className="mt-2 text-[10px] text-orange-500 font-medium max-w-xs mx-auto">
+                                    <p className="mt-2 text-[10px] text-brand-gray font-medium max-w-xs mx-auto">
                                         Rough estimate based on your answers. On the call we usually uncover even more hidden waste.
                                     </p>
 
-                                    <div className="mt-8 space-y-6 max-w-sm mx-auto">
-                                        <button 
-                                            onClick={() => window.location.href = BOOKING_URL}
-                                            className="group relative w-full overflow-hidden rounded-xl bg-brand-cta px-8 py-5 text-white shadow-xl transition-all hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20"
-                                        >
-                                            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 opacity-100 group-hover:opacity-90 transition-opacity"></div>
-                                            <div className="relative z-10 flex items-center justify-center gap-3 text-xl font-bold">
-                                                <span>Book a Call</span>
-                                                <i className="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
-                                            </div>
-                                        </button>
-                                        
-                                        <p className="text-xs font-medium text-brand-light uppercase tracking-wide">
-                                            Your digital employee is ready to deliver.
-                                        </p>
-                                    </div>
-
                                     {/* What Happens Next Card */}
-                                    <div className="mt-12 bg-white/60 border border-white/80 rounded-2xl p-6 backdrop-blur-sm text-left">
+                                    <div className="mt-10 bg-white/60 border border-white/80 rounded-2xl p-6 backdrop-blur-sm text-left">
                                         <h3 className="text-sm font-bold text-brand-dark uppercase tracking-wide mb-4 border-b border-gray-100 pb-2">What Happens Next?</h3>
                                         <div className="space-y-4">
                                             <div className="flex gap-4">
@@ -706,6 +688,18 @@
                                                 </div>
                                             </div>
                                         </div>
+                                    </div>
+
+                                    <div className="mt-8 max-w-sm mx-auto">
+                                        <button 
+                                            onClick={() => window.location.href = BOOKING_URL}
+                                            className="w-full rounded-xl bg-[#2563EB] px-8 py-4 text-white text-base font-semibold shadow-lg hover:shadow-xl hover:bg-brand-ctaHover transition-all"
+                                        >
+                                            Book a Call
+                                        </button>
+                                        <p className="mt-4 text-xs font-medium text-brand-light uppercase tracking-wide">
+                                            Your digital employee is ready to deliver.
+                                        </p>
                                     </div>
                                     
                                     <p className="mt-6 text-[10px] text-brand-light uppercase tracking-wider">No requirements, no commitments</p>
@@ -832,7 +826,7 @@
                                 <p>© 2025 ROBOTS. All rights reserved.</p>
                                 <div className="flex items-center gap-2">
                                     <i className="fa-solid fa-lock text-brand-cta"></i>
-                                    <span>End-to-end encryption. Your data is secure.</span>
+                                    <span>Encrypted &amp; Secure</span>
                                 </div>
                             </div>
                         </div>
