@@ -1,1056 +1,1191 @@
-import React, { useEffect, useState } from "react";
-
-type RoleOption =
-  | "Founder/Owner"
-  | "C-Level/VP"
-  | "Operations/Systems"
-  | "Marketing/Sales"
-  | "Other";
-
-type CompanySizeOption = "1-5" | "6-20" | "21-50" | "51-200" | "200+ employees";
-
-type TimelineOption =
-  | "Gathering information"
-  | "Planning to address"
-  | "Critical priority within 60 days";
-
-interface FormData {
-  workflows: string;
-  expectedImpact90Days: string;
-  companyDescription: string;
-  userRole: RoleOption | "";
-  companySize: CompanySizeOption | "";
-  implementationTimeline: TimelineOption | "";
-}
-
-interface RoiResult {
-  estimatedAffectedEmployees: number;
-  hoursSavedPerEmployeePerWeek: number;
-  weeklyHoursSaved: number;
-  monthlyHoursSaved: number;
-  blendedHourlyRate: number;
-  weeklyCostSavings: number;
-  monthlyCostSavings: number;
-  savings90Days: number;
-  adjustedSavings90Days: number;
-  savings12Months: number;
-  adjustedSavings12Months: number;
-  urgencyMultiplier: number;
-  manualCost90Days: number;
-  optimizedCost90Days: number;
-}
-
-type ToastType = "error" | "success";
-
-interface ToastState {
-  type: ToastType;
-  message: string;
-}
-
-const TOTAL_STEPS = 8;
-const WEBHOOK_URL =
-  "https://zerogpt.app.n8n.cloud/webhook-test/form-one";
-
-const initialFormData: FormData = {
-  workflows: "",
-  expectedImpact90Days: "",
-  companyDescription: "",
-  userRole: "",
-  companySize: "",
-  implementationTimeline: "",
-};
-
-const AnimatedCounter: React.FC<{
-  value: number;
-  prefix?: string;
-  durationMs?: number;
-  decimals?: number;
-}> = ({ value, prefix = "", durationMs = 900, decimals = 0 }) => {
-  const [displayValue, setDisplayValue] = useState(0);
-
-  useEffect(() => {
-    let start: number | null = null;
-    const from = 0;
-    const to = value;
-    const duration = durationMs;
-
-    let frameId: number;
-
-    const step = (timestamp: number) => {
-      if (start === null) start = timestamp;
-      const progress = Math.min((timestamp - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3); // ease-out
-      const current = from + (to - from) * eased;
-      setDisplayValue(current);
-      if (progress < 1) {
-        frameId = requestAnimationFrame(step);
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>AI Employee ROI Calculator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .step-transition {
+      animation: fadeSlideIn 0.28s ease-out;
+    }
+    @keyframes fadeSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
       }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-b from-[#F4F5FB] to-[#E7F0FF] flex items-center justify-center px-3 sm:px-4 py-6">
+  <!-- Toast root -->
+  <div id="toast-root" class="fixed top-4 right-4 z-50"></div>
+
+  <!-- App root -->
+  <main class="w-full max-w-3xl">
+    <section
+      id="card"
+      class="relative rounded-3xl bg-white/60 border border-white/60 shadow-xl backdrop-blur-2xl px-4 sm:px-6 md:px-8 py-5 sm:py-7"
+    >
+      <!-- JS will inject content here -->
+    </section>
+  </main>
+
+  <script>
+    // --- CONFIG ---
+    const TOTAL_STEPS = 8;
+    const WEBHOOK_URL = "https://zerogpt.app.n8n.cloud/webhook-test/form-one";
+
+    // --- STATE ---
+    const state = {
+      currentStep: 1,
+      formData: {
+        workflows: "",
+        expectedImpact90Days: "",
+        companyDescription: "",
+        userRole: "",
+        companySize: "",
+        implementationTimeline: ""
+      },
+      errors: {},
+      roiResult: null,
+      hasSentWebhook: false
     };
 
-    frameId = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(frameId);
-  }, [value, durationMs]);
+    let toastTimeoutId = null;
 
-  const formatted = displayValue.toLocaleString(undefined, {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  });
-
-  return <span>{prefix}{formatted}</span>;
-};
-
-const App: React.FC = () => {
-  const [currentStep, setCurrentStep] = useState<number>(1);
-  const [formData, setFormData] = useState<FormData>(initialFormData);
-  const [errors, setErrors] = useState<
-    Partial<Record<keyof FormData, string>>
-  >({});
-  const [roiResult, setRoiResult] = useState<RoiResult | null>(null);
-  const [toast, setToast] = useState<ToastState | null>(null);
-  const [hasSentWebhook, setHasSentWebhook] = useState(false);
-
-  // Auto-hide toast
-  useEffect(() => {
-    if (!toast) return;
-    const id = window.setTimeout(() => setToast(null), 5000);
-    return () => window.clearTimeout(id);
-  }, [toast]);
-
-  const updateField = <K extends keyof FormData>(
-    key: K,
-    value: FormData[K]
-  ) => {
-    setFormData((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-    // Clear error for this field when the user modifies it
-    setErrors((prev) => {
-      const { [key]: _removed, ...rest } = prev;
-      return rest;
-    });
-  };
-
-  const isStepValid = (step: number): boolean => {
-    const trimmedWorkflows = formData.workflows.trim();
-    const trimmedImpact = formData.expectedImpact90Days.trim();
-    const trimmedCompany = formData.companyDescription.trim();
-
-    switch (step) {
-      case 1:
-        return true;
-      case 2:
-        return trimmedWorkflows.length >= 20;
-      case 3:
-        return trimmedImpact.length >= 20;
-      case 4:
-        return trimmedCompany.length >= 30;
-      case 5:
-        return !!formData.userRole;
-      case 6:
-        return !!formData.companySize;
-      case 7:
-        return !!formData.implementationTimeline;
-      case 8:
-        return true;
-      default:
-        return false;
-    }
-  };
-
-  const validateStep = (step: number): boolean => {
-    const newErrors: Partial<Record<keyof FormData, string>> = {};
-    const trimmedWorkflows = formData.workflows.trim();
-    const trimmedImpact = formData.expectedImpact90Days.trim();
-    const trimmedCompany = formData.companyDescription.trim();
-
-    if (step === 2) {
-      if (!trimmedWorkflows) {
-        newErrors.workflows = "This field is required.";
-      } else if (trimmedWorkflows.length < 20) {
-        newErrors.workflows = "Minimum 20 characters required.";
+    // --- UTIL: PROGRESS ---
+    function getProgressHtml() {
+      let dotsHtml = "";
+      for (let step = 1; step <= TOTAL_STEPS; step++) {
+        const isActive = step === state.currentStep;
+        const isCompleted = step < state.currentStep;
+        const bgClass = isActive || isCompleted ? "bg-[#1F4FDB]" : "bg-slate-300";
+        const ringClass = isActive ? "ring-2 ring-[#06B6D4]" : "";
+        dotsHtml += `
+          <div
+            class="w-2.5 h-2.5 rounded-full transition-all duration-200 ${bgClass} ${ringClass}"
+            aria-hidden="true"
+          ></div>
+        `;
       }
-    }
-
-    if (step === 3) {
-      if (!trimmedImpact) {
-        newErrors.expectedImpact90Days = "This field is required.";
-      } else if (trimmedImpact.length < 20) {
-        newErrors.expectedImpact90Days = "Minimum 20 characters required.";
-      }
-    }
-
-    if (step === 4) {
-      if (!trimmedCompany) {
-        newErrors.companyDescription = "This field is required.";
-      } else if (trimmedCompany.length < 30) {
-        newErrors.companyDescription = "Minimum 30 characters required.";
-      }
-    }
-
-    if (step === 5) {
-      if (!formData.userRole) {
-        newErrors.userRole = "Please select an option.";
-      }
-    }
-
-    if (step === 6) {
-      if (!formData.companySize) {
-        newErrors.companySize = "Please select an option.";
-      }
-    }
-
-    if (step === 7) {
-      if (!formData.implementationTimeline) {
-        newErrors.implementationTimeline = "Please select an option.";
-      }
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const estimateAffectedEmployees = (
-    companySize: CompanySizeOption | ""
-  ): number => {
-    switch (companySize) {
-      case "1-5":
-        return 2;
-      case "6-20":
-        return 5;
-      case "21-50":
-        return 12;
-      case "51-200":
-        return 35;
-      case "200+ employees":
-        return 60;
-      default:
-        return 3;
-    }
-  };
-
-  const estimateBlendedHourlyRate = (
-    companySize: CompanySizeOption | ""
-  ): number => {
-    switch (companySize) {
-      case "1-5":
-        return 25;
-      case "6-20":
-        return 35;
-      case "21-50":
-        return 45;
-      case "51-200":
-        return 60;
-      case "200+ employees":
-        return 80;
-      default:
-        return 35;
-    }
-  };
-
-  const estimateHoursSavedPerEmployeePerWeek = (workflows: string): number => {
-    const trimmed = workflows.trim();
-    const length = trimmed.length;
-    let base = 1.5;
-
-    if (length > 200) base += 1;
-    if (length > 400) base += 1;
-
-    const keywords = [
-      "email",
-      "inbox",
-      "report",
-      "crm",
-      "follow up",
-      "follow-up",
-      "proposal",
-      "lead",
-      "sales",
-      "outreach",
-      "support",
-      "ticket",
-      "invoice",
-      "onboarding",
-      "content",
-      "social",
-      "ads",
-      "pipeline",
-      "prospect",
-    ];
-    const lower = trimmed.toLowerCase();
-    let keywordScore = 0;
-    keywords.forEach((kw) => {
-      if (lower.includes(kw)) {
-        keywordScore += 0.3;
-      }
-    });
-
-    const raw = base + keywordScore;
-    const capped = Math.min(10, raw); // cap for realism
-    return parseFloat(capped.toFixed(1));
-  };
-
-  const getUrgencyMultiplier = (
-    timeline: TimelineOption | ""
-  ): number => {
-    switch (timeline) {
-      case "Planning to address":
-        return 1.1;
-      case "Critical priority within 60 days":
-        return 1.25;
-      case "Gathering information":
-      default:
-        return 1.0;
-    }
-  };
-
-  const calculateRoi = (data: FormData): RoiResult => {
-    const estimatedAffectedEmployees = estimateAffectedEmployees(
-      data.companySize
-    );
-    const hoursSavedPerEmployeePerWeek =
-      estimateHoursSavedPerEmployeePerWeek(data.workflows);
-
-    const weeklyHoursSaved =
-      estimatedAffectedEmployees * hoursSavedPerEmployeePerWeek;
-
-    // Approx weeks per month used for monthly estimate
-    const monthlyHoursSaved = weeklyHoursSaved * 4.33;
-
-    const blendedHourlyRate = estimateBlendedHourlyRate(data.companySize);
-    const weeklyCostSavings = weeklyHoursSaved * blendedHourlyRate;
-    const monthlyCostSavings = monthlyHoursSaved * blendedHourlyRate;
-    const savings90Days = weeklyCostSavings * 12; // ~12 weeks in 90 days
-
-    // Assumption: automation recovers ~35% of manual cost baseline
-    const manualCost90Days = savings90Days / 0.35;
-    const optimizedCost90Days = manualCost90Days - savings90Days;
-
-    const savings12Months = weeklyCostSavings * 52;
-    const urgencyMultiplier = getUrgencyMultiplier(
-      data.implementationTimeline
-    );
-
-    const adjustedSavings90Days = savings90Days * urgencyMultiplier;
-    const adjustedSavings12Months = savings12Months * urgencyMultiplier;
-
-    return {
-      estimatedAffectedEmployees,
-      hoursSavedPerEmployeePerWeek,
-      weeklyHoursSaved,
-      monthlyHoursSaved,
-      blendedHourlyRate,
-      weeklyCostSavings,
-      monthlyCostSavings,
-      savings90Days,
-      adjustedSavings90Days,
-      savings12Months,
-      adjustedSavings12Months,
-      urgencyMultiplier,
-      manualCost90Days,
-      optimizedCost90Days,
-    };
-  };
-
-  const sendWebhook = async (data: FormData, roi: RoiResult) => {
-    try {
-      await fetch(WEBHOOK_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          workflows: data.workflows,
-          expectedImpact90Days: data.expectedImpact90Days,
-          companyDescription: data.companyDescription,
-          userRole: data.userRole,
-          companySize: data.companySize,
-          implementationTimeline: data.implementationTimeline,
-          roi,
-        }),
-      });
-    } catch (error) {
-      setToast({
-        type: "error",
-        message:
-          "We couldn't sync your data, but your ROI estimate is still shown.",
-      });
-    }
-  };
-
-  const goToNextStep = () => {
-    if (currentStep === TOTAL_STEPS) return;
-
-    if (currentStep === 7) {
-      const roi = calculateRoi(formData);
-      setRoiResult(roi);
-      setCurrentStep((prev) => Math.min(prev + 1, TOTAL_STEPS));
-
-      if (!hasSentWebhook) {
-        setHasSentWebhook(true);
-        void sendWebhook(formData, roi);
-      }
-    } else {
-      setCurrentStep((prev) => Math.min(prev + 1, TOTAL_STEPS));
-    }
-  };
-
-  const handleNextClick = () => {
-    if (!validateStep(currentStep)) return;
-    goToNextStep();
-  };
-
-  const handleBackClick = () => {
-    setCurrentStep((prev) => Math.max(1, prev - 1));
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      const target = e.target as HTMLElement;
-      const tag = target.tagName.toLowerCase();
-
-      // Apply Enter behavior only for inputs/textareas
-      if (tag === "textarea" || tag === "input") {
-        e.preventDefault();
-        if (!validateStep(currentStep)) return;
-        goToNextStep();
-      }
-    }
-  };
-
-  const renderProgress = () => {
-    return (
-      <div className="flex items-center justify-between mb-6">
-        <div className="text-xs sm:text-sm font-medium text-slate-600">
-          Step {currentStep} of {TOTAL_STEPS}
-        </div>
-        <div className="flex items-center gap-2">
-          {Array.from({ length: TOTAL_STEPS }).map((_, index) => {
-            const stepIndex = index + 1;
-            const isActive = stepIndex === currentStep;
-            const isCompleted = stepIndex < currentStep;
-            return (
-              <div
-                key={stepIndex}
-                className={[
-                  "w-2.5 h-2.5 rounded-full transition-all duration-200",
-                  isActive || isCompleted
-                    ? "bg-[#1F4FDB]"
-                    : "bg-slate-300",
-                  isActive ? "ring-2 ring-[#06B6D4]" : "",
-                ].join(" ")}
-                aria-hidden="true"
-              />
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
-  const renderIntroStep = () => (
-    <div
-      className="step-transition"
-      onKeyDown={handleKeyDown}
-    >
-      <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 mb-3">
-        Estimate Your AI Employee ROI in 3 Minutes
-      </h1>
-      <p className="text-sm sm:text-base text-slate-600 mb-4">
-        Get a clear, numbers-based estimate of how much time and money AI
-        automation can save across your team.
-      </p>
-      <ul className="list-disc list-inside text-sm sm:text-base text-slate-600 mb-6 space-y-1.5">
-        <li>Answer 6 focused questions about your company and workflows.</li>
-        <li>See an instant ROI model in hours and money saved.</li>
-        <li>Optionally book a strategy call to go deeper.</li>
-      </ul>
-
-      {renderProgress()}
-
-      <div className="flex justify-between items-center border-t border-slate-200/70 pt-5 mt-5">
-        <div className="text-xs text-slate-500">
-          No email required. No full page reloads.
-        </div>
-        <button
-          type="button"
-          onClick={() => setCurrentStep(2)}
-          className="inline-flex items-center justify-center rounded-full bg-[#1F4FDB] px-6 py-2.5 text-sm font-medium text-white shadow-md transition hover:shadow-lg hover:bg-[#1F4FDB]/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2"
-        >
-          Start
-        </button>
-      </div>
-    </div>
-  );
-
-  const renderStep2 = () => (
-    <div
-      className="step-transition"
-      onKeyDown={handleKeyDown}
-    >
-      {renderProgress()}
-      <h2 className="text-xl sm:text-2xl font-semibold text-slate-900 mb-2">
-        Prioritized workflows for AI automation
-      </h2>
-      <p className="text-sm text-slate-600 mb-4">
-        Be specific about the recurring processes you want automated.
-        Mention tools, roles, and where work currently bottlenecks.
-      </p>
-
-      <label
-        htmlFor="workflows"
-        className="block text-sm font-medium text-slate-800 mb-1"
-      >
-        Describe your top 2–5 workflows to automate
-      </label>
-      <textarea
-        id="workflows"
-        name="workflows"
-        className={`mt-1 block w-full rounded-2xl border px-3 py-2.5 text-sm sm:text-base text-slate-900 shadow-sm outline-none transition focus:ring-2 focus:ring-[#1F4FDB] focus:border-transparent bg-white/80 border-slate-200 min-h-[120px] ${
-          errors.workflows ? "border-red-500 ring-1 ring-red-400" : ""
-        }`}
-        aria-invalid={!!errors.workflows}
-        aria-describedby={
-          errors.workflows ? "workflows-error" : undefined
-        }
-        value={formData.workflows}
-        onChange={(e) => updateField("workflows", e.target.value)}
-        placeholder="Example: qualifying inbound leads, drafting outbound emails, CRM data entry, weekly reporting..."
-      />
-      <p className="mt-1 text-xs text-slate-500">
-        Minimum 20 characters. Concrete workflows are more useful than
-        generic terms like &quot;automation&quot;.
-      </p>
-      {errors.workflows && (
-        <p
-          id="workflows-error"
-          role="status"
-          className="mt-2 text-sm text-red-600"
-        >
-          {errors.workflows}
-        </p>
-      )}
-    </div>
-  );
-
-  const renderStep3 = () => (
-    <div
-      className="step-transition"
-      onKeyDown={handleKeyDown}
-    >
-      {renderProgress()}
-      <h2 className="text-xl sm:text-2xl font-semibold text-slate-900 mb-2">
-        Expected impact in the next 90 days
-      </h2>
-      <p className="text-sm text-slate-600 mb-4">
-        Summarize what success looks like if these AI workflows are in
-        place over the next 90 days.
-      </p>
-
-      <label
-        htmlFor="expectedImpact90Days"
-        className="block text-sm font-medium text-slate-800 mb-1"
-      >
-        In 1–2 sentences, describe the impact you want
-      </label>
-      <textarea
-        id="expectedImpact90Days"
-        name="expectedImpact90Days"
-        className={`mt-1 block w-full rounded-2xl border px-3 py-2.5 text-sm sm:text-base text-slate-900 shadow-sm outline-none transition focus:ring-2 focus:ring-[#1F4FDB] focus:border-transparent bg-white/80 border-slate-200 min-h-[100px] ${
-          errors.expectedImpact90Days
-            ? "border-red-500 ring-1 ring-red-400"
-            : ""
-        }`}
-        aria-invalid={!!errors.expectedImpact90Days}
-        aria-describedby={
-          errors.expectedImpact90Days
-            ? "expectedImpact90Days-error"
-            : undefined
-        }
-        value={formData.expectedImpact90Days}
-        onChange={(e) =>
-          updateField("expectedImpact90Days", e.target.value)
-        }
-        placeholder="Example: reduce time spent on manual lead qualification by 60% and increase outbound volume by 3x without adding headcount."
-      />
-      <p className="mt-1 text-xs text-slate-500">
-        Minimum 20 characters. Keep it focused on measurable outcomes.
-      </p>
-      {errors.expectedImpact90Days && (
-        <p
-          id="expectedImpact90Days-error"
-          role="status"
-          className="mt-2 text-sm text-red-600"
-        >
-          {errors.expectedImpact90Days}
-        </p>
-      )}
-    </div>
-  );
-
-  const renderStep4 = () => (
-    <div
-      className="step-transition"
-      onKeyDown={handleKeyDown}
-    >
-      {renderProgress()}
-      <h2 className="text-xl sm:text-2xl font-semibold text-slate-900 mb-2">
-        Company and ideal customer
-      </h2>
-      <p className="text-sm text-slate-600 mb-4">
-        Outline what your company does and who your ideal customer is.
-        This helps contextualize the ROI model.
-      </p>
-
-      <label
-        htmlFor="companyDescription"
-        className="block text-sm font-medium text-slate-800 mb-1"
-      >
-        Company description + ideal customer
-      </label>
-      <textarea
-        id="companyDescription"
-        name="companyDescription"
-        className={`mt-1 block w-full rounded-2xl border px-3 py-2.5 text-sm sm:text-base text-slate-900 shadow-sm outline-none transition focus:ring-2 focus:ring-[#1F4FDB] focus:border-transparent bg-white/80 border-slate-200 min-h-[100px] ${
-          errors.companyDescription
-            ? "border-red-500 ring-1 ring-red-400"
-            : ""
-        }`}
-        aria-invalid={!!errors.companyDescription}
-        aria-describedby={
-          errors.companyDescription
-            ? "companyDescription-error"
-            : undefined
-        }
-        value={formData.companyDescription}
-        onChange={(e) =>
-          updateField("companyDescription", e.target.value)
-        }
-        placeholder="Example: We run a B2B outbound agency serving SaaS companies in the US/Europe, targeting VP Sales and founders of 10–200 employee companies."
-      />
-      <p className="mt-1 text-xs text-slate-500">
-        Minimum 30 characters. Include industry, offer, and target
-        buyer where possible.
-      </p>
-      {errors.companyDescription && (
-        <p
-          id="companyDescription-error"
-          role="status"
-          className="mt-2 text-sm text-red-600"
-        >
-          {errors.companyDescription}
-        </p>
-      )}
-    </div>
-  );
-
-  const renderRadioStep = (
-    label: string,
-    field: keyof FormData,
-    options: string[],
-    helper?: string
-  ) => {
-    const error = errors[field];
-
-    return (
-      <div
-        className="step-transition"
-        onKeyDown={handleKeyDown}
-      >
-        {renderProgress()}
-        <h2 className="text-xl sm:text-2xl font-semibold text-slate-900 mb-2">
-          {label}
-        </h2>
-        {helper && (
-          <p className="text-sm text-slate-600 mb-4">
-            {helper}
-          </p>
-        )}
-
-        <fieldset>
-          <legend className="sr-only">{label}</legend>
-          <div className="space-y-2">
-            {options.map((option) => {
-              const isSelected = formData[field] === option;
-              const id = `${field}-${option}`;
-
-              return (
-                <label
-                  key={option}
-                  htmlFor={id}
-                  className={`flex items-center justify-between rounded-2xl border bg-white/80 px-3.5 py-2.5 cursor-pointer transition shadow-sm focus-within:ring-2 focus-within:ring-[#1F4FDB] focus-within:border-transparent ${
-                    isSelected
-                      ? "border-[#1F4FDB] ring-1 ring-[#1F4FDB]/80"
-                      : "border-slate-200 hover:border-[#1F4FDB]/50"
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-slate-300">
-                      <span
-                        className={`h-2.5 w-2.5 rounded-full transition ${
-                          isSelected
-                            ? "bg-[#1F4FDB]"
-                            : "bg-transparent"
-                        }`}
-                      />
-                    </span>
-                    <span className="text-sm font-medium text-slate-900">
-                      {option}
-                    </span>
-                  </span>
-                  <input
-                    id={id}
-                    type="radio"
-                    name={field}
-                    value={option}
-                    checked={isSelected}
-                    onChange={() =>
-                      updateField(
-                        field as keyof FormData,
-                        option as any
-                      )
-                    }
-                    className="sr-only"
-                    aria-invalid={!!error}
-                  />
-                </label>
-              );
-            })}
+      return `
+        <div class="flex items-center justify-between mb-6">
+          <div class="text-xs sm:text-sm font-medium text-slate-600">
+            Step ${state.currentStep} of ${TOTAL_STEPS}
           </div>
-        </fieldset>
+          <div class="flex items-center gap-2">
+            ${dotsHtml}
+          </div>
+        </div>
+      `;
+    }
 
-        {error && (
-          <p
-            role="status"
-            className="mt-2 text-sm text-red-600"
-          >
-            {error}
+    // --- STEP TEMPLATES ---
+
+    function getIntroStepHtml() {
+      return `
+        <div class="step-transition" data-step="1">
+          <h1 class="text-2xl sm:text-3xl font-semibold text-slate-900 mb-3">
+            Estimate Your AI Employee ROI in 3 Minutes
+          </h1>
+          <p class="text-sm sm:text-base text-slate-600 mb-4">
+            Get a clear, numbers-based estimate of how much time and money AI automation can save across your team.
           </p>
-        )}
-      </div>
-    );
-  };
+          <ul class="list-disc list-inside text-sm sm:text-base text-slate-600 mb-6 space-y-1.5">
+            <li>Answer 6 focused questions about your company and workflows.</li>
+            <li>See an instant ROI model in hours and money saved.</li>
+            <li>Optionally book a strategy call to go deeper.</li>
+          </ul>
+          ${getProgressHtml()}
+          <div class="flex justify-between items-center border-t border-slate-200/70 pt-5 mt-5">
+            <div class="text-xs text-slate-500">
+              No email required. No full page reloads.
+            </div>
+            <button
+              type="button"
+              id="start-btn"
+              class="inline-flex items-center justify-center rounded-full bg-[#1F4FDB] px-6 py-2.5 text-sm font-medium text-white shadow-md transition hover:shadow-lg hover:bg-[#1F4FDB]/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2"
+            >
+              Start
+            </button>
+          </div>
+        </div>
+      `;
+    }
 
-  const renderStep5 = () =>
-    renderRadioStep(
-      "Your role",
-      "userRole",
-      [
+    function getStep2Html() {
+      return `
+        <div class="step-transition" data-step="2">
+          ${getProgressHtml()}
+          <h2 class="text-xl sm:text-2xl font-semibold text-slate-900 mb-2">
+            Prioritized workflows for AI automation
+          </h2>
+          <p class="text-sm text-slate-600 mb-4">
+            Be specific about the recurring processes you want automated. Mention tools, roles, and where work currently bottlenecks.
+          </p>
+
+          <label for="workflows" class="block text-sm font-medium text-slate-800 mb-1">
+            Describe your top 2–5 workflows to automate
+          </label>
+          <textarea
+            id="workflows"
+            name="workflows"
+            aria-describedby="workflows-error"
+            class="mt-1 block w-full rounded-2xl border px-3 py-2.5 text-sm sm:text-base text-slate-900 shadow-sm outline-none transition focus:ring-2 focus:ring-[#1F4FDB] focus:border-transparent bg-white/80 border-slate-200 min-h-[120px]"
+            placeholder="Example: qualifying inbound leads, drafting outbound emails, CRM data entry, weekly reporting..."
+          ></textarea>
+          <p class="mt-1 text-xs text-slate-500">
+            Minimum 20 characters. Concrete workflows are more useful than generic terms like "automation".
+          </p>
+          <p id="workflows-error" class="mt-2 text-sm text-red-600 hidden"></p>
+        </div>
+      `;
+    }
+
+    function getStep3Html() {
+      return `
+        <div class="step-transition" data-step="3">
+          ${getProgressHtml()}
+          <h2 class="text-xl sm:text-2xl font-semibold text-slate-900 mb-2">
+            Expected impact in the next 90 days
+          </h2>
+          <p class="text-sm text-slate-600 mb-4">
+            Summarize what success looks like if these AI workflows are in place over the next 90 days.
+          </p>
+
+          <label for="expectedImpact90Days" class="block text-sm font-medium text-slate-800 mb-1">
+            In 1–2 sentences, describe the impact you want
+          </label>
+          <textarea
+            id="expectedImpact90Days"
+            name="expectedImpact90Days"
+            aria-describedby="expectedImpact90Days-error"
+            class="mt-1 block w-full rounded-2xl border px-3 py-2.5 text-sm sm:text-base text-slate-900 shadow-sm outline-none transition focus:ring-2 focus:ring-[#1F4FDB] focus:border-transparent bg-white/80 border-slate-200 min-h-[100px]"
+            placeholder="Example: reduce time spent on manual lead qualification by 60% and increase outbound volume by 3x without adding headcount."
+          ></textarea>
+          <p class="mt-1 text-xs text-slate-500">
+            Minimum 20 characters. Keep it focused on measurable outcomes.
+          </p>
+          <p id="expectedImpact90Days-error" class="mt-2 text-sm text-red-600 hidden"></p>
+        </div>
+      `;
+    }
+
+    function getStep4Html() {
+      return `
+        <div class="step-transition" data-step="4">
+          ${getProgressHtml()}
+          <h2 class="text-xl sm:text-2xl font-semibold text-slate-900 mb-2">
+            Company and ideal customer
+          </h2>
+          <p class="text-sm text-slate-600 mb-4">
+            Outline what your company does and who your ideal customer is. This helps contextualize the ROI model.
+          </p>
+
+          <label for="companyDescription" class="block text-sm font-medium text-slate-800 mb-1">
+            Company description + ideal customer
+          </label>
+          <textarea
+            id="companyDescription"
+            name="companyDescription"
+            aria-describedby="companyDescription-error"
+            class="mt-1 block w-full rounded-2xl border px-3 py-2.5 text-sm sm:text-base text-slate-900 shadow-sm outline-none transition focus:ring-2 focus:ring-[#1F4FDB] focus:border-transparent bg-white/80 border-slate-200 min-h-[100px]"
+            placeholder="Example: We run a B2B outbound agency serving SaaS companies in the US/Europe, targeting VP Sales and founders of 10–200 employee companies."
+          ></textarea>
+          <p class="mt-1 text-xs text-slate-500">
+            Minimum 30 characters. Include industry, offer, and target buyer where possible.
+          </p>
+          <p id="companyDescription-error" class="mt-2 text-sm text-red-600 hidden"></p>
+        </div>
+      `;
+    }
+
+    function getStep5Html() {
+      const options = [
         "Founder/Owner",
         "C-Level/VP",
         "Operations/Systems",
         "Marketing/Sales",
-        "Other",
-      ],
-      "Select the role that best matches your responsibility level for AI and systems decisions."
-    );
+        "Other"
+      ];
+      const optionsHtml = options
+        .map((opt) => {
+          const id = "userRole-" + opt.replace(/[^a-zA-Z0-9]+/g, "-");
+          return `
+            <label class="flex items-center gap-2 text-sm text-slate-900">
+              <input
+                type="radio"
+                id="${id}"
+                name="userRole"
+                value="${opt}"
+                class="h-4 w-4 text-[#1F4FDB] border-slate-300"
+              />
+              <span>${opt}</span>
+            </label>
+          `;
+        })
+        .join("");
+      return `
+        <div class="step-transition" data-step="5">
+          ${getProgressHtml()}
+          <h2 class="text-xl sm:text-2xl font-semibold text-slate-900 mb-2">
+            Your role
+          </h2>
+          <p class="text-sm text-slate-600 mb-4">
+            Select the role that best matches your responsibility level for AI and systems decisions.
+          </p>
 
-  const renderStep6 = () =>
-    renderRadioStep(
-      "Company size",
-      "companySize",
-      ["1-5", "6-20", "21-50", "51-200", "200+ employees"],
-      "This is used as a proxy for headcount and payroll when estimating ROI."
-    );
+          <fieldset>
+            <legend class="sr-only">Your role</legend>
+            <div class="space-y-2">
+              ${optionsHtml}
+            </div>
+          </fieldset>
+          <p id="userRole-error" class="mt-2 text-sm text-red-600 hidden"></p>
+        </div>
+      `;
+    }
 
-  const renderStep7 = () =>
-    renderRadioStep(
-      "Implementation timeline",
-      "implementationTimeline",
-      [
+    function getStep6Html() {
+      const options = [
+        "1-5",
+        "6-20",
+        "21-50",
+        "51-200",
+        "200+ employees"
+      ];
+      const optionsHtml = options
+        .map((opt) => {
+          const id = "companySize-" + opt.replace(/[^a-zA-Z0-9]+/g, "-");
+          return `
+            <label class="flex items-center gap-2 text-sm text-slate-900">
+              <input
+                type="radio"
+                id="${id}"
+                name="companySize"
+                value="${opt}"
+                class="h-4 w-4 text-[#1F4FDB] border-slate-300"
+              />
+              <span>${opt}</span>
+            </label>
+          `;
+        })
+        .join("");
+      return `
+        <div class="step-transition" data-step="6">
+          ${getProgressHtml()}
+          <h2 class="text-xl sm:text-2xl font-semibold text-slate-900 mb-2">
+            Company size
+          </h2>
+          <p class="text-sm text-slate-600 mb-4">
+            This is used as a proxy for headcount and payroll when estimating ROI.
+          </p>
+
+          <fieldset>
+            <legend class="sr-only">Company size</legend>
+            <div class="space-y-2">
+              ${optionsHtml}
+            </div>
+          </fieldset>
+          <p id="companySize-error" class="mt-2 text-sm text-red-600 hidden"></p>
+        </div>
+      `;
+    }
+
+    function getStep7Html() {
+      const options = [
         "Gathering information",
         "Planning to address",
-        "Critical priority within 60 days",
-      ],
-      "How urgent is it for you to implement AI workflows in your operations?"
-    );
-
-  const renderResults = () => {
-    if (!roiResult) return null;
-
-    const {
-      estimatedAffectedEmployees,
-      hoursSavedPerEmployeePerWeek,
-      monthlyHoursSaved,
-      monthlyCostSavings,
-      adjustedSavings90Days,
-      adjustedSavings12Months,
-      manualCost90Days,
-      optimizedCost90Days,
-    } = roiResult;
-
-    const manualVsOptimizedRatio =
-      manualCost90Days > 0
-        ? optimizedCost90Days / manualCost90Days
-        : 0.65; // fallback if somehow zero
-
-    const optimizedWidth = `${Math.round(
-      manualVsOptimizedRatio * 100
-    )}%`;
-
-    return (
-      <div
-        className="step-transition"
-        onKeyDown={handleKeyDown}
-      >
-        {renderProgress()}
-        <h2 className="text-xl sm:text-2xl font-semibold text-slate-900 mb-2">
-          Your AI Employee ROI estimate
-        </h2>
-        <p className="text-sm text-slate-600 mb-4">
-          Based on your answers, here is a modeled view of time and cost
-          savings AI automation can unlock across your team.
-        </p>
-
-        <div className="grid gap-4 sm:grid-cols-2 mb-6">
-          <div className="rounded-2xl bg-white/80 border border-white/80 shadow-sm px-4 py-4">
-            <p className="text-xs text-slate-500 mb-1">
-              Estimated employees meaningfully impacted
-            </p>
-            <p className="text-2xl font-semibold text-slate-900">
-              <AnimatedCounter value={estimatedAffectedEmployees} />
-            </p>
-            <p className="mt-1 text-xs text-slate-500">
-              Assumes workflows affect core operators, not the entire
-              company.
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-white/80 border border-white/80 shadow-sm px-4 py-4">
-            <p className="text-xs text-slate-500 mb-1">
-              Hours saved per employee per week
-            </p>
-            <p className="text-2xl font-semibold text-slate-900">
-              <AnimatedCounter
-                value={hoursSavedPerEmployeePerWeek}
-                decimals={1}
-              />{" "}
-              <span className="text-base text-slate-500">
-                hrs / week
-              </span>
-            </p>
-            <p className="mt-1 text-xs text-slate-500">
-              Derived from workflow complexity and automation potential.
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-white/80 border border-white/80 shadow-sm px-4 py-4">
-            <p className="text-xs text-slate-500 mb-1">
-              Hours saved per month (team-wide)
-            </p>
-            <p className="text-2xl font-semibold text-slate-900">
-              <AnimatedCounter
-                value={Math.round(monthlyHoursSaved)}
-              />{" "}
-              <span className="text-base text-slate-500">
-                hrs / month
-              </span>
-            </p>
-            <p className="mt-1 text-xs text-slate-500">
-              Using ~4.3 weeks per month.
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-white/80 border border-white/80 shadow-sm px-4 py-4">
-            <p className="text-xs text-slate-500 mb-1">
-              Estimated cost savings per month
-            </p>
-            <p className="text-2xl font-semibold text-slate-900">
-              <AnimatedCounter
-                value={Math.round(monthlyCostSavings)}
-                prefix="$"
+        "Critical priority within 60 days"
+      ];
+      const optionsHtml = options
+        .map((opt) => {
+          const id = "implementationTimeline-" + opt.replace(/[^a-zA-Z0-9]+/g, "-");
+          return `
+            <label class="flex items-center gap-2 text-sm text-slate-900">
+              <input
+                type="radio"
+                id="${id}"
+                name="implementationTimeline"
+                value="${opt}"
+                class="h-4 w-4 text-[#1F4FDB] border-slate-300"
               />
-            </p>
-            <p className="mt-1 text-xs text-slate-500">
-              Approximate blended hourly rate by company size, in
-              USD-equivalent.
-            </p>
-          </div>
-        </div>
+              <span>${opt}</span>
+            </label>
+          `;
+        })
+        .join("");
+      return `
+        <div class="step-transition" data-step="7">
+          ${getProgressHtml()}
+          <h2 class="text-xl sm:text-2xl font-semibold text-slate-900 mb-2">
+            Implementation timeline
+          </h2>
+          <p class="text-sm text-slate-600 mb-4">
+            How urgent is it for you to implement AI workflows in your operations?
+          </p>
 
-        <div className="rounded-2xl bg-white/80 border border-white/80 shadow-sm px-4 py-4 mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-            <div>
-              <p className="text-xs text-slate-500 mb-1">
-                90-day cost savings (based on your urgency)
-              </p>
-              <p className="text-2xl font-semibold text-slate-900">
-                <AnimatedCounter
-                  value={Math.round(adjustedSavings90Days)}
-                  prefix="$"
-                  durationMs={1100}
-                />
-              </p>
-              <p className="mt-1 text-xs text-slate-500">
-                If you implement the described AI workflows on your{" "}
-                chosen timeline.
-              </p>
+          <fieldset>
+            <legend class="sr-only">Implementation timeline</legend>
+            <div class="space-y-2">
+              ${optionsHtml}
             </div>
-            <div>
-              <p className="text-xs text-slate-500 mb-1">
-                Cost of inaction over 12 months
-              </p>
-              <p className="text-xl sm:text-2xl font-semibold text-rose-600">
-                <AnimatedCounter
-                  value={Math.round(adjustedSavings12Months)}
-                  prefix="$"
-                  durationMs={1200}
-                />
-              </p>
-              <p className="mt-1 text-xs text-slate-500">
-                Represents the opportunity cost if these workflows stay
-                manual.
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <p className="text-xs text-slate-500 mb-2">
-              90-day manual vs. AI-assisted cost (modeled)
-            </p>
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs text-slate-500">
-                <span>Manual baseline</span>
-                <span>
-                  <AnimatedCounter
-                    value={Math.round(manualCost90Days)}
-                    prefix="$"
-                    durationMs={800}
-                  />
-                </span>
-              </div>
-              <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
-                <div className="h-2 rounded-full bg-slate-400 w-full" />
-              </div>
-
-              <div className="flex justify-between text-xs text-slate-500 mt-3">
-                <span>After AI automation</span>
-                <span>
-                  <AnimatedCounter
-                    value={Math.round(optimizedCost90Days)}
-                    prefix="$"
-                    durationMs={900}
-                  />
-                </span>
-              </div>
-              <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
-                <div
-                  className="h-2 rounded-full bg-[#1F4FDB] transition-all duration-700"
-                  style={{ width: optimizedWidth }}
-                />
-              </div>
-            </div>
-          </div>
+          </fieldset>
+          <p id="implementationTimeline-error" class="mt-2 text-sm text-red-600 hidden"></p>
         </div>
-
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-t border-slate-200/80 pt-4 mt-2">
-          <div className="text-xs text-slate-500 max-w-md">
-            Assumptions: affected employees and blended hourly rate are
-            estimated from company size. Hours saved are modeled from
-            workflow richness and may be conservative if you fully
-            standardize processes.
-          </div>
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center">
-            <button
-              type="button"
-              onClick={handleBackClick}
-              className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white/70 px-4 py-2 text-xs sm:text-sm font-medium text-slate-700 shadow-sm transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2"
-            >
-              Back
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                window.open("https://cal.com/ibaitti", "_blank")
-              }
-              className="inline-flex items-center justify-center rounded-full bg-[#1F4FDB] px-5 sm:px-6 py-2.5 text-xs sm:text-sm font-medium text-white shadow-md transition hover:shadow-lg hover:bg-[#1F4FDB]/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2"
-            >
-              Book Your Strategy Call
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderStepContent = () => {
-    switch (currentStep) {
-      case 1:
-        return renderIntroStep();
-      case 2:
-        return renderStep2();
-      case 3:
-        return renderStep3();
-      case 4:
-        return renderStep4();
-      case 5:
-        return renderStep5();
-      case 6:
-        return renderStep6();
-      case 7:
-        return renderStep7();
-      case 8:
-        return renderResults();
-      default:
-        return null;
+      `;
     }
-  };
 
-  const showNavBar = currentStep >= 2 && currentStep <= 7;
-
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-[#F4F5FB] to-[#E7F0FF] flex items-center justify-center px-3 sm:px-4 py-6">
-      {/* Toast */}
-      {toast && (
-        <div className="fixed top-4 right-4 z-50 max-w-sm">
-          <div
-            className={`rounded-2xl border px-4 py-3 shadow-lg backdrop-blur-xl bg-white/90 ${
-              toast.type === "error"
-                ? "border-rose-200"
-                : "border-emerald-200"
-            }`}
-          >
-            <p
-              className={`text-sm ${
-                toast.type === "error"
-                  ? "text-rose-700"
-                  : "text-emerald-700"
-              }`}
-            >
-              {toast.message}
-            </p>
+    function getResultsHtml() {
+      const r = state.roiResult;
+      if (!r) {
+        return `
+          <div class="step-transition" data-step="8">
+            ${getProgressHtml()}
+            <p class="text-sm text-slate-600">Calculating ROI...</p>
           </div>
-        </div>
-      )}
+        `;
+      }
 
-      <main className="w-full max-w-3xl">
-        <section className="relative rounded-3xl bg-white/60 border border-white/60 shadow-xl backdrop-blur-2xl px-4 sm:px-6 md:px-8 py-5 sm:py-7">
-          {renderStepContent()}
+      const manualCost90 = Math.round(r.manualCost90Days);
+      const optimizedCost90 = Math.round(r.optimizedCost90Days);
+      const monthlyHoursSaved = Math.round(r.monthlyHoursSaved);
+      const monthlyCostSavings = Math.round(r.monthlyCostSavings);
+      const adjustedSavings90 = Math.round(r.adjustedSavings90Days);
+      const adjustedSavings12 = Math.round(r.adjustedSavings12Months);
+      const ratio =
+        r.manualCost90Days > 0
+          ? r.optimizedCost90Days / r.manualCost90Days
+          : 0.65;
+      const widthPercent = Math.max(5, Math.min(100, Math.round(ratio * 100)));
 
-          {/* Bottom navigation for steps 2–7 */}
-          {showNavBar && currentStep >= 2 && currentStep <= 7 && (
-            <div className="mt-6 flex items-center justify-between border-t border-slate-200/80 pt-4">
+      return `
+        <div class="step-transition" data-step="8">
+          ${getProgressHtml()}
+          <h2 class="text-xl sm:text-2xl font-semibold text-slate-900 mb-2">
+            Your AI Employee ROI estimate
+          </h2>
+          <p class="text-sm text-slate-600 mb-4">
+            Based on your answers, here is a modeled view of time and cost savings AI automation can unlock across your team.
+          </p>
+
+          <div class="grid gap-4 sm:grid-cols-2 mb-6">
+            <div class="rounded-2xl bg-white/80 border border-white/80 shadow-sm px-4 py-4">
+              <p class="text-xs text-slate-500 mb-1">
+                Estimated employees meaningfully impacted
+              </p>
+              <p class="text-2xl font-semibold text-slate-900">
+                <span
+                  class="counter"
+                  data-value="${r.estimatedAffectedEmployees}"
+                  data-decimals="0"
+                  data-prefix=""
+                ></span>
+              </p>
+              <p class="mt-1 text-xs text-slate-500">
+                Assumes workflows affect core operators, not the entire company.
+              </p>
+            </div>
+
+            <div class="rounded-2xl bg-white/80 border border-white/80 shadow-sm px-4 py-4">
+              <p class="text-xs text-slate-500 mb-1">
+                Hours saved per employee per week
+              </p>
+              <p class="text-2xl font-semibold text-slate-900">
+                <span
+                  class="counter"
+                  data-value="${r.hoursSavedPerEmployeePerWeek}"
+                  data-decimals="1"
+                  data-prefix=""
+                ></span>
+                <span class="text-base text-slate-500"> hrs / week</span>
+              </p>
+              <p class="mt-1 text-xs text-slate-500">
+                Derived from workflow complexity and automation potential.
+              </p>
+            </div>
+
+            <div class="rounded-2xl bg-white/80 border border-white/80 shadow-sm px-4 py-4">
+              <p class="text-xs text-slate-500 mb-1">
+                Hours saved per month (team-wide)
+              </p>
+              <p class="text-2xl font-semibold text-slate-900">
+                <span
+                  class="counter"
+                  data-value="${monthlyHoursSaved}"
+                  data-decimals="0"
+                  data-prefix=""
+                ></span>
+                <span class="text-base text-slate-500"> hrs / month</span>
+              </p>
+              <p class="mt-1 text-xs text-slate-500">
+                Using ~4.3 weeks per month.
+              </p>
+            </div>
+
+            <div class="rounded-2xl bg-white/80 border border-white/80 shadow-sm px-4 py-4">
+              <p class="text-xs text-slate-500 mb-1">
+                Estimated cost savings per month
+              </p>
+              <p class="text-2xl font-semibold text-slate-900">
+                <span
+                  class="counter"
+                  data-value="${monthlyCostSavings}"
+                  data-decimals="0"
+                  data-prefix="$"
+                ></span>
+              </p>
+              <p class="mt-1 text-xs text-slate-500">
+                Approximate blended hourly rate by company size, in USD-equivalent.
+              </p>
+            </div>
+          </div>
+
+          <div class="rounded-2xl bg-white/80 border border-white/80 shadow-sm px-4 py-4 mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+              <div>
+                <p class="text-xs text-slate-500 mb-1">
+                  90-day cost savings (based on your urgency)
+                </p>
+                <p class="text-2xl font-semibold text-slate-900">
+                  <span
+                    class="counter"
+                    data-value="${adjustedSavings90}"
+                    data-decimals="0"
+                    data-prefix="$"
+                  ></span>
+                </p>
+                <p class="mt-1 text-xs text-slate-500">
+                  If you implement the described AI workflows on your chosen timeline.
+                </p>
+              </div>
+              <div>
+                <p class="text-xs text-slate-500 mb-1">
+                  Cost of inaction over 12 months
+                </p>
+                <p class="text-xl sm:text-2xl font-semibold text-rose-600">
+                  <span
+                    class="counter"
+                    data-value="${adjustedSavings12}"
+                    data-decimals="0"
+                    data-prefix="$"
+                  ></span>
+                </p>
+                <p class="mt-1 text-xs text-slate-500">
+                  Represents the opportunity cost if these workflows stay manual.
+                </p>
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <p class="text-xs text-slate-500 mb-2">
+                90-day manual vs. AI-assisted cost (modeled)
+              </p>
+              <div class="space-y-2">
+                <div class="flex justify-between text-xs text-slate-500">
+                  <span>Manual baseline</span>
+                  <span>
+                    <span
+                      class="counter"
+                      data-value="${manualCost90}"
+                      data-decimals="0"
+                      data-prefix="$"
+                    ></span>
+                  </span>
+                </div>
+                <div class="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
+                  <div class="h-2 rounded-full bg-slate-400 w-full"></div>
+                </div>
+
+                <div class="flex justify-between text-xs text-slate-500 mt-3">
+                  <span>After AI automation</span>
+                  <span>
+                    <span
+                      class="counter"
+                      data-value="${optimizedCost90}"
+                      data-decimals="0"
+                      data-prefix="$"
+                    ></span>
+                  </span>
+                </div>
+                <div class="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
+                  <div
+                    class="h-2 rounded-full bg-[#1F4FDB] transition-all duration-700"
+                    style="width: ${widthPercent}%;"
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-t border-slate-200/80 pt-4 mt-2">
+            <div class="text-xs text-slate-500 max-w-md">
+              Assumptions: affected employees and blended hourly rate are
+              estimated from company size. Hours saved are modeled from workflow richness and may be conservative if you fully standardize processes.
+            </div>
+            <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center">
               <button
                 type="button"
-                onClick={handleBackClick}
-                className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white/70 px-4 py-2 text-xs sm:text-sm font-medium text-slate-700 shadow-sm transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2"
+                id="back-btn-results"
+                class="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white/70 px-4 py-2 text-xs sm:text-sm font-medium text-slate-700 shadow-sm transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2"
               >
                 Back
               </button>
               <button
                 type="button"
-                onClick={handleNextClick}
-                disabled={!isStepValid(currentStep)}
-                className="inline-flex items-center justify-center rounded-full bg-[#1F4FDB] px-5 sm:px-6 py-2.5 text-xs sm:text-sm font-medium text-white shadow-md transition hover:shadow-lg hover:bg-[#1F4FDB]/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                id="book-call-btn"
+                class="inline-flex items-center justify-center rounded-full bg-[#1F4FDB] px-5 sm:px-6 py-2.5 text-xs sm:text-sm font-medium text-white shadow-md transition hover:shadow-lg hover:bg-[#1F4FDB]/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2"
               >
-                Next
+                Book Your Strategy Call
               </button>
             </div>
-          )}
-        </section>
-      </main>
-    </div>
-  );
-};
+          </div>
+        </div>
+      `;
+    }
 
-export default App;
+    function getStepHtml(step) {
+      switch (step) {
+        case 1:
+          return getIntroStepHtml();
+        case 2:
+          return getStep2Html();
+        case 3:
+          return getStep3Html();
+        case 4:
+          return getStep4Html();
+        case 5:
+          return getStep5Html();
+        case 6:
+          return getStep6Html();
+        case 7:
+          return getStep7Html();
+        case 8:
+          return getResultsHtml();
+        default:
+          return "";
+      }
+    }
+
+    function getNavHtml(isNextDisabled) {
+      return `
+        <div class="mt-6 flex items-center justify-between border-t border-slate-200/80 pt-4">
+          <button
+            type="button"
+            id="back-btn"
+            class="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white/70 px-4 py-2 text-xs sm:text-sm font-medium text-slate-700 shadow-sm transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2"
+          >
+            Back
+          </button>
+          <button
+            type="button"
+            id="next-btn"
+            class="inline-flex items-center justify-center rounded-full bg-[#1F4FDB] px-5 sm:px-6 py-2.5 text-xs sm:text-sm font-medium text-white shadow-md transition hover:shadow-lg hover:bg-[#1F4FDB]/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2 ${isNextDisabled ? "opacity-50 cursor-not-allowed" : ""}"
+            ${isNextDisabled ? "disabled" : ""}
+          >
+            Next
+          </button>
+        </div>
+      `;
+    }
+
+    // --- VALIDATION & ROI LOGIC ---
+    function isStepValid(step) {
+      const fd = state.formData;
+      const workflows = fd.workflows.trim();
+      const impact = fd.expectedImpact90Days.trim();
+      const company = fd.companyDescription.trim();
+
+      switch (step) {
+        case 1:
+          return true;
+        case 2:
+          return workflows.length >= 20;
+        case 3:
+          return impact.length >= 20;
+        case 4:
+          return company.length >= 30;
+        case 5:
+          return !!fd.userRole;
+        case 6:
+          return !!fd.companySize;
+        case 7:
+          return !!fd.implementationTimeline;
+        case 8:
+          return true;
+        default:
+          return false;
+      }
+    }
+
+    function validateStep(step) {
+      const fd = state.formData;
+      const workflows = fd.workflows.trim();
+      const impact = fd.expectedImpact90Days.trim();
+      const company = fd.companyDescription.trim();
+      const errors = {};
+
+      if (step === 2) {
+        if (!workflows) {
+          errors.workflows = "This field is required.";
+        } else if (workflows.length < 20) {
+          errors.workflows = "Minimum 20 characters required.";
+        }
+      }
+
+      if (step === 3) {
+        if (!impact) {
+          errors.expectedImpact90Days = "This field is required.";
+        } else if (impact.length < 20) {
+          errors.expectedImpact90Days = "Minimum 20 characters required.";
+        }
+      }
+
+      if (step === 4) {
+        if (!company) {
+          errors.companyDescription = "This field is required.";
+        } else if (company.length < 30) {
+          errors.companyDescription = "Minimum 30 characters required.";
+        }
+      }
+
+      if (step === 5) {
+        if (!fd.userRole) {
+          errors.userRole = "Please select an option.";
+        }
+      }
+
+      if (step === 6) {
+        if (!fd.companySize) {
+          errors.companySize = "Please select an option.";
+        }
+      }
+
+      if (step === 7) {
+        if (!fd.implementationTimeline) {
+          errors.implementationTimeline = "Please select an option.";
+        }
+      }
+
+      state.errors = errors;
+      return Object.keys(errors).length === 0;
+    }
+
+    function estimateAffectedEmployees(companySize) {
+      switch (companySize) {
+        case "1-5":
+          return 2;
+        case "6-20":
+          return 5;
+        case "21-50":
+          return 12;
+        case "51-200":
+          return 35;
+        case "200+ employees":
+          return 60;
+        default:
+          return 3;
+      }
+    }
+
+    function estimateBlendedHourlyRate(companySize) {
+      switch (companySize) {
+        case "1-5":
+          return 25;
+        case "6-20":
+          return 35;
+        case "21-50":
+          return 45;
+        case "51-200":
+          return 60;
+        case "200+ employees":
+          return 80;
+        default:
+          return 35;
+      }
+    }
+
+    function estimateHoursSavedPerEmployeePerWeek(workflows) {
+      const trimmed = workflows.trim();
+      const length = trimmed.length;
+      let base = 1.5;
+
+      if (length > 200) base += 1;
+      if (length > 400) base += 1;
+
+      const keywords = [
+        "email",
+        "inbox",
+        "report",
+        "crm",
+        "follow up",
+        "follow-up",
+        "proposal",
+        "lead",
+        "sales",
+        "outreach",
+        "support",
+        "ticket",
+        "invoice",
+        "onboarding",
+        "content",
+        "social",
+        "ads",
+        "pipeline",
+        "prospect"
+      ];
+      const lower = trimmed.toLowerCase();
+      let keywordScore = 0;
+      keywords.forEach((kw) => {
+        if (lower.includes(kw)) {
+          keywordScore += 0.3;
+        }
+      });
+
+      const raw = base + keywordScore;
+      const capped = Math.min(10, raw);
+      return parseFloat(capped.toFixed(1));
+    }
+
+    function getUrgencyMultiplier(timeline) {
+      switch (timeline) {
+        case "Planning to address":
+          return 1.1;
+        case "Critical priority within 60 days":
+          return 1.25;
+        case "Gathering information":
+        default:
+          return 1.0;
+      }
+    }
+
+    function calculateRoi(fd) {
+      const estimatedAffectedEmployees = estimateAffectedEmployees(fd.companySize);
+      const hoursSavedPerEmployeePerWeek =
+        estimateHoursSavedPerEmployeePerWeek(fd.workflows);
+
+      const weeklyHoursSaved =
+        estimatedAffectedEmployees * hoursSavedPerEmployeePerWeek;
+      const monthlyHoursSaved = weeklyHoursSaved * 4.33;
+
+      const blendedHourlyRate = estimateBlendedHourlyRate(fd.companySize);
+      const weeklyCostSavings = weeklyHoursSaved * blendedHourlyRate;
+      const monthlyCostSavings = monthlyHoursSaved * blendedHourlyRate;
+      const savings90Days = weeklyCostSavings * 12;
+
+      const manualCost90Days = savings90Days / 0.35;
+      const optimizedCost90Days = manualCost90Days - savings90Days;
+      const savings12Months = weeklyCostSavings * 52;
+      const urgencyMultiplier = getUrgencyMultiplier(fd.implementationTimeline);
+
+      const adjustedSavings90Days = savings90Days * urgencyMultiplier;
+      const adjustedSavings12Months = savings12Months * urgencyMultiplier;
+
+      return {
+        estimatedAffectedEmployees,
+        hoursSavedPerEmployeePerWeek,
+        weeklyHoursSaved,
+        monthlyHoursSaved,
+        blendedHourlyRate,
+        weeklyCostSavings,
+        monthlyCostSavings,
+        savings90Days,
+        adjustedSavings90Days,
+        savings12Months,
+        adjustedSavings12Months,
+        urgencyMultiplier,
+        manualCost90Days,
+        optimizedCost90Days
+      };
+    }
+
+    function sendWebhook(fd, roi) {
+      fetch(WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workflows: fd.workflows,
+          expectedImpact90Days: fd.expectedImpact90Days,
+          companyDescription: fd.companyDescription,
+          userRole: fd.userRole,
+          companySize: fd.companySize,
+          implementationTimeline: fd.implementationTimeline,
+          roi
+        })
+      }).catch(() => {
+        showToast(
+          "error",
+          "We couldn't sync your data, but your ROI estimate is still shown."
+        );
+      });
+    }
+
+    // --- TOAST ---
+    function showToast(type, message) {
+      const root = document.getElementById("toast-root");
+      if (!root) return;
+      root.innerHTML = `
+        <div class="max-w-sm rounded-2xl border px-4 py-3 shadow-lg backdrop-blur-xl bg-white/90 ${
+          type === "error" ? "border-rose-200" : "border-emerald-200"
+        }">
+          <p class="text-sm ${
+            type === "error" ? "text-rose-700" : "text-emerald-700"
+          }">
+            ${message}
+          </p>
+        </div>
+      `;
+      if (toastTimeoutId) {
+        clearTimeout(toastTimeoutId);
+      }
+      toastTimeoutId = window.setTimeout(() => {
+        root.innerHTML = "";
+        toastTimeoutId = null;
+      }, 5000);
+    }
+
+    // --- ERROR RENDERING ---
+    function applyFieldError(fieldId, errorKey) {
+      const input = document.getElementById(fieldId);
+      const errorEl = document.getElementById(fieldId + "-error");
+      const msg = state.errors[errorKey];
+
+      if (!errorEl || !input) return;
+
+      if (msg) {
+        errorEl.textContent = msg;
+        errorEl.classList.remove("hidden");
+        errorEl.setAttribute("role", "status");
+        input.setAttribute("aria-invalid", "true");
+        input.classList.add("border-red-500", "ring-1", "ring-red-400");
+      } else {
+        errorEl.textContent = "";
+        errorEl.classList.add("hidden");
+        errorEl.removeAttribute("role");
+        input.removeAttribute("aria-invalid");
+        input.classList.remove("border-red-500", "ring-1", "ring-red-400");
+      }
+    }
+
+    function applyRadioError(fieldKey) {
+      const errorEl = document.getElementById(fieldKey + "-error");
+      if (!errorEl) return;
+      const msg = state.errors[fieldKey];
+      if (msg) {
+        errorEl.textContent = msg;
+        errorEl.classList.remove("hidden");
+        errorEl.setAttribute("role", "status");
+      } else {
+        errorEl.textContent = "";
+        errorEl.classList.add("hidden");
+        errorEl.removeAttribute("role");
+      }
+    }
+
+    function applyErrorsForCurrentStep() {
+      applyFieldError("workflows", "workflows");
+      applyFieldError(
+        "expectedImpact90Days",
+        "expectedImpact90Days"
+      );
+      applyFieldError(
+        "companyDescription",
+        "companyDescription"
+      );
+      applyRadioError("userRole");
+      applyRadioError("companySize");
+      applyRadioError("implementationTimeline");
+    }
+
+    // --- FORM VALUE RESTORE ---
+    function fillFormValuesForCurrentStep() {
+      const fd = state.formData;
+      const workflowsEl = document.getElementById("workflows");
+      if (workflowsEl) workflowsEl.value = fd.workflows;
+
+      const impactEl = document.getElementById("expectedImpact90Days");
+      if (impactEl) impactEl.value = fd.expectedImpact90Days;
+
+      const companyEl = document.getElementById("companyDescription");
+      if (companyEl) companyEl.value = fd.companyDescription;
+
+      const roleRadios = document.querySelectorAll('input[name="userRole"]');
+      roleRadios.forEach((el) => {
+        if (el.value === fd.userRole) {
+          el.checked = true;
+        }
+      });
+
+      const sizeRadios = document.querySelectorAll('input[name="companySize"]');
+      sizeRadios.forEach((el) => {
+        if (el.value === fd.companySize) {
+          el.checked = true;
+        }
+      });
+
+      const timelineRadios = document.querySelectorAll(
+        'input[name="implementationTimeline"]'
+      );
+      timelineRadios.forEach((el) => {
+        if (el.value === fd.implementationTimeline) {
+          el.checked = true;
+        }
+      });
+    }
+
+    // --- NAV STATE ---
+    function updateNextButtonState() {
+      const nextBtn = document.getElementById("next-btn");
+      if (!nextBtn) return;
+      const disabled = !isStepValid(state.currentStep);
+      nextBtn.disabled = disabled;
+      if (disabled) {
+        nextBtn.classList.add("opacity-50", "cursor-not-allowed");
+      } else {
+        nextBtn.classList.remove("opacity-50", "cursor-not-allowed");
+      }
+    }
+
+    // --- NAV ACTIONS ---
+    function goToStep(step) {
+      if (step < 1 || step > TOTAL_STEPS) return;
+      state.currentStep = step;
+      state.errors = {};
+      renderCard();
+    }
+
+    function goToNextStepAfterValidation() {
+      if (state.currentStep === 7) {
+        const roi = calculateRoi(state.formData);
+        state.roiResult = roi;
+        if (!state.hasSentWebhook) {
+          state.hasSentWebhook = true;
+          sendWebhook(state.formData, roi);
+        }
+      }
+      if (state.currentStep < TOTAL_STEPS) {
+        state.currentStep++;
+        state.errors = {};
+        renderCard();
+      }
+    }
+
+    function handleNextClick() {
+      if (!validateStep(state.currentStep)) {
+        applyErrorsForCurrentStep();
+        updateNextButtonState();
+        return;
+      }
+      goToNextStepAfterValidation();
+    }
+
+    function handleBackClick() {
+      if (state.currentStep > 1) {
+        state.currentStep--;
+        state.errors = {};
+        renderCard();
+      }
+    }
+
+    // --- COUNTERS ---
+    function animateCounter(element, target, options) {
+      const prefix = options.prefix || "";
+      const decimals = options.decimals || 0;
+      const duration = options.duration || 900;
+
+      let start = null;
+      const from = 0;
+      const to = target;
+
+      function step(timestamp) {
+        if (start === null) start = timestamp;
+        const progress = Math.min((timestamp - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const current = from + (to - from) * eased;
+        const num = current.toLocaleString(undefined, {
+          minimumFractionDigits: decimals,
+          maximumFractionDigits: decimals
+        });
+        element.textContent = prefix + num;
+        if (progress < 1) {
+          requestAnimationFrame(step);
+        }
+      }
+      requestAnimationFrame(step);
+    }
+
+    function initCounters() {
+      const counters = document.querySelectorAll(".counter");
+      counters.forEach((el) => {
+        const value = parseFloat(el.getAttribute("data-value") || "0");
+        const prefix = el.getAttribute("data-prefix") || "";
+        const decimals = parseInt(
+          el.getAttribute("data-decimals") || "0",
+          10
+        );
+        animateCounter(el, value, {
+          prefix,
+          decimals,
+          duration: 900
+        });
+      });
+    }
+
+    // --- HANDLERS ATTACH ---
+    function attachHandlersForCurrentStep() {
+      const workflowsEl = document.getElementById("workflows");
+      if (workflowsEl) {
+        workflowsEl.addEventListener("input", (e) => {
+          state.formData.workflows = e.target.value;
+          delete state.errors.workflows;
+          applyFieldError("workflows", "workflows");
+          updateNextButtonState();
+        });
+      }
+
+      const impactEl = document.getElementById("expectedImpact90Days");
+      if (impactEl) {
+        impactEl.addEventListener("input", (e) => {
+          state.formData.expectedImpact90Days = e.target.value;
+          delete state.errors.expectedImpact90Days;
+          applyFieldError(
+            "expectedImpact90Days",
+            "expectedImpact90Days"
+          );
+          updateNextButtonState();
+        });
+      }
+
+      const companyEl = document.getElementById("companyDescription");
+      if (companyEl) {
+        companyEl.addEventListener("input", (e) => {
+          state.formData.companyDescription = e.target.value;
+          delete state.errors.companyDescription;
+          applyFieldError("companyDescription", "companyDescription");
+          updateNextButtonState();
+        });
+      }
+
+      const roleRadios = document.querySelectorAll('input[name="userRole"]');
+      if (roleRadios.length) {
+        roleRadios.forEach((el) => {
+          el.addEventListener("change", (e) => {
+            state.formData.userRole = e.target.value;
+            delete state.errors.userRole;
+            applyRadioError("userRole");
+            updateNextButtonState();
+          });
+        });
+      }
+
+      const sizeRadios = document.querySelectorAll('input[name="companySize"]');
+      if (sizeRadios.length) {
+        sizeRadios.forEach((el) => {
+          el.addEventListener("change", (e) => {
+            state.formData.companySize = e.target.value;
+            delete state.errors.companySize;
+            applyRadioError("companySize");
+            updateNextButtonState();
+          });
+        });
+      }
+
+      const timelineRadios = document.querySelectorAll(
+        'input[name="implementationTimeline"]'
+      );
+      if (timelineRadios.length) {
+        timelineRadios.forEach((el) => {
+          el.addEventListener("change", (e) => {
+            state.formData.implementationTimeline = e.target.value;
+            delete state.errors.implementationTimeline;
+            applyRadioError("implementationTimeline");
+            updateNextButtonState();
+          });
+        });
+      }
+
+      const startBtn = document.getElementById("start-btn");
+      if (startBtn) {
+        startBtn.addEventListener("click", () => {
+          goToStep(2);
+        });
+      }
+
+      const backBtn = document.getElementById("back-btn");
+      if (backBtn) {
+        backBtn.addEventListener("click", handleBackClick);
+      }
+
+      const nextBtn = document.getElementById("next-btn");
+      if (nextBtn) {
+        nextBtn.addEventListener("click", handleNextClick);
+      }
+
+      const backResultsBtn = document.getElementById("back-btn-results");
+      if (backResultsBtn) {
+        backResultsBtn.addEventListener("click", handleBackClick);
+      }
+
+      const bookCallBtn = document.getElementById("book-call-btn");
+      if (bookCallBtn) {
+        bookCallBtn.addEventListener("click", () => {
+          window.open("https://cal.com/ibaitti", "_blank");
+        });
+      }
+    }
+
+    // --- ENTER KEY BEHAVIOR ---
+    function handleGlobalKeyDown(e) {
+      if (e.key !== "Enter" || e.shiftKey) return;
+      const active = document.activeElement;
+      if (!active) return;
+      const tag = active.tagName.toLowerCase();
+      if (tag !== "textarea" && tag !== "input") return;
+      if (state.currentStep < 2 || state.currentStep > 7) return;
+
+      e.preventDefault();
+      if (!validateStep(state.currentStep)) {
+        applyErrorsForCurrentStep();
+        updateNextButtonState();
+        return;
+      }
+      goToNextStepAfterValidation();
+    }
+
+    // --- RENDER ---
+    function renderCard() {
+      const card = document.getElementById("card");
+      if (!card) return;
+
+      const stepHtml = getStepHtml(state.currentStep);
+      const showNav =
+        state.currentStep >= 2 && state.currentStep <= 7;
+      const navHtml = showNav
+        ? getNavHtml(!isStepValid(state.currentStep))
+        : "";
+
+      card.innerHTML = stepHtml + navHtml;
+
+      fillFormValuesForCurrentStep();
+      applyErrorsForCurrentStep();
+      attachHandlersForCurrentStep();
+      if (showNav) updateNextButtonState();
+      if (state.currentStep === 8 && state.roiResult) {
+        initCounters();
+      }
+    }
+
+    // --- INIT ---
+    document.addEventListener("DOMContentLoaded", () => {
+      renderCard();
+      document.addEventListener("keydown", handleGlobalKeyDown);
+    });
+  </script>
+</body>
+</html>
