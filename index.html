@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ROBOTS [$] – The Autonomous Work Era</title>
+    <title>ROBOTS [$] – placeholders</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -53,7 +53,7 @@
     <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
 
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
     
     <!-- FontAwesome for Brand Logos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -94,18 +94,41 @@
             transform: translateY(-1px);
         }
 
-        .card-select {
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                .card-select {
+            position: relative;
+            transform-style: preserve-3d;
+            --mx: 50%;
+            --my: 50%;
+            transition:
+                box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                background 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             background: rgba(255, 255, 255, 0.9);
             border-radius: 0.75rem;
             border: 1px solid rgba(148, 163, 184, 0.18);
             box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+            overflow: hidden;
         }
-        
+
+        /* Subtle halo behind the card (uses CSS vars updated on mouse move) */
+        .card-select::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: radial-gradient(circle at var(--mx) var(--my), rgba(37, 99, 235, 0.14), transparent 62%);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            pointer-events: none;
+        }
+
         .card-select:hover {
-            transform: translateY(-2px);
             box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
             border-color: rgba(129, 140, 248, 0.55);
+        }
+
+        .card-select:hover::before {
+            opacity: 1;
         }
 
         .card-select.selected {
@@ -114,17 +137,44 @@
                 0 0 0 1px rgba(37, 99, 235, 0.28),
                 0 22px 45px rgba(37, 99, 235, 0.25);
             background: linear-gradient(135deg, #EEF2FF, #EFF6FF);
-            transform: translateY(-2px) scale(1.03);
         }
+
+        .card-select.selected::before {
+            opacity: 1;
+            background: radial-gradient(circle at 50% 25%, rgba(37, 99, 235, 0.14), transparent 65%);
+        }
+
+        /* Animated outline target (moved via Framer Motion layoutId) */
+        .selection-outline {
+            position: absolute;
+            inset: -2px;
+            border-radius: 0.85rem;
+            pointer-events: none;
+            border: 2px solid rgba(37, 99, 235, 0.55);
+            box-shadow:
+                0 0 0 1px rgba(37, 99, 235, 0.22),
+                0 0 34px rgba(37, 99, 235, 0.22);
+            z-index: 10;
+        }
+
+        /* Soft dreamy glow behind panels/cards */
+        .dreamy-glow {
+            position: absolute;
+            inset: -90px;
+            background:
+                radial-gradient(circle at 18% 22%, rgba(37, 99, 235, 0.20), transparent 58%),
+                radial-gradient(circle at 82% 28%, rgba(6, 182, 212, 0.18), transparent 58%),
+                radial-gradient(circle at 52% 92%, rgba(99, 102, 241, 0.14), transparent 62%);
+            filter: blur(58px);
+            opacity: 0.85;
+            pointer-events: none;
+            z-index: 0;
+        }
+
 
         .logo-text {
             font-family: 'Montserrat', sans-serif;
             letter-spacing: -0.05em;
-        }
-
-        .text-brand-gray,
-        .text-brand-light {
-            font-family: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
         .glowing-text {
@@ -154,19 +204,50 @@
     </style>
 </head>
 <body>
-    <div id="root"></div>
+    <div id="root">
+        <div class="min-h-screen flex items-center justify-center px-6">
+            <div class="glass-panel w-full max-w-xl p-8 text-center">
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/60 border border-gray-200/60 text-[12px] text-brand-gray font-display">
+                    <span class="w-2 h-2 rounded-full bg-brand-cta"></span>
+                    placeholders
+                </div>
+                <h1 class="mt-5 text-2xl md:text-3xl font-extrabold text-brand-dark tracking-tight">placeholders</h1>
+                <p class="mt-2 text-sm text-brand-gray font-display">placeholders</p>
+                <p class="mt-6 text-[11px] text-brand-light font-display">If you only see the blue background, your browser didn’t load the external scripts (Tailwind/React/Babel). Open this file with internet access.</p>
+            </div>
+        </div>
+    </div>
 
     <script type="text/babel" data-presets="typescript,react">
         const { useState, useEffect, useRef } = React;
-        const { motion, AnimatePresence, useSpring, useTransform, animate } = window.Motion;
+        const { motion, AnimatePresence, animate, LayoutGroup, useMotionValue, useSpring } = window.Motion;
 
         // --- Constants & Config ---
         const WEBHOOK_URL = "https://zerogpt.app.n8n.cloud/webhook-test/form-one";
         const BOOKING_URL = "https://cal.com/ibaitti";
-        
-        const MAX_HOURLY_COST = 10000;
-        const HOURS_PER_WEEK_PER_EMPLOYEE = 168;
-        const MAX_EMPLOYEE_COUNT = 500;
+
+        // --- Limits ---
+        const MAX_HOURLY_COST = 500;        // $/hour
+        const MAX_HOURS_PER_WEEK = 168;     // hours
+        const ROBOT_THRESHOLD_HOURS = 112;  // hours (show easter egg)
+
+        const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
+        const teamUpperBound = (teamSize) => {
+            switch (teamSize) {
+                case "1": return 1;
+                case "2-10": return 10;
+                case "11-50": return 50;
+                case "51-200": return 200;
+                case "200+": return Infinity;
+                default: return Infinity;
+            }
+        };
+        const getMaxWeeklyHours = (teamSize) => {
+            const upper = teamUpperBound(teamSize);
+            const capByTeam = upper === Infinity ? MAX_HOURS_PER_WEEK : Math.min(MAX_HOURS_PER_WEEK, upper * 40);
+            return capByTeam;
+        };
+
         
         // Revised Steps Structure
         // 0: Intro
@@ -182,42 +263,29 @@
         const TOTAL_STEPS = 9; 
 
         const ROLES = [
-            { id: "founder", icon: "fa-solid fa-chess-king", label: "Founder", description: "You set the direction." },
-            { id: "exec", icon: "fa-solid fa-user-tie", label: "Executive", description: "You make strategy real." },
-            { id: "ops", icon: "fa-solid fa-gears", label: "Operations", description: "You keep things moving." },
-            { id: "growth", icon: "fa-solid fa-chart-line", label: "Growth", description: "You turn attention into revenue." },
-            { id: "other", icon: "fa-solid fa-user", label: "Other", description: "You’re the leverage point." }
+            { id: "founder", icon: "fa-solid fa-chess-king", label: "option one", description: "placeholders" },
+            { id: "exec", icon: "fa-solid fa-user-tie", label: "option two", description: "placeholders" },
+            { id: "ops", icon: "fa-solid fa-gears", label: "option three", description: "placeholders" },
+            { id: "growth", icon: "fa-solid fa-chart-line", label: "option four", description: "placeholders" },
+            { id: "other", icon: "fa-solid fa-user", label: "option five", description: "placeholders" }
         ];
 
         const TEAM_SIZES = [
-            { id: "1", label: "Solo (1)", description: "Solo engine" },
-            { id: "2-10", label: "2 - 10", description: "Strike squad" },
-            { id: "11-50", label: "11 - 50", description: "Core team" },
-            { id: "51-200", label: "51 - 200", description: "Serious operation" },
-            { id: "200+", label: "200+", description: "Full-scale org" }
+            { id: "1", label: "option one", description: "placeholders" },
+            { id: "2-10", label: "option two", description: "placeholders" },
+            { id: "11-50", label: "option three", description: "placeholders" },
+            { id: "51-200", label: "option four", description: "placeholders" },
+            { id: "200+", label: "option five", description: "placeholders" }
         ];
 
         const PARTNERS = [
-            { name: "Salesforce", icon: "fa-brands fa-salesforce", color: "#00A1E0" },
-            { name: "HubSpot", icon: "fa-brands fa-hubspot", color: "#FF7A59" },
-            { name: "Google", icon: "fa-brands fa-google", color: "#4285F4" },
-            { name: "Microsoft", icon: "fa-brands fa-microsoft", color: "#00A4EF" },
-            { name: "Meta", icon: "fa-brands fa-meta", color: "#0668E1" },
-            { name: "OpenAI", icon: "fa-solid fa-bolt", color: "#10A37F" },
-            { name: "Slack", icon: "fa-brands fa-slack", color: "#4A154B" }
-        ];
-
-        const WORKFLOW_OPTIONS = [
-            "Lead capture & qualification",
-            "Appointment booking / scheduling",
-            "Inbound customer support (FAQ / triage)",
-            "Follow-ups & nurture (email/SMS)",
-            "CRM updates & data entry",
-            "Reporting / dashboards",
-            "Proposal / quote generation",
-            "Billing / invoicing / collections",
-            "Client onboarding (intake + setup)",
-            "Content repurposing & publishing",
+            { name: "placeholders", icon: "fa-brands fa-salesforce", color: "#00A1E0" },
+            { name: "placeholders", icon: "fa-brands fa-hubspot", color: "#FF7A59" },
+            { name: "placeholders", icon: "fa-brands fa-google", color: "#4285F4" },
+            { name: "placeholders", icon: "fa-brands fa-microsoft", color: "#00A4EF" },
+            { name: "placeholders", icon: "fa-brands fa-meta", color: "#0668E1" },
+            { name: "placeholders", icon: "fa-solid fa-bolt", color: "#10A37F" },
+            { name: "placeholders", icon: "fa-brands fa-slack", color: "#4A154B" }
         ];
 
         // --- Utils ---
@@ -247,7 +315,7 @@
             
             const variants = {
                 primary: "bg-brand-cta text-white hover:bg-brand-ctaHover shadow-lg shadow-blue-600/25 hover:-translate-y-1 hover:shadow-xl",
-                ghost: "text-brand-gray hover:text-brand-dark hover:bg-white/50",
+                ghost: "text-brand-gray font-display hover:text-brand-dark hover:bg-white/50",
                 outline: "border-2 border-brand-cta text-brand-cta hover:bg-blue-50"
             };
 
@@ -273,9 +341,83 @@
                 animate={{ opacity: 1 }}
                 className="text-xs text-brand-light flex items-center gap-1 mt-3"
             >
-                <i className="fa-solid fa-keyboard"></i> Press <span className="font-semibold text-brand-gray">Enter</span> to continue
+                <i className="fa-solid fa-keyboard"></i> placeholders <span className="font-semibold text-brand-gray font-display">placeholders</span> placeholders
             </motion.p>
         );
+
+
+        const LayoutGroupSafe = LayoutGroup || (({ children }) => React.createElement(React.Fragment, null, children));
+
+        // --- Option Card (tilt + moving outline) ---
+        const OptionCard = (typeof useMotionValue === 'function')
+            ? function OptionCardTilt({ children, onClick, selected, outlineId, className = "" }) {
+                const rX = useMotionValue(0);
+                const rY = useMotionValue(0);
+                const rotateX = useSpring(rX, { stiffness: 320, damping: 26 });
+                const rotateY = useSpring(rY, { stiffness: 320, damping: 26 });
+
+                const handleMove = (e) => {
+                    const el = e.currentTarget;
+                    const rect = el.getBoundingClientRect();
+                    const px = (e.clientX - rect.left) / rect.width;
+                    const py = (e.clientY - rect.top) / rect.height;
+
+                    el.style.setProperty('--mx', `${(px * 100).toFixed(2)}%`);
+                    el.style.setProperty('--my', `${(py * 100).toFixed(2)}%`);
+
+                    const max = 10; // degrees
+                    rY.set(clamp((px - 0.5) * (max * 2), -max, max));
+                    rX.set(clamp(-(py - 0.5) * (max * 2), -max, max));
+                };
+
+                const reset = (e) => {
+                    const el = e.currentTarget;
+                    el.style.setProperty('--mx', `50%`);
+                    el.style.setProperty('--my', `50%`);
+                    rX.set(0);
+                    rY.set(0);
+                };
+
+                return (
+                    <motion.button
+                        type="button"
+                        onClick={onClick}
+                        onMouseMove={handleMove}
+                        onMouseLeave={reset}
+                        onBlur={reset}
+                        className={`card-select ${selected ? "selected" : "text-brand-gray font-display"} ${className}`}
+                        style={{ rotateX, rotateY, transformPerspective: 900 }}
+                        animate={{ scale: selected ? 1.03 : 1 }}
+                        whileHover={{ y: -2, scale: selected ? 1.04 : 1.02 }}
+                        whileTap={{ scale: selected ? 1.02 : 0.98 }}
+                        transition={{ type: "spring", stiffness: 420, damping: 30 }}
+                    >
+                        {selected && (
+                            <motion.div
+                                layoutId={outlineId}
+                                className="selection-outline"
+                                transition={{ type: "spring", stiffness: 520, damping: 40 }}
+                            />
+                        )}
+                        <div className="relative z-20">
+                            {children}
+                        </div>
+                    </motion.button>
+                );
+            }
+            : function OptionCardFlat({ children, onClick, selected, className = "" }) {
+                return (
+                    <button
+                        type="button"
+                        onClick={onClick}
+                        className={`card-select ${selected ? "selected" : "text-brand-gray font-display"} ${className}`}
+                    >
+                        <div className="relative z-20">
+                            {children}
+                        </div>
+                    </button>
+                );
+            };
 
         // --- Main Application ---
 
@@ -289,7 +431,6 @@
                 offerICP: "",
                 role: "",
                 teamSize: "",
-                employeeCount: "1",
                 hourlyCost: "",
                 hoursPerWeek: "",
                 name: "",
@@ -299,44 +440,41 @@
 
             const [roi, setRoi] = useState({ yearlySavings: 0, hoursSaved: 0 });
 
-            const [workflowChoice, setWorkflowChoice] = useState("");
-
-            const logoRef = useRef(null);
-            const logoX = useSpring(0, { stiffness: 180, damping: 18, mass: 0.8 });
-            const logoY = useSpring(0, { stiffness: 180, damping: 18, mass: 0.8 });
-
-            const handleLogoMove = (e) => {
-                const el = logoRef.current;
-                if (!el) return;
-                const r = el.getBoundingClientRect();
-                const dx = e.clientX - (r.left + r.width / 2);
-                const dy = e.clientY - (r.top + r.height / 2);
-                const max = 10;
-                const x = Math.max(-max, Math.min(max, (dx / r.width) * 28));
-                const y = Math.max(-max, Math.min(max, (dy / r.height) * 28));
-                logoX.set(x);
-                logoY.set(y);
-            };
-
-            const resetLogo = () => {
-                logoX.set(0);
-                logoY.set(0);
-            };
+            const maxWeeklyHours = getMaxWeeklyHours(answers.teamSize);
 
             // Calculate ROI
             useEffect(() => {
-                const cost = Number(answers.hourlyCost) || 0;
-                const hours = Number(answers.hoursPerWeek) || 0;
+                const rawCost = Number(answers.hourlyCost) || 0;
+                const rawHours = Number(answers.hoursPerWeek) || 0;
+
+                const cost = clamp(rawCost, 0, MAX_HOURLY_COST);
+                const hours = clamp(rawHours, 0, getMaxWeeklyHours(answers.teamSize));
                 const factor = 0.7; // 70% automation
-                
+
                 const weeklyManual = cost * hours;
                 const yearlyManual = weeklyManual * 52;
-                
+
                 setRoi({
                     yearlySavings: yearlyManual * factor,
                     hoursSaved: (hours * 52) * factor
                 });
-            }, [answers.hourlyCost, answers.hoursPerWeek]);
+            }, [answers.hourlyCost, answers.hoursPerWeek, answers.teamSize]);
+
+            // Keep inputs within limits even if team size changes later
+            useEffect(() => {
+                const capHours = getMaxWeeklyHours(answers.teamSize);
+
+                const rawCost = answers.hourlyCost === "" ? "" : String(clamp(Number(answers.hourlyCost) || 0, 0, MAX_HOURLY_COST));
+                const rawHours = answers.hoursPerWeek === "" ? "" : String(clamp(Number(answers.hoursPerWeek) || 0, 0, capHours));
+
+                if (rawCost !== answers.hourlyCost || rawHours !== answers.hoursPerWeek) {
+                    setAnswers(prev => ({
+                        ...prev,
+                        hourlyCost: rawCost,
+                        hoursPerWeek: rawHours
+                    }));
+                }
+            }, [answers.teamSize]);
 
             // Enter Key Handler
             useEffect(() => {
@@ -364,8 +502,8 @@
                     case 3: return !!answers.offerICP.trim();
                     case 4: return !!answers.role;
                     case 5: return !!answers.teamSize;
-                    case 6: return !!answers.hourlyCost;
-                    case 7: return !!answers.hoursPerWeek;
+                    case 6: return !!answers.hourlyCost && Number(answers.hourlyCost) <= MAX_HOURLY_COST;
+                    case 7: return !!answers.hoursPerWeek && Number(answers.hoursPerWeek) <= getMaxWeeklyHours(answers.teamSize);
                     case 8: {
                         const email = answers.email.trim();
                         return !!email && /\S+@\S+\.\S+/.test(email);
@@ -408,10 +546,10 @@
                 } catch(e) {}
             };
 
-            const variants = {
-                enter: (dir) => ({ x: dir > 0 ? 40 : -40, opacity: 0 }),
-                center: { x: 0, opacity: 1 },
-                exit: (dir) => ({ x: dir < 0 ? 40 : -40, opacity: 0 })
+                        const variants = {
+                enter: (dir) => ({ x: dir > 0 ? 64 : -64, opacity: 0, filter: "blur(10px)" }),
+                center: { x: 0, opacity: 1, filter: "blur(0px)" },
+                exit: (dir) => ({ x: dir < 0 ? 64 : -64, opacity: 0, filter: "blur(10px)" })
             };
 
             // Render Content
@@ -425,33 +563,25 @@
                                     animate={{ scale: 1, opacity: 1 }}
                                     className="space-y-8"
                                 >
-                                    <div
-                                        ref={logoRef}
-                                        onMouseMove={handleLogoMove}
-                                        onMouseLeave={resetLogo}
-                                        className="inline-block p-5 bg-gradient-to-br from-blue-50 to-white border border-blue-100 shadow-xl rounded-full mb-2 animate-float"
-                                    >
-                                        <motion.div style={{ x: logoX, y: logoY }}>
-                                            <i className="fa-solid fa-robot text-5xl text-brand-cta"></i>
-                                        </motion.div>
+                                    <div className="inline-block p-5 bg-gradient-to-br from-blue-50 to-white border border-blue-100 shadow-xl rounded-full mb-2 animate-float">
+                                        <i className="fa-solid fa-robot text-5xl text-brand-cta"></i>
                                     </div>
                                     <div className="space-y-4">
                                         <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-brand-dark leading-[1.05]">
-                                            machines are
+                                            question one
                                             <br/>
-                                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-cta to-brand-accent">here</span>
+                                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-cta to-brand-accent">placeholders</span>
                                         </h1>
-                                        <p className="text-base md:text-lg text-brand-gray max-w-lg mx-auto font-medium leading-relaxed">
-                                            <span className="block">Six questions. One vision—</span>
-                                            <span className="block">your first AI employee brought to life.</span>
+                                        <p className="text-base md:text-lg text-brand-gray font-display max-w-md mx-auto font-medium">
+                                            placeholders
                                         </p>
                                     </div>
                                     <div className="pt-4 flex flex-col items-center gap-3">
-                                        <Button onClick={() => { setDirection(1); setStep(1); }} className="w-full md:w-auto px-10 py-6 text-lg rounded-2xl">
-                                            Begin
+                                        <Button onClick={() => { setDirection(1); setStep(1); }} className="w-full md:w-auto px-10 py-5 text-lg rounded-2xl">
+                                            option one
                                         </Button>
                                         <span className="text-[11px] md:text-xs font-medium text-brand-light mt-1">
-                                            Your next decision shapes your future.
+                                            placeholders
                                         </span>
                                     </div>
                                 </motion.div>
@@ -462,49 +592,16 @@
                         return (
                             <div className="space-y-6">
                                 <div className="space-y-2">
-                                    <h2 className="text-3xl font-bold text-brand-dark">Priority One.</h2>
-                                    <p className="text-brand-gray text-sm md:text-base">What is the single most repetitive workflow you want to automate immediately?</p>
+                                    <h2 className="text-3xl font-extrabold text-brand-dark">question two</h2>
+                                    <p className="text-brand-gray font-display text-sm md:text-base">question two</p>
                                 </div>
-                                <div className="space-y-4">
-                                <select
+                                <input 
                                     autoFocus
                                     className="w-full text-lg px-6 py-5 input-glass"
-                                    value={workflowChoice}
-                                    onChange={e => {
-                                        const v = e.target.value;
-                                        setWorkflowChoice(v);
-                                        if (v === "__other__") {
-                                            setAnswers({ ...answers, workflow: "" });
-                                        } else {
-                                            setAnswers({ ...answers, workflow: v });
-                                        }
-                                    }}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            if (validateStep()) {
-                                                handleNext();
-                                            }
-                                        }
-                                    }}
-                                >
-                                    <option value="" disabled>Select one…</option>
-                                    {WORKFLOW_OPTIONS.map(opt => (
-                                        <option key={opt} value={opt}>{opt}</option>
-                                    ))}
-                                    <option value="__other__">Other…</option>
-                                </select>
-
-                                {workflowChoice === "__other__" && (
-                                    <input
-                                        className="w-full text-lg px-6 py-5 input-glass"
-                                        placeholder="Type your workflow…"
-                                        value={answers.workflow}
-                                        onChange={e => setAnswers({ ...answers, workflow: e.target.value })}
-                                    />
-                                )}
-                            </div>
+                                    placeholder="placeholder"
+                                    value={answers.workflow}
+                                    onChange={e => setAnswers({...answers, workflow: e.target.value})}
+                                />
                                 <EnterHint />
                             </div>
                         );
@@ -513,14 +610,14 @@
                         return (
                             <div className="space-y-6">
                                 <div className="space-y-2">
-                                    <h2 className="text-3xl font-bold text-brand-dark">The Leak.</h2>
-                                    <p className="text-brand-gray text-sm md:text-base">Where are you losing money right now because of this manual work?</p>
+                                    <h2 className="text-3xl font-extrabold text-brand-dark">question three</h2>
+                                    <p className="text-brand-gray font-display text-sm md:text-base">question three</p>
                                 </div>
                                 <textarea 
                                     autoFocus
                                     rows={4}
                                     className="w-full text-lg px-6 py-5 input-glass resize-none"
-                                    placeholder="We lose leads on weekends because no one responds..."
+                                    placeholder="placeholder"
                                     value={answers.impactVision}
                                     onChange={e => setAnswers({...answers, impactVision: e.target.value})}
                                 />
@@ -532,14 +629,14 @@
                         return (
                             <div className="space-y-6">
                                 <div className="space-y-2">
-                                    <h2 className="text-3xl font-bold text-brand-dark">Context.</h2>
-                                    <p className="text-brand-gray text-sm md:text-base">What do you sell, and who do you sell it to?</p>
+                                    <h2 className="text-3xl font-extrabold text-brand-dark">question four</h2>
+                                    <p className="text-brand-gray font-display text-sm md:text-base">question four</p>
                                 </div>
                                 <textarea 
                                     autoFocus
                                     rows={4}
                                     className="w-full text-lg px-6 py-5 input-glass resize-none"
-                                    placeholder="We sell high-ticket consulting to dental practices..."
+                                    placeholder="placeholder"
                                     value={answers.offerICP}
                                     onChange={e => setAnswers({...answers, offerICP: e.target.value})}
                                 />
@@ -547,45 +644,49 @@
                             </div>
                         );
 
-                    case 4: // Role
+                                        case 4: // Role
                         return (
                             <div className="space-y-6">
                                 <div className="space-y-2">
-                                    <h2 className="text-3xl font-bold text-brand-dark">Your Position.</h2>
-                                    <p className="text-brand-gray text-lg">Help us tailor the report to your perspective.</p>
+                                    <h2 className="text-3xl font-extrabold text-brand-dark">question five</h2>
+                                    <p className="text-brand-gray font-display text-lg">question five</p>
                                 </div>
                                 <div className="pb-2">
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                        {ROLES.map((opt) => {
-                                            const selected = answers.role === opt.id;
-                                            return (
-                                                <button
-                                                    key={opt.id}
-                                                    onClick={() => setAnswers({ ...answers, role: opt.id })}
-                                                    className={`card-select flex flex-col items-center justify-center px-5 py-4 text-center min-h-[7rem] ${selected ? "selected scale-[1.03]" : "text-brand-gray"}`}
-                                                >
-                                                    <i className={`${opt.icon} text-3xl mb-2 ${selected ? 'text-brand-cta' : 'text-gray-400'}`}></i>
-                                                    <div className="flex flex-col items-center gap-1">
-                                                        <span className={`font-semibold ${selected ? "text-brand-dark" : ""}`}>{opt.label}</span>
-                                                        <AnimatePresence>
-                                                            {selected && (
-                                                                <motion.p
-                                                                    key={`${opt.id}-desc`}
-                                                                    initial={{ opacity: 0, y: 4 }}
-                                                                    animate={{ opacity: 1, y: 0 }}
-                                                                    exit={{ opacity: 0, y: 4 }}
-                                                                    transition={{ duration: 0.18 }}
-                                                                    className="text-xs text-brand-gray"
-                                                                >
-                                                                    {opt.description}
-                                                                </motion.p>
-                                                            )}
-                                                        </AnimatePresence>
-                                                    </div>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
+                                    <LayoutGroupSafe id="role-options">
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                            {ROLES.map((opt) => {
+                                                const selected = answers.role === opt.id;
+                                                return (
+                                                    <OptionCard
+                                                        key={opt.id}
+                                                        selected={selected}
+                                                        outlineId="role-outline"
+                                                        onClick={() => setAnswers({ ...answers, role: opt.id })}
+                                                        className="flex flex-col items-center justify-center px-5 py-4 text-center min-h-[7rem]"
+                                                    >
+                                                        <i className={`${opt.icon} text-3xl mb-2 ${selected ? 'text-brand-cta' : 'text-gray-400'}`}></i>
+                                                        <div className="flex flex-col items-center gap-1">
+                                                            <span className={`font-semibold ${selected ? "text-brand-dark" : ""}`}>{opt.label}</span>
+                                                            <AnimatePresence>
+                                                                {selected && (
+                                                                    <motion.p
+                                                                        key={`${opt.id}-desc`}
+                                                                        initial={{ opacity: 0, y: 4 }}
+                                                                        animate={{ opacity: 1, y: 0 }}
+                                                                        exit={{ opacity: 0, y: 4 }}
+                                                                        transition={{ duration: 0.18 }}
+                                                                        className="text-xs text-brand-gray font-display"
+                                                                    >
+                                                                        {opt.description}
+                                                                    </motion.p>
+                                                                )}
+                                                            </AnimatePresence>
+                                                        </div>
+                                                    </OptionCard>
+                                                );
+                                            })}
+                                        </div>
+                                    </LayoutGroupSafe>
                                 </div>
                                 <EnterHint />
                             </div>
@@ -595,75 +696,74 @@
                         return (
                             <div className="space-y-6">
                                 <div className="space-y-2">
-                                    <h2 className="text-3xl font-bold text-brand-dark">Scale.</h2>
-                                    <p className="text-brand-gray text-lg">How large is the team currently handling this?</p>
+                                    <h2 className="text-3xl font-extrabold text-brand-dark">question six</h2>
+                                    <p className="text-brand-gray font-display text-lg">question six</p>
                                 </div>
                                 <div className="pb-2">
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                        {TEAM_SIZES.map((opt) => {
-                                            const selected = answers.teamSize === opt.id;
-                                            return (
-                                                <button
-                                                    key={opt.id}
-                                                    onClick={() => setAnswers({ ...answers, teamSize: opt.id })}
-                                                    className={`card-select flex flex-col items-center justify-center px-5 py-4 text-center min-h-[7rem] ${selected ? "selected scale-[1.03]" : "text-brand-gray"}`}
-                                                >
-                                                    <div className="flex flex-col items-center gap-1">
-                                                        <span className={`text-xl font-bold ${selected ? 'text-brand-dark' : 'text-gray-600'}`}>
-                                                            {opt.label}
-                                                        </span>
-                                                        <AnimatePresence>
-                                                            {selected && (
-                                                                <motion.p
-                                                                    key={`${opt.id}-size-desc`}
-                                                                    initial={{ opacity: 0, y: 4 }}
-                                                                    animate={{ opacity: 1, y: 0 }}
-                                                                    exit={{ opacity: 0, y: 4 }}
-                                                                    transition={{ duration: 0.18 }}
-                                                                    className="text-xs text-brand-gray"
-                                                                >
-                                                                    {opt.description}
-                                                                </motion.p>
-                                                            )}
-                                                        </AnimatePresence>
-                                                    </div>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
+                                    <LayoutGroupSafe id="team-options">
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                            {TEAM_SIZES.map((opt) => {
+                                                const selected = answers.teamSize === opt.id;
+                                                return (
+                                                    <OptionCard
+                                                        key={opt.id}
+                                                        selected={selected}
+                                                        outlineId="team-outline"
+                                                        onClick={() => setAnswers({ ...answers, teamSize: opt.id })}
+                                                        className="flex flex-col items-center justify-center px-5 py-4 text-center min-h-[7rem]"
+                                                    >
+                                                        <div className="flex flex-col items-center gap-1">
+                                                            <span className={`text-xl font-bold ${selected ? 'text-brand-dark' : 'text-gray-600'}`}>
+                                                                {opt.label}
+                                                            </span>
+                                                            <AnimatePresence>
+                                                                {selected && (
+                                                                    <motion.p
+                                                                        key={`${opt.id}-size-desc`}
+                                                                        initial={{ opacity: 0, y: 4 }}
+                                                                        animate={{ opacity: 1, y: 0 }}
+                                                                        exit={{ opacity: 0, y: 4 }}
+                                                                        transition={{ duration: 0.18 }}
+                                                                        className="text-xs text-brand-gray font-display"
+                                                                    >
+                                                                        {opt.description}
+                                                                    </motion.p>
+                                                                )}
+                                                            </AnimatePresence>
+                                                        </div>
+                                                    </OptionCard>
+                                                );
+                                            })}
+                                        </div>
+                                    </LayoutGroupSafe>
                                 </div>
-                                <EnterHint />
-                            </div>
-                        );
-
-                    case 6: // Hourly Cost
+                                <Ent                    case 6: // Hourly Cost
                         return (
                             <div className="space-y-6">
                                 <div className="space-y-2">
-                                    <h2 className="text-3xl font-bold text-brand-dark">The Cost of Human Time.</h2>
-                                    <p className="text-brand-gray text-lg">What is the average fully loaded hourly cost of the people doing this work?</p>
+                                    <h2 className="text-3xl font-extrabold text-brand-dark">price</h2>
+                                    <p className="text-brand-gray font-display text-lg">price</p>
                                 </div>
                                 <div className="input-glass flex items-center px-6 py-6">
                                     <span className="text-2xl font-bold text-brand-cta">$</span>
                                     <input 
                                         autoFocus
                                         type="number"
+                                        min="0"
+                                        max={MAX_HOURLY_COST}
                                         className="w-full text-4xl font-bold pl-4 pr-2 bg-transparent text-brand-cta placeholder-blue-200 focus:outline-none"
-                                        placeholder="0"
+                                        placeholder="price"
                                         value={answers.hourlyCost}
-                                        onChange={e => {
-                                            const raw = e.target.value;
-                                            if (raw === "") {
-                                                setAnswers({ ...answers, hourlyCost: "" });
-                                                return;
-                                            }
-                                            const n = Number(raw);
-                                            if (!Number.isFinite(n)) return;
-                                            const clamped = Math.max(0, Math.min(MAX_HOURLY_COST, n));
-                                            setAnswers({ ...answers, hourlyCost: String(clamped) });
+                                        onChange={(e) => {
+                                            const v = e.target.value;
+                                            if (v === "") return setAnswers({ ...answers, hourlyCost: "" });
+                                            const n = Number(v);
+                                            const safe = clamp(n, 0, MAX_HOURLY_COST);
+                                            setAnswers({ ...answers, hourlyCost: String(safe) });
                                         }}
                                     />
                                 </div>
+                                <p className="text-xs text-brand-light font-display">price</p>
                                 <EnterHint />
                             </div>
                         );
@@ -672,89 +772,74 @@
                         return (
                             <div className="space-y-6">
                                 <div className="space-y-2">
-                                    <h2 className="text-3xl font-bold text-brand-dark">The Volume.</h2>
-                                    <p className="text-brand-gray text-lg">How many employees do this task today, and how many total hours per week does it take?</p>
+                                    <h2 className="text-3xl font-extrabold text-brand-dark">question seven</h2>
+                                    <p className="text-brand-gray font-display text-lg">question seven</p>
                                 </div>
-
-                                <div className="input-glass flex items-center px-6 py-5">
-                                    <span className="text-sm font-bold text-brand-gray uppercase tracking-wide">Employees</span>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        className="ml-auto w-24 text-right text-2xl font-bold bg-transparent text-brand-cta placeholder-blue-200 focus:outline-none"
-                                        placeholder="1"
-                                        value={answers.employeeCount}
-                                        onChange={e => {
-                                            const raw = e.target.value;
-                                            if (raw === "") {
-                                                setAnswers({ ...answers, employeeCount: "" });
-                                                return;
-                                            }
-                                            const n = Math.floor(Number(raw));
-                                            if (!Number.isFinite(n)) return;
-                                            const clampedCount = Math.max(1, Math.min(MAX_EMPLOYEE_COUNT, n));
-                                            const maxHours = HOURS_PER_WEEK_PER_EMPLOYEE * clampedCount;
-                                            const currentHours = Number(answers.hoursPerWeek);
-                                            const next = { ...answers, employeeCount: String(clampedCount) };
-                                            if (Number.isFinite(currentHours) && currentHours > maxHours) {
-                                                next.hoursPerWeek = String(maxHours);
-                                            }
-                                            setAnswers(next);
-                                        }}
-                                    />
-                                </div>
-
                                 <input 
                                     autoFocus
                                     type="number"
-                                    className="w-full text-4xl font-bold px-6 py-8 input-glass text-brand-cta text-left placeholder-blue-200"
-                                    placeholder="0"
+                                    min="0"
+                                    max={maxWeeklyHours}
+                                    className="w-full text-4xl font-bold px-6 py-8 input-glass text-brand-cta text-center placeholder-blue-200"
+                                    placeholder="placeholder"
                                     value={answers.hoursPerWeek}
-                                    onChange={e => {
-                                        const raw = e.target.value;
-                                        if (raw === "") {
-                                            setAnswers({ ...answers, hoursPerWeek: "" });
-                                            return;
-                                        }
-                                        const n = Number(raw);
-                                        if (!Number.isFinite(n)) return;
-                                        const count = Math.max(1, Math.min(MAX_EMPLOYEE_COUNT, Number(answers.employeeCount) || 1));
-                                        const maxHours = HOURS_PER_WEEK_PER_EMPLOYEE * count;
-                                        const clamped = Math.max(0, Math.min(maxHours, n));
-                                        setAnswers({ ...answers, hoursPerWeek: String(clamped) });
+                                    onChange={(e) => {
+                                        const v = e.target.value;
+                                        if (v === "") return setAnswers({ ...answers, hoursPerWeek: "" });
+                                        const n = Number(v);
+                                        const safe = clamp(n, 0, maxWeeklyHours);
+                                        setAnswers({ ...answers, hoursPerWeek: String(safe) });
                                     }}
                                 />
+                                <AnimatePresence>
+                                    {Number(answers.hoursPerWeek) >= ROBOT_THRESHOLD_HOURS && (
+                                        <motion.p
+                                            key="robot-threshold"
+                                            initial={{ opacity: 0, y: 6, filter: "blur(6px)" }}
+                                            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                                            exit={{ opacity: 0, y: 6, filter: "blur(6px)" }}
+                                            transition={{ duration: 0.22 }}
+                                            className="text-sm font-semibold text-brand-cta font-display"
+                                        >
+                                            placeholders
+                                        </motion.p>
+                                    )}
+                                </AnimatePresence>
+                                <p className="text-xs text-brand-light font-display">Max volume: {maxWeeklyHours} hours/week.</p>
                                 <EnterHint />
                             </div>
+                        );
+
+                  </div>
                         );
 
                     case 8: // Contact Info (Email required)
                         return (
                             <div className="space-y-6">
                                 <div className="space-y-2">
-                                    <h2 className="text-3xl font-bold text-brand-dark">Almost Done.</h2>
-                                    <p className="text-brand-gray">A few details so we can send back a concrete digital employee outline instead of a generic PDF.</p>
+                                    <h2 className="text-3xl font-extrabold text-brand-dark">question eight</h2>
+                                    <p className="text-brand-gray font-display">placeholders</p>
                                 </div>
                                 
                                 <div className="space-y-4">
                                     <input 
                                         type="email"
                                         className="w-full text-lg px-6 py-4 input-glass"
-                                        placeholder="Work Email (Required)"
+                                        placeholder="email"
                                         value={answers.email}
                                         onChange={e => setAnswers({...answers, email: e.target.value})}
                                     />
                                     <input 
                                         type="text"
                                         className="w-full text-lg px-6 py-4 input-glass"
-                                        placeholder="Full Name (Optional)"
+                                        placeholder="name"
                                         value={answers.name}
                                         onChange={e => setAnswers({...answers, name: e.target.value})}
                                     />
                                     <input 
                                         type="text"
                                         className="w-full text-lg px-6 py-4 input-glass"
-                                        placeholder="Company Name (Optional)"
+                                        placeholder="placeholder"
                                         value={answers.company}
                                         onChange={e => setAnswers({...answers, company: e.target.value})}
                                     />
@@ -762,7 +847,7 @@
                                 
                                 <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 text-sm text-blue-800 flex items-start gap-3">
                                     <i className="fa-solid fa-circle-info mt-1"></i>
-                                    <span>Work email lets us send your ROI breakdown. Name and company are optional. No spam.</span>
+                                    <span>placeholders</span>
                                 </div>
 
                                 <EnterHint />
@@ -778,8 +863,8 @@
                                     transition={{ type: "spring", bounce: 0.4, duration: 1 }}
                                     className="relative z-10"
                                 >
-                                    <p className="text-brand-gray font-bold uppercase tracking-widest text-xs mb-6">
-                                        Estimated yearly loss to manual work
+                                    <p className="text-brand-gray font-display font-bold uppercase tracking-widest text-xs mb-6">
+                                        results
                                     </p>
                                     
                                     <div className="mb-6 relative inline-block">
@@ -797,48 +882,51 @@
                                         </div>
                                     </div>
 
-                                    <p className="mt-2 text-[10px] text-brand-gray font-medium max-w-xs mx-auto">
-                                        Rough estimate based on your answers. On the call we usually uncover even more hidden waste.
+                                    <p className="mt-2 text-[10px] text-brand-gray font-display font-medium max-w-xs mx-auto">
+                                        placeholders
                                     </p>
 
                                     {/* What Happens Next Card */}
                                     <div className="mt-10 bg-white/60 border border-white/80 rounded-2xl p-6 backdrop-blur-sm text-left">
-                                        <h3 className="text-sm font-bold text-brand-dark uppercase tracking-wide mb-4 border-b border-gray-100 pb-2">What Happens Next?</h3>
+                                        <h3 className="text-sm font-bold text-brand-dark uppercase tracking-wide mb-4 border-b border-gray-100 pb-2">results</h3>
                                         <div className="space-y-4">
                                             <div className="flex gap-4">
                                                 <div className="w-8 h-8 rounded-full bg-blue-100 text-brand-cta flex items-center justify-center font-bold text-sm shrink-0">1</div>
                                                 <div>
-                                                    <p className="font-semibold text-sm text-brand-dark">Discovery (15 minutes)</p>
-                                                    <p className="text-xs text-brand-gray">We map the exact workflow and edge cases.</p>
+                                                    <p className="font-semibold text-sm text-brand-dark">placeholders</p>
+                                                    <p className="text-xs text-brand-gray font-display">placeholders</p>
                                                 </div>
                                             </div>
                                             <div className="flex gap-4">
                                                 <div className="w-8 h-8 rounded-full bg-blue-100 text-brand-cta flex items-center justify-center font-bold text-sm shrink-0">2</div>
                                                 <div>
-                                                    <p className="font-semibold text-sm text-brand-dark">Blueprint</p>
-                                                    <p className="text-xs text-brand-gray">You receive a concrete automation architecture, not a generic PDF.</p>
+                                                    <p className="font-semibold text-sm text-brand-dark">placeholders</p>
+                                                    <p className="text-xs text-brand-gray font-display">placeholders</p>
                                                 </div>
                                             </div>
                                             <div className="flex gap-4">
                                                 <div className="w-8 h-8 rounded-full bg-blue-100 text-brand-cta flex items-center justify-center font-bold text-sm shrink-0">3</div>
                                                 <div>
-                                                    <p className="font-semibold text-sm text-brand-dark">Deployment</p>
-                                                    <p className="text-xs text-brand-gray">We ship your AI employee into production in ~7 days.</p>
+                                                    <p className="font-semibold text-sm text-brand-dark">placeholders</p>
+                                                    <p className="text-xs text-brand-gray font-display">We ship your AI employee into production in ~7 days.</p>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
 
                                     <div className="mt-8 max-w-sm mx-auto">
-                                        <Button onClick={() => window.location.href = BOOKING_URL} className="w-full">
+                                        <button 
+                                            onClick={() => window.location.href = BOOKING_URL}
+                                            className="w-full rounded-xl bg-[#2563EB] px-8 py-4 text-white text-base font-semibold shadow-lg hover:shadow-xl hover:bg-brand-ctaHover transition-all"
+                                        >
                                             Book a Call
-                                        </Button>
+                                        </button>
                                         <p className="mt-4 text-xs font-medium text-brand-light uppercase tracking-wide">
-                                            Your digital employee is ready to deliver.
+                                            results
                                         </p>
                                     </div>
                                     
-                                    <p className="mt-6 text-[10px] text-brand-light uppercase tracking-wider">No requirements, no commitments</p>
+                                    <p className="mt-6 text-[10px] text-brand-light uppercase tracking-wider">placeholders</p>
 
                                 </motion.div>
                             </div>
@@ -860,11 +948,11 @@
                     <header className="pt-6 px-6 md:px-12 flex flex-col md:flex-row items-center justify-between z-20 relative">
                         <div className="flex flex-col items-center md:items-start">
                             <div className="text-3xl font-black logo-text text-brand-dark tracking-tighter flex items-center gap-2">
-                                <span>ROBOTS</span>
+                                <span>placeholders</span>
                                 <span className="bg-brand-cta text-white px-2 py-0.5 rounded text-xl shadow-lg shadow-blue-500/30">[$]</span>
                             </div>
-                            <span className="text-[10px] font-bold text-brand-gray mt-1.5 tracking-[0.2em] uppercase">
-                                The Autonomous Work Era
+                            <span className="text-[10px] font-bold text-brand-gray font-display mt-1.5 tracking-[0.2em] uppercase">
+                                placeholders
                             </span>
                         </div>
                     </header>
@@ -894,6 +982,9 @@
 
                             <div className={`glass-panel rounded-[2rem] p-7 md:p-10 relative overflow-hidden transition-all duration-500 ${isIntro ? 'min-h-[420px] flex items-center justify-center' : 'min-h-[360px]'}`}>
                                 
+                                <div className="dreamy-glow" aria-hidden="true"></div>
+                                <div className="relative z-10">
+
                                 <AnimatePresence custom={direction} mode="wait">
                                     <motion.div
                                         key={step}
@@ -902,7 +993,8 @@
                                         initial="enter"
                                         animate="center"
                                         exit="exit"
-                                        transition={{ x: { type: "spring", stiffness: 300, damping: 30 }, opacity: { duration: 0.2 } }}
+                                        transition={{ x: { type: "spring", stiffness: 260, damping: 28 }, opacity: { duration: 0.22 }, filter: { duration: 0.22 } }}
+                                        style={{ willChange: "transform, opacity, filter" }}
                                         className="w-full"
                                     >
                                         {renderContent()}
@@ -913,7 +1005,7 @@
                                 {!isIntro && !isReveal && (
                                     <div className="mt-12 flex items-center justify-between pt-6 border-t border-gray-200/50">
                                         <Button variant="ghost" onClick={handleBack} className="px-6 text-sm">
-                                            Back
+                                            option one
                                         </Button>
                                         <div className="flex gap-3">
                                             <Button 
@@ -932,6 +1024,8 @@
                                     </div>
                                 )}
                             </div>
+                                </div>
+                            </div>
                         </div>
                     </main>
 
@@ -941,7 +1035,7 @@
                             
                             {/* Partners Grid */}
                             <div className="flex flex-col items-center space-y-4">
-                                <p className="text-xs font-bold text-brand-light uppercase tracking-widest">Technology Partners</p>
+                                <p className="text-xs font-bold text-brand-light uppercase tracking-widest">placeholders</p>
                                 <div className="flex flex-wrap justify-center gap-3 md:gap-4">
                                     {PARTNERS.map(p => (
                                         <div key={p.name} className="partner-pill px-4 py-2 flex items-center gap-2 group cursor-default">
@@ -951,15 +1045,15 @@
                                                 onMouseOver={(e) => e.target.style.color = p.color}
                                                 onMouseOut={(e) => e.target.style.color = '#6B7280'}
                                             ></i>
-                                            <span className="text-[10px] font-bold text-brand-gray group-hover:text-brand-dark transition-colors">{p.name}</span>
-                                            <span className="text-[8px] font-semibold text-brand-light bg-gray-100 px-1.5 py-0.5 rounded ml-1">PARTNER</span>
+                                            <span className="text-[10px] font-bold text-brand-gray font-display group-hover:text-brand-dark transition-colors">{p.name}</span>
+                                            <span className="text-[8px] font-semibold text-brand-light bg-gray-100 px-1.5 py-0.5 rounded ml-1">placeholders</span>
                                         </div>
                                     ))}
                                 </div>
                             </div>
 
-                            <div className="flex flex-col md:flex-row justify-between items-center gap-4 pt-6 border-t border-gray-200/50 text-xs text-brand-light">
-                                <p>© 2025 ROBOTS. All rights reserved.</p>
+                            <div className="flex flex-col md:flex-row justify-between items-center gap-4 pt-8 border-t border-gray-200/50 text-xs text-brand-light">
+                                <p>© 2025 placeholders. All rights reserved.</p>
                                 <div className="flex items-center gap-2">
                                     <i className="fa-solid fa-lock text-brand-cta"></i>
                                     <span>Encrypted &amp; Secure</span>
@@ -971,8 +1065,23 @@
             );
         };
 
+        try {
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
-    </script>
+    } catch (e) {
+        console.error(e);
+        const el = document.getElementById('root');
+        if (el) {
+            el.innerHTML = `
+                <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;">
+                    <div style="max-width:680px;width:100%;background:rgba(255,255,255,.72);border:1px solid rgba(229,231,235,.7);border-radius:20px;padding:28px;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 18px 60px rgba(0,0,0,.12);font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial;">
+                        <div style="font-size:12px;opacity:.7;margin-bottom:10px;">placeholders</div>
+                        <div style="font-size:20px;font-weight:800;margin-bottom:8px;color:#0f172a;">Render error</div>
+                        <div style="font-size:13px;line-height:1.5;color:#334155;margin-bottom:14px;">A script failed before the UI could mount. Open DevTools → Console to see the error.</div>
+                        <pre style="white-space:pre-wrap;word-break:break-word;font-size:12px;background:rgba(15,23,42,.06);padding:12px;border-radius:12px;overflow:auto;">${String(e && (e.stack || e.message || e))}</pre>
+                    </div>
+                </div>`;
+        }
+    }</script>
 </body>
 </html>
