@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ROBOTS [$] – The Autonomous Work Era</title>
+    <title>BEON [$] – The Autonomous Work Era v1</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -11,16 +11,25 @@
         tailwind.config = {
             theme: {
                 extend: {
-                    colors: {
-                        brand: {
-                            dark: '#020617',
-                            gray: '#6B7280',
-                            light: '#9CA3AF',
-                            accent: '#06B6D4',
-                            cta: '#2563EB',
-                            ctaHover: '#1D4ED8',
-                        }
-                    },
+                        colors: {
+                            brand: {
+                                dark: '#020617',
+                                gray: '#6B7280',
+                                light: '#9CA3AF',
+                                accent: '#06B6D4',
+                                cta: '#2563EB',
+                                ctaHover: '#1D4ED8',
+                                ctaActive: "#1E40AF",
+                                success: "#10B981",
+                                error: "#EF4444",
+                                warning: "#F59E0B",
+                                disabled: "#CBD5E1",
+                                disabledBg: "#F1F5F9",
+                                focus: "#DBEAFE",
+                                bgBase: "#F8FAFC",
+                                bgSubtle: "#F1F5F9",
+                            }
+                        },
                     fontFamily: {
                         sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
                         display: ['Montserrat', 'system-ui', 'sans-serif'],
@@ -28,13 +37,29 @@
                     animation: {
                         'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                         'float': 'float 8s ease-in-out infinite',
+                        "pulse-glow": "pulse-glow 3s infinite",
+                        shimmer: "shimmer 1.5s infinite",
                     },
                     keyframes: {
+                        "pulse-glow": {
+                          "0%, 100%": { boxShadow: "0 0 0 0 rgba(37, 99, 235, 0)" },
+                          "50%": { boxShadow: "0 0 20px 0 rgba(37, 99, 235, 0.4)" },
+                        },
+                        shimmer: {
+                          "100%": { transform: "translateX(100%)" },
+                        },
                         float: {
                             '0%, 100%': { transform: 'translateY(0) rotate(0deg)' },
                             '50%': { transform: 'translateY(-20px) rotate(5deg)' },
                         }
-                    }
+                    },
+                    boxShadow: {
+                        glass: "0 8px 32px 0 rgba(37, 99, 235, 0.1)",
+                        "glass-hover": "0 12px 40px 0 rgba(37, 99, 235, 0.2)",
+                        glow: "0 0 20px rgba(37, 99, 235, 0.5)",
+                        "glow-lg": "0 0 30px rgba(37, 99, 235, 0.6)",
+                        "glow-input": "0 0 0 1px #2563EB, 0 0 16px rgba(37, 99, 235, 0.4)",
+                    },
                 }
             }
         }
@@ -230,53 +255,68 @@
         const WORKFLOW_OPTIONS = [
             {
                 id: "lead_qualification_booking",
-                label: "Lead qualification & meeting booking",
-                subtext: "Reviewing leads only to find they don't meet your qualification criteria?",
-                visionPlaceholder: "We're booking 25+ qualified meetings per month instead of 10, and our sales team only talks to prospects who fit our ICP"
+                label: "Unqualified meetings draining your pipeline",
+                subtext: "Low-intent leads consuming sales time",
+                visionPlaceholder: "We’re booking 25+ qualified meetings per month instead of 10..."
             },
             {
                 id: "pre_call_research",
-                label: "Pre-call research & preparation",
-                subtext: "Preparing for calls without enough prospect information?",
-                visionPlaceholder: "Our close rate increased from 15% to 22% because reps enter every call fully prepared with context and insights"
+                label: "Deals lost before the call even starts",
+                subtext: "Conversations happening without context",
+                visionPlaceholder: "Our close rate increased from 15% to 22% because reps are prepared..."
             },
             {
                 id: "meeting_notes_crm_updates",
-                label: "Meeting notes & CRM updates",
-                subtext: "Manually transcribing meeting notes and updating your CRM after each call?",
-                visionPlaceholder: "Our CRM is 95%+ accurate without manual effort, and we have complete visibility into our pipeline at all times"
+                label: "Decisions made with incomplete information",
+                subtext: "Critical deal context lost after calls",
+                visionPlaceholder: "Our CRM is 95%+ accurate without manual effort..."
             },
             {
                 id: "proposal_pricing_contracts",
-                label: "Proposal, pricing & contract generation",
-                subtext: "Manually writing proposals, pricing documents, and contracts for every opportunity?",
-                visionPlaceholder: "We're sending proposals within minutes, closing deals 30% faster, and our close rate has improved from 18% to 25%"
+                label: "Slow proposals killing deal momentum",
+                subtext: "Buyers going cold during admin work",
+                visionPlaceholder: "We’re sending proposals within minutes, closing deals 30% faster..."
             },
             {
                 id: "deal_health_stall_detection",
-                label: "Deal health & stall detection",
-                subtext: "Open deals stalling without clear indicators of why?",
-                visionPlaceholder: "We catch at-risk deals early and intervene proactively, improving our win rate from 20% to 28%"
+                label: "Deals dying silently in your pipeline",
+                subtext: "Oppertunities stalling with no visibility",
+                visionPlaceholder: "We catch at-risk deals early and intervene proactively..."
             },
             {
                 id: "followups_reengagement",
-                label: "Follow-ups & lifecycle re-engagement",
-                subtext: "Following up with prospects consistently, but getting minimal responses despite your reminders and check-ins?",
-                visionPlaceholder: "We're seeing 15% higher response rates and reactivating 10+ dormant opportunities per quarter without any manual follow-up work"
+                label: "Interested prospects going cold",
+                subtext: "Revenue lost due to poor follow-up",
+                visionPlaceholder: "We’re reactivating 10+ dormant opportunities per quarter without any manual work..."
             },
             {
                 id: "crm_hygiene_enrichment",
-                label: "CRM hygiene, enrichment & data structure",
-                subtext: "Fixing inaccurate CRM data instead of using it to drive decisions?",
-                visionPlaceholder: "Our CRM data is clean, complete, and over 95% accurate, making our reports trustworthy and our predictions much more reliable"
+                label: "No trust in your pipeline numbers",
+                subtext: "Inaccurate CRM data leading to bad decisions",
+                visionPlaceholder: "Our CRM data is clean, complete and trustworthy..."
             },
             {
                 id: "other",
                 label: "Other",
-                subtext: "",
-                visionPlaceholder: "Describe the specific outcome you're looking for, what would make this a clear win 90 days after implementation?"
+                visionPlaceholder: "Describe the specific outcome you’re looking for..."
             }
         ];
+
+        const WORKFLOW_BENCHMARKS = {
+          lead_qualification_booking: { bookedCalls: 45 },
+          proposal_pricing_contracts: { closeRate: 8, closeSpeed: 30 },
+          deal_health_stall_detection: { closeRate: 10 },
+          pre_call_research: { closeRate: 15, winProbability: 1.5 },
+          meeting_notes_crm_updates: { closeRate: 5, crmAccuracy: true },
+          followups_reengagement: {
+            bookedCalls: 12,
+            closeRate: 9,
+            responseRate: 15,
+            reactivatedDeals: true,
+          },
+          crm_hygiene_enrichment: { closeRate: 3, dataQuality: true },
+          other: { otherNote: true },
+        };
 
         const PLACEHOLDER_PRIORITY = [
             "lead_qualification_booking",
@@ -297,37 +337,39 @@
             return Math.round(n).toLocaleString();
         };
 
-        const AnimatedCurrencyCounter = ({ from, to }) => {
-            const nodeRef = useRef();
-            useEffect(() => {
-                const node = nodeRef.current;
-                const controls = animate(from, to, {
-                    duration: 2.6,
-                    ease: [0.22, 1, 0.36, 1],
-                    onUpdate(value) {
-                        node.textContent = formatCurrency(Math.round(value));
-                    }
-                });
-                return () => controls.stop();
-            }, [from, to]);
-            return <span ref={nodeRef} />;
+        const compoundLiftPct = (values) => {
+          const pcts = (values || [])
+            .map((v) => Number(v))
+            .filter((v) => Number.isFinite(v) && v > 0);
+          if (!pcts.length) return null;
+          return (pcts.reduce((acc, pct) => acc * (1 + pct / 100), 1) - 1) * 100;
         };
 
-        const AnimatedNumberCounter = ({ from, to }) => {
-            const nodeRef = useRef();
+        const AnimatedCounter = ({ value, format = (v) => v, duration = 2 }) => {
+            const ref = useRef();
+            const prevValue = useRef(0);
+
             useEffect(() => {
-                const node = nodeRef.current;
-                const controls = animate(from, to, {
-                    duration: 2.2,
-                    ease: [0.22, 1, 0.36, 1],
-                    onUpdate(value) {
-                        node.textContent = formatInt(value);
-                    }
-                });
-                return () => controls.stop();
-            }, [from, to]);
-            return <span ref={nodeRef} />;
+            const node = ref.current;
+            const controls = animate(prevValue.current, value, {
+                duration: duration,
+                ease: [0.16, 1, 0.3, 1],
+                onUpdate: (v) => {
+                if (node) node.textContent = format(v);
+                },
+                onComplete: () => {
+                prevValue.current = value;
+                },
+            });
+            return () => controls.stop();
+            }, [value]);
+
+            return <span ref={ref}>{format(0)}</span>;
         };
+
+        const PrimaryButton = ({ className = '', ...props }) => (
+            <Button variant="primary" className={className} {...props} />
+        );
 
         const Button = ({ children, onClick, variant = 'primary', className = '', disabled = false, type = 'button' }) => {
             const base = "inline-flex items-center justify-center rounded-xl px-8 py-4 text-base font-semibold transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50";
@@ -462,6 +504,30 @@
                 return { wastedHours, savedHours, savedMoney, manualCost, fte };
             }, [answers.teamSize, answers.hoursPerWeek, answers.hourlyCost]);
 
+            const benchmarkResults = useMemo(() => {
+              const selectedIds = answers.workflows || [];
+              const selected = selectedIds
+                .map((id) => WORKFLOW_BENCHMARKS[id])
+                .filter(Boolean);
+              const winMultipliers = selected
+                .map((s) => s.winProbability)
+                .filter((m) => Number.isFinite(m) && m > 0);
+
+              return {
+                bookedCalls: compoundLiftPct(selected.map((s) => s.bookedCalls)),
+                closeRate: compoundLiftPct(selected.map((s) => s.closeRate)),
+                closeSpeed: compoundLiftPct(selected.map((s) => s.closeSpeed)),
+                responseRate: compoundLiftPct(selected.map((s) => s.responseRate)),
+                winProbability: winMultipliers.length
+                  ? winMultipliers.reduce((acc, m) => acc * m, 1)
+                  : null,
+                crmAccuracy: selected.some((s) => s.crmAccuracy),
+                reactivatedDeals: selected.some((s) => s.reactivatedDeals),
+                dataQuality: selected.some((s) => s.dataQuality),
+                otherNote: selected.some((s) => s.otherNote),
+              };
+            }, [answers.workflows]);
+
             useEffect(() => {
                 const handleKeyDown = (e) => {
                     if (e.key !== 'Enter') return;
@@ -559,33 +625,29 @@
                 switch (step) {
                     case 0:
                         return (
-                            <div className="text-center py-8">
+                            <div className="text-center py-4">
                                 <motion.div
                                     initial={{ scale: 0.95, opacity: 0 }}
                                     animate={{ scale: 1, opacity: 1 }}
-                                    className="space-y-8"
+                                    className="space-y-4"
                                 >
-                                    <div className="inline-block p-5 bg-gradient-to-br from-blue-50 to-white border border-blue-100 shadow-xl rounded-full mb-2 animate-float">
-                                        <i className="fa-solid fa-robot text-5xl text-brand-cta"></i>
+                                    <div className="inline-block p-4 bg-gradient-to-br from-blue-50 to-white border border-blue-100 shadow-xl rounded-full mb-1 animate-float">
+                                        <i className="fa-solid fa-robot text-4xl text-brand-cta"></i>
                                     </div>
-                                    <div className="space-y-4">
-                                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-black font-display tracking-tight text-brand-dark leading-[1.05]">
-                                            machines are
-                                            <br />
-                                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-cta to-brand-accent">here</span>
+                                    <div className="space-y-3">
+                                        <h1 className="text-2xl md:text-3xl lg:text-4xl font-black font-display tracking-tight text-brand-dark leading-[1.1]">
+                                            Revenue Leaks Don't Fix Themselves. <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-cta to-brand-accent">AI Does.</span>
                                         </h1>
-                                        <p className="text-base md:text-lg text-brand-gray max-w-md mx-auto font-medium font-display">
-                                            Six questions. One vision.
-                                            <br />
-                                            Your first AI employee - brought to life.
+                                        <p className="text-xs md:text-sm text-brand-gray mx-auto font-medium font-display whitespace-nowrap">
+                                            Six questions. One vision. A revenue system that runs without headcount.
                                         </p>
                                     </div>
-                                    <div className="pt-4 flex flex-col items-center gap-3">
-                                        <Button onClick={() => { setDirection(1); setStep(1); }} className="w-full md:w-auto px-10 py-5 text-lg rounded-2xl">
+                                    <div className="pt-2 flex flex-col items-center gap-2">
+                                        <Button onClick={() => { setDirection(1); setStep(1); }} className="w-full md:w-auto px-8 py-4 text-base rounded-xl">
                                             Begin
                                         </Button>
-                                        <span className="text-[11px] md:text-xs font-medium text-brand-light mt-1">
-                                            Today's decision will shape your business trajectory.
+                                        <span className="text-xs font-medium text-brand-light">
+                                            Takes less than 2 minutes.
                                         </span>
                                     </div>
                                 </motion.div>
@@ -839,7 +901,7 @@
                             <div className="space-y-6">
                                 <div className="space-y-2">
                                     <h2 className="text-3xl font-bold text-brand-dark">Almost Done.</h2>
-                                    <p className="text-brand-gray">To ensure our next steps align precisely with your needs, we'll need a few key details from you.</p>
+                                    <p className="text-brand-gray">To ensure our next steps align precisely with your needs, we’ll need a few key details from you.</p>
                                 </div>
 
                                 <div className="space-y-4">
@@ -876,96 +938,219 @@
                         );
 
                     case 9:
-                        return (
-                            <div className="text-center py-2 md:py-6">
-                                <motion.div
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ duration: 0.8, type: "spring" }}
-                                >
-                                    <div className="mb-8 relative">
-                                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-blue-400/20 rounded-full blur-[80px]"></div>
-                                        <p className="text-brand-gray font-bold uppercase tracking-[0.2em] text-[10px] mb-2">Annual Cost of Manual Work</p>
-                                        <h1 className="text-5xl md:text-6xl font-black text-brand-dark tracking-tighter">
-                                            <AnimatedCurrencyCounter from={0} to={roi.manualCost} />
-                                        </h1>
-                                        <div className="mt-3 text-sm font-semibold text-emerald-600 bg-emerald-50 inline-block px-4 py-2 rounded-full border border-emerald-100">
-                                            Potential Annual Savings: {formatCurrency(roi.savedMoney)}
-                                        </div>
-                                    </div>
+              const combinedChips = [
+                benchmarkResults.bookedCalls && {
+                  i: "fa-calendar-check",
+                  t: `${Math.round(
+                    benchmarkResults.bookedCalls
+                  )}% more booked calls`,
+                },
+                benchmarkResults.closeRate && {
+                  i: "fa-chart-line",
+                  t: `${Math.round(
+                    benchmarkResults.closeRate
+                  )}% higher close rate`,
+                },
+                benchmarkResults.closeSpeed && {
+                  i: "fa-forward",
+                  t: `${Math.round(
+                    benchmarkResults.closeSpeed
+                  )}% faster close times`,
+                },
+                benchmarkResults.responseRate && {
+                  i: "fa-reply",
+                  t: `${Math.round(
+                    benchmarkResults.responseRate
+                  )}% higher response rates`,
+                },
+                benchmarkResults.winProbability && {
+                  i: "fa-bullseye",
+                  t: `${benchmarkResults.winProbability.toFixed(
+                    1
+                  )}x win probability`,
+                },
+                benchmarkResults.crmAccuracy && {
+                  i: "fa-database",
+                  t: "95%+ CRM accuracy",
+                },
+                benchmarkResults.reactivatedDeals && {
+                  i: "fa-rotate",
+                  t: "Reactivation of deals",
+                },
+              ].filter(Boolean);
 
-                                    <div className="grid grid-cols-2 gap-3 mb-8">
-                                        <div className="result-card-glass p-4 rounded-2xl text-left">
-                                            <i className="fa-regular fa-clock text-brand-gray mb-2"></i>
-                                            <div className="text-2xl font-bold text-brand-dark">
-                                                <AnimatedNumberCounter from={0} to={roi.wastedHours} />
-                                            </div>
-                                            <div className="text-[10px] font-bold text-brand-gray uppercase tracking-wider">Annual Hours Wasted</div>
-                                        </div>
-                                        <div className="result-card-glass p-4 rounded-2xl text-left">
-                                            <i className="fa-solid fa-wand-magic-sparkles text-brand-cta mb-2"></i>
-                                            <div className="text-2xl font-bold text-brand-dark">
-                                                <AnimatedNumberCounter from={0} to={roi.savedHours} />
-                                            </div>
-                                            <div className="text-[10px] font-bold text-brand-gray uppercase tracking-wider">Hours Recoverable</div>
-                                        </div>
-                                        <div className="result-card-glass p-4 rounded-2xl text-left col-span-2">
-                                            <i className="fa-solid fa-user-group text-brand-gray mb-2"></i>
-                                            <div className="text-2xl font-bold text-brand-dark">
-                                                {roi.fte.toFixed(1)} FTE
-                                            </div>
-                                            <div className="text-[10px] font-bold text-brand-gray uppercase tracking-wider">Equivalent Full-Time Capacity</div>
-                                        </div>
-                                    </div>
+              return (
+                <div className="w-full max-w-6xl mx-auto pb-20">
+                  <div className="text-center mb-16 relative">
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-brand-cta/10 rounded-full blur-3xl -z-10"></div>
+                    <h2 className="text-brand-cta font-bold tracking-[0.3em] text-xs uppercase mb-4">
+                      Analysis Complete
+                    </h2>
+                    <h1 className="text-4xl md:text-6xl font-black font-display text-brand-dark">
+                      Your AI Employee Impact
+                    </h1>
+                  </div>
 
-                                    <div className="bg-gradient-to-br from-[#0f172a] to-[#1e293b] rounded-2xl p-6 text-white text-left shadow-2xl relative overflow-hidden">
-                                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+                  {/* Bento Grid Results */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+                    {/* Cost Card */}
+                    <motion.div
+                      initial={{ y: 20, opacity: 0 }}
+                      whileInView={{ y: 0, opacity: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.1, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                      className="col-span-1 bg-white/60 backdrop-blur-xl border border-white/80 p-8 md:p-10 rounded-[2.5rem] shadow-glass flex flex-col justify-between h-80 relative overflow-hidden group hover:scale-[1.02] transition-transform"
+                    >
+                      <div className="absolute -right-12 -top-12 text-[10rem] text-brand-error/5 rotate-12 transition-transform group-hover:rotate-6">
+                        <i className="fa-solid fa-money-bill-wave"></i>
+                      </div>
+                      <div>
+                        <div className="text-brand-gray font-bold uppercase text-xs tracking-[0.2em] mb-4">
+                          Annual Waste
+                        </div>
+                        <div className="text-5xl md:text-6xl font-black text-brand-dark tracking-tight">
+                          <AnimatedCounter
+                            value={roi.manualCost}
+                            format={formatCurrency}
+                          />
+                        </div>
+                      </div>
+                      <div className="text-base font-medium text-brand-error/80 mt-4 leading-snug">
+                        Current cost of manual inefficiency
+                      </div>
+                    </motion.div>
 
-                                        <h3 className="text-sm font-bold text-white/90 uppercase tracking-[0.15em] mb-6 border-b border-white/10 pb-4">
-                                            What Happens Next
-                                        </h3>
+                    {/* Savings Card (Highlight) */}
+                    <motion.div
+                      initial={{ y: 20, opacity: 0 }}
+                      whileInView={{ y: 0, opacity: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.2, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                      className="col-span-1 md:col-span-2 bg-gradient-to-br from-brand-cta to-brand-ctaHover text-white p-8 md:p-10 rounded-[2.5rem] shadow-2xl flex flex-col justify-between h-80 relative overflow-hidden group hover:scale-[1.01] transition-transform"
+                    >
+                      <div className="absolute -right-8 -bottom-16 text-[16rem] text-white/10 rotate-12 transition-transform group-hover:rotate-6">
+                        <i className="fa-solid fa-piggy-bank"></i>
+                      </div>
+                      <div>
+                        <div className="text-blue-100 font-bold uppercase text-xs tracking-[0.2em] mb-4">
+                          Potential Annual Upside
+                        </div>
+                        <div className="text-6xl md:text-8xl font-black tracking-tighter">
+                          <AnimatedCounter
+                            value={roi.savedMoney}
+                            format={formatCurrency}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-5 mt-6">
+                        <div className="bg-white/20 backdrop-blur-md px-6 py-3 rounded-full text-base font-bold shadow-lg">
+                          <i className="fa-regular fa-clock mr-2"></i>
+                          <AnimatedCounter
+                            value={roi.savedHours}
+                            format={formatInt}
+                          />{" "}
+                          hours reclaimed
+                        </div>
+                        <div className="bg-white/10 backdrop-blur-md px-6 py-3 rounded-full text-base font-bold border border-white/10">
+                          {roi.fte.toFixed(1)} FTE Equivalent
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
 
-                                        <div className="space-y-5 relative z-10">
-                                            <div className="flex items-start gap-4">
-                                                <div className="w-6 h-6 rounded-full bg-brand-cta flex items-center justify-center text-[10px] font-bold shadow-[0_0_15px_rgba(37,99,235,0.6)] shrink-0 mt-0.5">1</div>
-                                                <div>
-                                                    <p className="font-bold text-sm text-white">Discovery Call (15 min)</p>
-                                                    <p className="text-xs text-slate-400 mt-1">We map the exact workflow, data sources, and edge cases.</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-start gap-4">
-                                                <div className="w-6 h-6 rounded-full bg-brand-cta flex items-center justify-center text-[10px] font-bold shadow-[0_0_15px_rgba(37,99,235,0.6)] shrink-0 mt-0.5">2</div>
-                                                <div>
-                                                    <p className="font-bold text-sm text-white">System Blueprint</p>
-                                                    <p className="text-xs text-slate-400 mt-1">You receive a concrete automation architecture, not a generic PDF.</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-start gap-4">
-                                                <div className="w-6 h-6 rounded-full bg-brand-cta flex items-center justify-center text-[10px] font-bold shadow-[0_0_15px_rgba(37,99,235,0.6)] shrink-0 mt-0.5">3</div>
-                                                <div>
-                                                    <p className="font-bold text-sm text-white">Production Launch</p>
-                                                    <p className="text-xs text-slate-400 mt-1">Your AI employee goes live in ~7 days.</p>
-                                                </div>
-                                            </div>
-                                        </div>
+                  {/* Benefit Stack */}
+                  <motion.div
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                    className="bg-white/40 backdrop-blur-md border border-white/50 rounded-[2rem] p-8 md:p-12 mb-12"
+                  >
+                    <h3 className="text-center text-sm font-bold text-brand-gray uppercase tracking-widest mb-10">
+                      projected performance lift
+                    </h3>
+                    <div className="flex flex-wrap justify-center gap-3">
+                      {combinedChips.map((chip, i) => (
+                        <motion.div
+                          key={i}
+                          whileHover={{ y: -5 }}
+                          className="bg-white shadow-lg shadow-brand-cta/5 border border-white/80 px-6 py-4 rounded-xl flex items-center gap-3"
+                        >
+                          <i
+                            className={`fa-solid ${chip.i} text-brand-cta text-lg`}
+                          ></i>
+                          <span className="font-bold text-brand-dark">
+                            {chip.t}
+                          </span>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
 
-                                        <div className="mt-8">
-                                            <button
-                                                onClick={() => window.location.href = BOOKING_URL}
-                                                className="w-full py-4 bg-white text-brand-dark font-bold rounded-xl hover:bg-gray-100 transition-colors shadow-lg flex items-center justify-center gap-2"
-                                            >
-                                                <span>Book the Discovery Call</span>
-                                                <i className="fa-solid fa-arrow-right text-xs"></i>
-                                            </button>
-                                        </div>
-                                    </div>
+                  {/* CTA Section */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-white/70 backdrop-blur-xl rounded-[2.5rem] p-8 md:p-12 border border-white shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-2/3 h-full bg-gradient-to-l from-brand-focus/50 to-transparent -z-10"></div>
 
-                                    <p className="mt-6 text-[10px] text-brand-light uppercase tracking-wider">
-                                        Estimates based on average benchmarks. Actual results verified in discovery.
-                                    </p>
-                                </motion.div>
-                            </div>
-                        );
+                    <div className="space-y-6">
+                      <div>
+                        <div className="w-10 h-10 bg-brand-cta rounded-full flex items-center justify-center text-white font-bold mb-4">
+                          1
+                        </div>
+                        <h3 className="text-xl font-bold text-brand-dark">
+                          Deep Dive Discovery
+                        </h3>
+                        <p className="text-brand-gray mt-2">
+                          15 min call to map your workflows and validate these
+                          numbers.
+                        </p>
+                      </div>
+                      <div>
+                        <div className="w-10 h-10 bg-brand-cta/10 text-brand-cta rounded-full flex items-center justify-center font-bold mb-4">
+                          2
+                        </div>
+                        <h3 className="text-xl font-bold text-brand-dark">
+                          System Build
+                        </h3>
+                        <p className="text-brand-gray mt-2">
+                          We configure your AI employee and integrate it with
+                          your stack.
+                        </p>
+                      </div>
+                      <div>
+                        <div className="w-10 h-10 bg-brand-cta/10 text-brand-cta rounded-full flex items-center justify-center font-bold mb-4">
+                          3
+                        </div>
+                        <h3 className="text-xl font-bold text-brand-dark">
+                          Launch
+                        </h3>
+                        <p className="text-brand-gray mt-2">
+                          Go live in ~7 days. Instant capacity.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-6 text-center md:text-left">
+                      <h3 className="text-3xl font-black text-brand-dark leading-tight">
+                        Ready to unlock {formatCurrency(roi.savedMoney)}?
+                      </h3>
+                      <PrimaryButton
+                        onClick={() => (window.location.href = BOOKING_URL)}
+                        className="w-full text-xl py-5 rounded-2xl"
+                      >
+                        Book Strategy Call
+                      </PrimaryButton>
+                      <p className="text-xs text-brand-gray text-center">
+                        Prefer email?{" "}
+                        <a
+                          href="mailto:ayoubbaitti02@gmail.com"
+                          className="text-brand-cta font-bold hover:underline"
+                        >
+                          ayoubbaitti02@gmail.com
+                        </a>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
 
                     default: return null;
                 }
@@ -982,7 +1167,7 @@
                         <div className="w-full max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between">
                             <div className="flex flex-col items-center md:items-start">
                                 <div className="text-3xl font-black logo-text text-brand-dark tracking-tighter flex items-center gap-2">
-                                    <span>ROBOTS</span>
+                                    <span>BEON</span>
                                     <span className="bg-brand-cta text-white px-2 py-0.5 rounded text-xl shadow-lg shadow-blue-500/30">[$]</span>
                                 </div>
                                 <span className="text-[10px] font-bold font-display text-brand-gray mt-1.5 tracking-[0.2em] uppercase">
@@ -994,7 +1179,7 @@
 
                     <main className="flex-grow flex items-center justify-center p-4 md:p-6 relative z-10">
                         <div className="ethereal-halo"></div>
-                        <div className={`w-full ${isReveal ? 'max-w-md' : 'max-w-xl'} transition-all duration-700 ease-in-out`}>
+                        <div className={`w-full ${isReveal ? 'max-w-full' : 'max-w-2xl'} transition-all duration-700 ease-in-out`}>
 
                             {!isIntro && !isReveal && (
                                 <div className="mb-8 px-1">
@@ -1014,70 +1199,90 @@
                                 </div>
                             )}
 
-                            <div className={`glass-panel rounded-[2rem] p-7 md:p-10 relative overflow-hidden transition-all duration-500 ${isIntro ? 'min-h-[420px] flex items-center justify-center' : 'min-h-[360px]'}`}>
-                                <AnimatePresence custom={direction} mode="wait">
+                            <AnimatePresence mode="wait">
+                                {isReveal ? (
                                     <motion.div
-                                        key={step}
-                                        custom={direction}
-                                        variants={variants}
-                                        initial="enter"
-                                        animate="center"
-                                        exit="exit"
-                                        transition={{ x: { type: "spring", stiffness: 320, damping: 32 }, opacity: { duration: 0.2 }, filter: { duration: 0.22 } }}
+                                        key="result-view"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.5 }}
                                         className="w-full"
                                     >
                                         {renderContent()}
                                     </motion.div>
-                                </AnimatePresence>
-
-                                {!isIntro && !isReveal && (
-                                    <div className="mt-12 flex items-center justify-between pt-6 border-t border-gray-200/50">
-                                        <Button variant="ghost" onClick={handleBack} className="px-6 text-sm">
-                                            Back
-                                        </Button>
-                                        <div className="flex gap-3">
-                                            <Button
-                                                onClick={handleNext}
-                                                disabled={!isValid}
-                                                className={`transition-all duration-300 px-8 ${isValid
-                                                    ? 'bg-brand-cta shadow-blue-500/25'
-                                                    : 'bg-gray-200 text-gray-400 shadow-none hover:shadow-none hover:translate-y-0'
-                                                    }`}
+                                ) : (
+                                    <motion.div
+                                        key="form-view"
+                                        initial={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        className={`glass-panel rounded-[2rem] p-6 md:p-8 relative overflow-hidden transition-all duration-500 ${isIntro ? 'min-h-[280px] flex items-center justify-center' : 'min-h-[320px]'}`}
+                                    >
+                                        <AnimatePresence custom={direction} mode="wait">
+                                            <motion.div
+                                                key={step}
+                                                custom={direction}
+                                                variants={variants}
+                                                initial="enter"
+                                                animate="center"
+                                                exit="exit"
+                                                transition={{ x: { type: "spring", stiffness: 320, damping: 32 }, opacity: { duration: 0.2 }, filter: { duration: 0.22 } }}
+                                                className="w-full"
                                             >
-                                                {step === 8 ? "Submit & see results" : "Next"}
-                                                {step !== 8 && <i className="fa-solid fa-chevron-right ml-2 text-xs"></i>}
-                                            </Button>
-                                        </div>
-                                    </div>
+                                                {renderContent()}
+                                            </motion.div>
+                                        </AnimatePresence>
+
+                                        {!isIntro && !isReveal && (
+                                            <div className="mt-12 flex items-center justify-between pt-6 border-t border-gray-200/50">
+                                                <Button variant="ghost" onClick={handleBack} className="px-6 text-sm">
+                                                    Back
+                                                </Button>
+                                                <div className="flex gap-3">
+                                                    <Button
+                                                        onClick={handleNext}
+                                                        disabled={!isValid}
+                                                        className={`transition-all duration-300 px-8 ${isValid
+                                                            ? 'bg-brand-cta shadow-blue-500/25'
+                                                            : 'bg-gray-200 text-gray-400 shadow-none hover:shadow-none hover:translate-y-0'
+                                                            }`}
+                                                    >
+                                                        {step === 8 ? "Submit & see results" : "Next"}
+                                                        {step !== 8 && <i className="fa-solid fa-chevron-right ml-2 text-xs"></i>}
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </motion.div>
                                 )}
-                            </div>
+                            </AnimatePresence>
                         </div>
                     </main>
 
-                    <footer className="pb-6 px-6 relative z-10">
-                        <div className="max-w-7xl mx-auto space-y-8">
-                            <div className="flex flex-col items-center space-y-4">
-                                <p className="text-xs font-bold text-brand-light uppercase tracking-widest">Technology Partners</p>
-                                <div className="flex flex-wrap justify-center gap-3 md:gap-4">
+                    <footer className="pb-4 px-4 relative z-10">
+                        <div className="max-w-7xl mx-auto space-y-4">
+                            <div className="flex flex-col items-center space-y-3">
+                                <p className="text-[10px] font-bold text-brand-light uppercase tracking-widest">Trusted by B2B teams to solve sales problems and increase revenue</p>
+                                <div className="flex flex-wrap justify-center gap-2">
                                     {PARTNERS.map(p => (
-                                        <div key={p.name} className="partner-pill px-4 py-2 flex items-center gap-2 group cursor-default">
+                                        <div key={p.name} className="partner-pill px-3 py-1.5 flex items-center gap-1.5 group cursor-default">
                                             <i
-                                                className={`${p.icon} text-lg transition-colors duration-300`}
+                                                className={`${p.icon} text-base transition-colors duration-300`}
                                                 style={{ color: '#6B7280' }}
                                                 onMouseOver={(e) => e.target.style.color = p.color}
                                                 onMouseOut={(e) => e.target.style.color = '#6B7280'}
                                             ></i>
-                                            <span className="text-[10px] font-bold text-brand-gray group-hover:text-brand-dark transition-colors">{p.name}</span>
-                                            <span className="text-[8px] font-semibold text-brand-light bg-gray-100 px-1.5 py-0.5 rounded ml-1">PARTNER</span>
+                                            <span className="text-[9px] font-bold text-brand-gray group-hover:text-brand-dark transition-colors">{p.name}</span>
+                                            <span className="text-[7px] font-semibold text-brand-light bg-gray-100 px-1 py-0.5 rounded ml-0.5">PARTNER</span>
                                         </div>
                                     ))}
                                 </div>
                             </div>
 
-                            <div className="flex flex-col md:flex-row justify-between items-center gap-4 pt-8 border-t border-gray-200/50 text-xs text-brand-light">
-                                <p>© 2025 ROBOTS. All rights reserved.</p>
-                                <div className="flex items-center gap-2">
-                                    <i className="fa-solid fa-lock text-brand-cta"></i>
+                            <div className="flex flex-col md:flex-row justify-between items-center gap-2 pt-4 border-t border-gray-200/50 text-[10px] text-brand-light">
+                                <p>© 2025 BEON. All rights reserved.</p>
+                                <div className="flex items-center gap-1.5">
+                                    <i className="fa-solid fa-lock text-brand-cta text-xs"></i>
                                     <span>Encrypted &amp; Secure</span>
                                 </div>
                             </div>
